@@ -1,2 +1,2 @@
 # MAC-5G-RANGE
-L2 module for POC of 5G-RANGE project
+L2 layer for POC of 5G-RANGE project
