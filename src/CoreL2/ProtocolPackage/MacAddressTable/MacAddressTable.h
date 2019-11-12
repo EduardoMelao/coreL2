@@ -1,13 +1,22 @@
+/* ***************************************/
+/* Copyright Notice                      */
+/* Copyright(c)2019 5G Range Consortium  */
+/* All rights Reserved                   */
+/*****************************************/
+
 #pragma once
 #include <stdint.h> //uint8_t
 #include <iostream> //cout
 
+/**
+ * @brief Table of correlation of IP Addresses and 5G-RANGE MAC Addresses
+ */
 class MacAddressTable{
 private:
-    int numRegs;    //Number of current register in the table
-    uint8_t** ipAddrs;    //Array of IP strings
-    uint8_t* macAddrs;  //Array of MAC Addresses
-    bool verbose;  
+    int numRegs;            //Number of current registers in the table
+    uint8_t** ipAddrs;      //Array of IP strings
+    uint8_t* macAddrs;      //Array of MAC Addresses
+    bool verbose;           //Verbosity flag
 public:
     MacAddressTable();
     MacAddressTable(bool verbose);

@@ -1,23 +1,46 @@
+/* ***************************************/
+/* Copyright Notice                      */
+/* Copyright(c)2019 5G Range Consortium  */
+/* All rights Reserved                   */
+/*****************************************/
+
 #include "MacHighQueue.h"
 
+/**
+ * @brief Constructs an empty MacHighQueue with a TUN descriptor
+ * @param tun TUN Interface object
+ * @param v Verbosity flag 
+ */
 MacHighQueue::MacHighQueue(TunInterface* tun, bool v){
     tunIf = tun;
     verbose = v;
 }
 
+/**
+ * @brief Destroys MacHighQueue
+ */
 MacHighQueue::~MacHighQueue(){ }
 
-void MacHighQueue::reading(){
+/**
+ * @brief Proceeding that executes forever, receiving packets from L3 and storing them in the queue
+ */
+void 
+MacHighQueue::reading(){
     char *buf;
     ssize_t nread = 0;
     while(1){
+        //Allocate buffer
         buf = new char[MAXLINE];
         bzero(buf, MAXLINE);
+
+        //Read from TUN Interface
         nread = tunIf->readTunInterface(buf, MAXLINE);
         {
+            //Lock to write in the queue
             lock_guard<mutex> lk(tunMutex);
             
-            if(nread==0)    //EOF
+            //Check EOF
+            if(nread==0)
                 break;
 
             //Check ipv4
@@ -38,7 +61,7 @@ void MacHighQueue::reading(){
                 continue;
             }
             
-            //Everything is ok, can add buffer to queue
+            //Everything is ok, buffer can be added to queue
             queue.push_back(buf);
             sizes.push_back(nread);
             if(verbose) cout<<"[MacHighQueue] SDU added to Queue. Num SDUs: "<<queue.size()<<endl;
@@ -46,18 +69,34 @@ void MacHighQueue::reading(){
     }
 }
 
-int MacHighQueue::getNum(){
+/**
+ * @brief Gets number of packets that are currently enqueued
+ * @returns Number of packets enqueued
+ */
+int 
+MacHighQueue::getNum(){
+    //Lock mutex to consult queue size information
     lock_guard<mutex> lk(tunMutex);
     return (int)queue.size();
 }
 
-ssize_t MacHighQueue::getNextSdu(char* buf){
+/**
+ * @brief Gets next SDU on queue for treatment
+ * @param buf Buffer were SDU will be stored
+ * @returns Size of SDU
+ */
+ssize_t 
+MacHighQueue::getNextSdu(char* buf){
     ssize_t retValue;
+
+    //Lock mutex to remove SDU from the head of the queue
     lock_guard<mutex> lk(tunMutex);
     if(queue.size()==0){
         if(verbose) cout<<"[MacHighQueue] Tried to get empty SDU from L3."<<endl;
         return -1;
     }
+
+    //Get front values from que vectors
     retValue = sizes.front();
     char* buf2 = queue.front();
     for(int i=0;i<sizes.front();i++)
@@ -65,6 +104,7 @@ ssize_t MacHighQueue::getNextSdu(char* buf){
     
     delete [] buf2;
 
+    //Delete front positions
     queue.erase(queue.begin());
     sizes.erase(sizes.begin());
 

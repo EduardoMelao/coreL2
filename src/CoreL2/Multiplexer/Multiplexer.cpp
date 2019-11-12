@@ -1,3 +1,9 @@
+/* ***************************************/
+/* Copyright Notice                      */
+/* Copyright(c)2019 5G Range Consortium  */
+/* All rights Reserved                   */
+/*****************************************/
+
 #include "Multiplexer.h"
 
 Multiplexer::Multiplexer(uint16_t nB, uint8_t _srcMac, MacAddressTable* _arp, int _maxSDUs, bool v){
@@ -21,34 +27,38 @@ Multiplexer::~Multiplexer(){
     delete[] nBytes; 
 }
 
-int Multiplexer::addSdu(char* sdu, uint16_t n, uint8_t dc){
-    int i;
-    uint8_t mac;
-    //First, see if there's a TransmissionQueue ready
-    if(dc){
-        uint8_t ipAddr[4];
-        for(int i=0;i<4;i++)
-            ipAddr[i] = (uint8_t) sdu[DST_OFFSET+i]; //Copying IP address
-        mac = arp->getMacAddress(ipAddr);
+void Multiplexer::setTransmissionQueue(uint8_t _dstMac){
+    if(nTransmissionQueues>MAX_BUFFERS && verbose){
+        cout<<"[Multiplexer] Trying to create more buffers than supported."<<endl;
+        exit(1);
     }
-    
-    ////////////////////PROVISIONAL///////////////////////////////
-    else mac = srcMac? 0:1;///////////////////////////////////////
-    //////////////////////////////////////////////////////////////
+    TransmissionQueues[nTransmissionQueues] = new TransmissionQueue(maxNBytes, srcMac, _dstMac, maxSDUs, verbose);
+    dstMac[nTransmissionQueues] = _dstMac;
+    nBytes[nTransmissionQueues] = 0;
+    nTransmissionQueues++;
+}
 
+//Data sdu.
+int Multiplexer::addSdu(char* sdu, uint16_t n){
+    uint8_t mac;
+    uint8_t ipAddr[4];
+    for(int i=0;i<4;i++)
+        ipAddr[i] = (uint8_t) sdu[DST_OFFSET+i]; //Copying IP address
+    mac = arp->getMacAddress(ipAddr);
+    return addSdu(sdu, n, 1, mac);
+}
+
+int Multiplexer::addSdu(char* sdu, uint16_t n, uint8_t dc, uint8_t _dstMac){
+    int i;
     for(i=0;i<nTransmissionQueues;i++)
-        if(dstMac[i]==mac)
+        if(dstMac[i]==_dstMac)
             break;
 
     if(i==nTransmissionQueues){   //Means there's no TransmissionQueue for this address
-        if(nTransmissionQueues>MAX_BUFFERS && verbose){
-            cout<<"[Multiplexer] Trying to create more buffers than supported."<<endl;
+        if(verbose){
+            cout<<"[Multiplexer] Error: no TransmissionQueue found."<<endl;
             return -2;
         }
-        TransmissionQueues[i] = new TransmissionQueue(maxNBytes, srcMac, mac, maxSDUs, verbose);
-        dstMac[i] = mac;
-        nBytes[i] = 0;
-        nTransmissionQueues++;
     }
 
     if((n + 2 + TransmissionQueues[i]->getNumberofBytes())>maxNBytes){
@@ -96,5 +106,9 @@ ssize_t Multiplexer::getPdu(char* buffer, int index){
 bool Multiplexer::emptyPdu(int index){
     if(index>=nTransmissionQueues) return true;
     return nBytes[index]==0;
+}
+
+int Multiplexer::getNTransmissionQueues(){
+    return nTransmissionQueues;
 }
 

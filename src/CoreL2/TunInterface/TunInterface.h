@@ -1,3 +1,9 @@
+/* ***************************************/
+/* Copyright Notice                      */
+/* Copyright(c)2019 5G Range Consortium  */
+/* All rights Reserved                   */
+/*****************************************/
+
 #pragma once
 #include <net/if.h>   //IFNAMSIZ, struct ifreq
 #include <linux/if_tun.h>
@@ -8,11 +14,14 @@
 #include <fcntl.h>      //open(), O_RDWR
 #include <sys/ioctl.h>  //ioctl()
 
+/**
+ * @brief Class to alloc, save the descriptor and manage operations of TUN interface
+ */
 class TunInterface{
 private:
-    int fd;
-    char* dev;
-    bool verbose;
+    int fd;         //File descriptor of the interface
+    char* dev;      //[optional] Name of the interface
+    bool verbose;   //Verbosity flag
 public:
     TunInterface();
     TunInterface(bool v);

@@ -1,3 +1,9 @@
+/* ***************************************/
+/* Copyright Notice                      */
+/* Copyright(c)2019 5G Range Consortium  */
+/* All rights Reserved                   */
+/*****************************************/
+
 #pragma once
 #include <iostream>     //cout
 #include <stdint.h>     //uint16_t
@@ -7,15 +13,18 @@
 #include <unistd.h>     //close()
 using namespace std;
 
+/**
+ * @brief This class simulates the physical layer with UDP sockets. 
+ */
 class CoreL1{
 private:
-    int *socksIn;     //Accept messages: Act as server
-    int *socksOut;    //Send messages: Act as client
-    struct sockaddr_in *socknames;
-    const char **ipServers;   //Messages will be sent to this ip
-    uint16_t *ports;  //Universal port 
-    int numSockets;     //Number of actual sockets stored
-    bool verbose;
+    int *socksIn;                   //Array of sockets used to RECEIVE messages
+    int *socksOut;                  //Array of sockets used to SEND messages
+    struct sockaddr_in *socknames;  //Array of socket addesses structs
+    const char **ipServers;         //Array of IP addresses to which messages will be sent
+    uint16_t *ports;                //Array of ports used to define IN and OUT sockets 
+    int numSockets;                 //Number of actual sockets stored
+    bool verbose;                   //Verbosity flag
 
 public:
     CoreL1(bool v);

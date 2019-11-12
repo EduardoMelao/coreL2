@@ -1,3 +1,9 @@
+/* ***************************************/
+/* Copyright Notice                      */
+/* Copyright(c)2019 5G Range Consortium  */
+/* All rights Reserved                   */
+/*****************************************/
+
 #pragma once
 #include <iostream>
 #include <list>
@@ -26,7 +32,10 @@ private:
 public:
     Multiplexer(uint16_t nB, uint8_t _srcMac, MacAddressTable* _arp, int _maxSDUS,  bool v);
     ~Multiplexer();
-    int addSdu(char* sdu, uint16_t n, uint8_t dc);   //Attempts to add SDU to queue. If queue is full for Tx, returns the index to get PDU. Else returns -1.
+    void setTransmissionQueue(uint8_t _dstMac);
+    int addSdu(char* sdu, uint16_t n);   //Attempts to add SDU to queue. If queue is full for Tx, returns the index to get PDU. Else returns -1.
+    int addSdu(char* sdu, uint16_t n, uint8_t dc, uint8_t _dstMac);   //Attempts to add SDU to queue. If queue is full for Tx, returns the index to get PDU. Else returns -1.
     ssize_t getPdu(char* buffer, int index);      //Get full PDU for transmission
     bool emptyPdu(int index);
+    int getNTransmissionQueues();
 };

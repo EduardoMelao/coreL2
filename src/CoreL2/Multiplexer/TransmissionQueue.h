@@ -1,3 +1,9 @@
+/* ***************************************/
+/* Copyright Notice                      */
+/* Copyright(c)2019 5G Range Consortium  */
+/* All rights Reserved                   */
+/*****************************************/
+
 #pragma once
 #include <iostream>
 
@@ -5,8 +11,12 @@
 #include "../ProtocolPackage/MacAddressTable/MacAddressTable.h"
 using namespace std;
 
+//Predefinition of class ProtocolPackage 
 class ProtocolPackage;
 
+/**
+ * @brief Queue used to store SDUs that will be transmitted to a specific destination
+ */
 class TransmissionQueue{
 private:
     char* buffer;           //Buffer accumulates SDUs
@@ -16,7 +26,7 @@ private:
     int controlOffset;      //Offset for encoding Control SDUs
     uint16_t* sizesSDUs;    //Sizes of each SDU multiplexed
     uint8_t* dcsSDUs;       //Data(1)/Control(0) flag
-    bool verbose;
+    bool verbose;           //Verbosity flag
     bool addSduPosition(char* sdu, uint16_t size, uint8_t dc, int position);  
     int currentBufferLength();     
 public:
@@ -32,4 +42,5 @@ public:
     ProtocolPackage* getPDUPackage();   
     void clearBuffer(); 
     uint8_t getCurrentDCFlag();
+    uint8_t getDstAddr();
 };

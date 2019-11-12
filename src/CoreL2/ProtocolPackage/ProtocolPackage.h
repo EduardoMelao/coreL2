@@ -1,11 +1,22 @@
+/* ***************************************/
+/* Copyright Notice                      */
+/* Copyright(c)2019 5G Range Consortium  */
+/* All rights Reserved                   */
+/*****************************************/
+
 #pragma once
 #include <stdint.h> //uint8_t
 #include <iostream> //cout
 using namespace std;
 
 #include "../Multiplexer/TransmissionQueue.h"
+
+//Predefinition of class TransmissionQueue 
 class TransmissionQueue;
 
+/**
+ * @brief Class used to build MAC Header with all information it needs
+ */
 class ProtocolPackage{
 private:
     uint8_t srcAddr;    //Source MAC Address (4 bits)
@@ -15,8 +26,8 @@ private:
     uint8_t *dcs;       //Data(1)/Control(0) flag of each SDU (1 bit each)
     size_t size;        //PDU length
     unsigned short crc; //Cyclic Redundance Check (16 bits)
+    bool verbose;       //Verbosity flag
     unsigned short auxCalcCRC(char data, unsigned short _crc);
-    bool verbose;
 public:
     ProtocolPackage(uint8_t sa, uint8_t da, uint8_t n, uint16_t* _sizes, uint8_t* _dcs, char* buf);
     ProtocolPackage(uint8_t sa, uint8_t da, uint8_t n, uint16_t* _sizes, uint8_t* _dcs, char* buf, bool v);
