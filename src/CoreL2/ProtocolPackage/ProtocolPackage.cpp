@@ -68,9 +68,6 @@ ProtocolPackage::ProtocolPackage(char* pdu, size_t _size, bool v){
  * @brief Destructs ProtocolPackage object
  */
 ProtocolPackage::~ProtocolPackage(){
-    delete buffer;
-    delete dcs;
-    delete sizes;
 }
 
 /**
