@@ -23,7 +23,7 @@ MacController::MacController(int nEquipments, uint16_t _nB, const char* _devName
     verbose = v;
     arp = _arp;
     macAddr = _macAddr;
-    bs = (macAddr==0);
+
     l1 = _l1;
     if(!(tunIf->allocTunInterface())){
         if(verbose) cout << "[MacController] Error allocating tun interface." << endl;
@@ -34,6 +34,14 @@ MacController::MacController(int nEquipments, uint16_t _nB, const char* _devName
     threads = new thread[4+attachedEquipments];
 
     mux = new Multiplexer(nB, macAddr, arp, MAXSDUS, verbose);
+
+    ///////PROVISIONAL: BS MAC ADDR = 0//////////////////////////////////////
+    bs = (macAddr==0);
+    if(bs){
+    	for(int i=0;i<nEquipments;i++)
+    		mux->setTransmissionQueue(arp->getMacAddress(i+1));
+    }
+    else mux->setTransmissionQueue(0);
 }
 
 /**
