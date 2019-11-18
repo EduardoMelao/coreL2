@@ -22,9 +22,34 @@ using namespace std;
 class MacCQueue{
 private:
 public:
+    /**
+     * @brief Constructs an empty Control Queue
+     */
     MacCQueue();
+
+    /**
+     * @brief Destroys control queue
+     */
     ~MacCQueue();
-    ssize_t getAck(char* buf);
-    ssize_t getControlSduULMCS(char* buf);
-    ssize_t getControlSduCSI(char* buf);
+
+    /**
+     * @brief Gets ACK control message that will be used for UE->BS acknowledgement
+     * @param buffer Buffer that will store the message
+     * @returns Size of the message in bytes
+     */
+    ssize_t getAck(char* buffer);
+
+    /**
+     * @brief Gets CSI Control SDU
+     * @param buffer Buffer that will store the message
+     * @returns Size of the message in bytes
+     */
+    ssize_t getControlSduULMCS(char* buffer);
+
+    /**
+     * @brief Gets ULMCS Control SDU
+     * @param buffer Buffer that will store the message
+     * @returns Size of the message in bytes
+     */
+    ssize_t getControlSduCSI(char* buffer);
 };

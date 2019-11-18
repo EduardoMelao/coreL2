@@ -6,21 +6,19 @@
 
 #include "MacController.h"
 
-/**
- * @brief Initializes a MacController object to manage all 5G RANGE MAC Operations
- * @param nEquipments Number of attached equipments. Must be 1 for UEs
- * @param _nB Maximum number of PDU in Bytes 
- * @param _devNameTun Customized name for TUN Interface
- * @param _arp Static table to link IP addresses to 5G-RANGE MAC addresses
- * @param _macAddr Current MAC address
- * @param _l1 Configured CoreL1 object
- * @param v Verbosity flag
- */
-MacController::MacController(int nEquipments, uint16_t _nB, const char* _devNameTun, MacAddressTable* _arp, uint8_t _macAddr, CoreL1* _l1, bool v){
-    attachedEquipments = nEquipments;
-    nB = _nB;
-    tunIf = new TunInterface(_devNameTun, v);
-    verbose = v;
+MacController::MacController(
+        int numberEquipments,       //Number of equipments attached
+        uint16_t _maxNumberBytes,   //Maximum number of Bytes in PDU
+        const char* _devNameTun,    //TUN device name
+        MacAddressTable* _arp,      //MAC address - IP address table
+        uint8_t _macAddr,           //5GR MAC address
+        CoreL1* _l1,                //L1 object
+        bool _verbose)             //Verbosity flag
+    {
+    attachedEquipments = numberEquipments;
+    maxNumberBytes = _maxNumberBytes;
+    tunIf = new TunInterface(_devNameTun, _verbose);
+    verbose = _verbose;
     arp = _arp;
     macAddr = _macAddr;
 
@@ -29,24 +27,21 @@ MacController::MacController(int nEquipments, uint16_t _nB, const char* _devName
         if(verbose) cout << "[MacController] Error allocating tun interface." << endl;
         exit(1);
     }
-    macHigh = new MacHighQueue(tunIf, v);
+    macHigh = new MacHighQueue(tunIf, _verbose);
 
     threads = new thread[4+attachedEquipments];
 
-    mux = new Multiplexer(nB, macAddr, arp, MAXSDUS, verbose);
+    mux = new Multiplexer(maxNumberBytes, macAddr, arp, MAXSDUS, verbose);
 
     ///////PROVISIONAL: BS MAC ADDR = 0//////////////////////////////////////
-    bs = (macAddr==0);
-    if(bs){
-    	for(int i=0;i<nEquipments;i++)
+    flagBS = (macAddr==0);
+    if(flagBS){
+    	for(int i=0;i<numberEquipments;i++)
     		mux->setTransmissionQueue(arp->getMacAddress(i+1));
     }
     else mux->setTransmissionQueue(0);
 }
 
-/**
- * @brief Destructs MacController object
- */
 MacController::~MacController(){
     delete mux;
     delete macHigh;
@@ -54,100 +49,94 @@ MacController::~MacController(){
     delete threads;
 }
 
-/**
- * @brief Procedure that executes forever and controls TUN interface reading
- */
 void 
 MacController::readTunCtl(){
-    int val;
-    char bufData[MAXLINE];
-    ssize_t nread = 0;
+    int indexSendingPDU;
+    char bufferData[MAXLINE];
+    ssize_t numberBytesRead = 0;
     while(1){
 
         //Test if MacHigh Queue is not empty, i.e. there are SDUs to enqueue
         if(macHigh->getNum()){
 
             //If multiplexer queue is empty, notify condition variable to trigger timeout timer
-            if(mux->emptyPdu(0)) queueCv.notify_all();
+            if(mux->emptyPdu(0)) queueConditionVariable.notify_all();
 
-            //Fulfill bufData with zeros 
-            bzero(bufData, MAXLINE);
+            //Fulfill bufferData with zeros 
+            bzero(bufferData, MAXLINE);
 
             //Gets next SDU from MACHigh Queue
-            nread = macHigh->getNextSdu(bufData);
+            numberBytesRead = macHigh->getNextSdu(bufferData);
             {   
                 //Locks mutex to write in Multiplexer queue
                 lock_guard<mutex> lk(queueMutex);
                 
                 //Adds SDU to multiplexer
-                val = mux->addSdu(bufData, nread);
+                indexSendingPDU = mux->addSdu(bufferData, numberBytesRead);
 
                 //If the SDU was added successfully, continues the loop
-                if(val==-1)
+                if(indexSendingPDU==-1)
                     continue;
 
-                //Else, val contains the Transmission Queue index to perform PDU sending. 
+                //Else, indexSendingPDU contains the Transmission Queue index to perform PDU sending. 
                 //So, perform PDU sending
-                sendPdu(val);
+                sendPdu(indexSendingPDU);
 
                 //Now, it is possible to add SDU to queue
-                mux->addSdu(bufData,nread);
+                mux->addSdu(bufferData,numberBytesRead);
             }
         }
     }
 }
 
-/**
- * @brief Procedure that executes forever and controls Control SDUs entrance in Multiplexing queue
- */
 void 
 MacController::controlSduCtl(){
-    int val;
+    int indexSendingPDU;
     char bufControl[MAXLINE];
 
     //Creates a new MacCQueue object to generate Control SDUs
     MacCQueue *macc = new MacCQueue();
-    ssize_t nread = 0;
+    ssize_t numberBytesRead = 0;
     while (1){
         //If multiplexing queue is empty, notify condition variable to trigger timeout timer
-        if(mux->emptyPdu(0)) queueCv.notify_all();
+        if(mux->emptyPdu(0)) queueConditionVariable.notify_all();
         bzero(bufControl, MAXLINE);
 
         //Test if it is BS or UE and decides which Control SDU to get
-        nread = macAddr? macc->getControlSduCSI(bufControl): macc->getControlSduULMCS(bufControl);
+        numberBytesRead = macAddr? macc->getControlSduCSI(bufControl): macc->getControlSduULMCS(bufControl);
         {   
             //Locks mutex to write in multiplexer queue
             lock_guard<mutex> lk(queueMutex);
-            if(!bs){
+            if(!flagBS){
                 //Adds SDU to multiplexer
-                val = mux->addSdu(bufControl, nread, 0, 0);
+                indexSendingPDU = mux->addSdu(bufControl, numberBytesRead, 0, 0);
 
                 //If the SDU was added successfully, continues the loop
-                if(val==-1)
+                if(indexSendingPDU==-1)
                     continue;
 
-                //Else, val contains the Transmission Queue index to perform PDU sending. 
+                //Else, indexSendingPDU contains the Transmission Queue index to perform PDU sending. 
                 //So, perform PDU sending
-                sendPdu(val);
+                sendPdu(indexSendingPDU);
 
                 //Now, it is possible to add SDU to queue
-                mux->addSdu(bufControl,nread, 0, 0);
+                mux->addSdu(bufControl,numberBytesRead, 0, 0);
             }
             else{
                 for(int i=0;i<mux->getNTransmissionQueues();i++){
                 //Adds SDU to multiplexer
-                val = mux->addSdu(bufControl, nread, 0, arp->getMacAddress(i+1));   //<----PROVISIONAL////////////////////////////////////////////////
+                indexSendingPDU = mux->addSdu(bufControl, numberBytesRead, 0, arp->getMacAddress(i+1));   //<----PROVISIONAL////////////////////////////////////////////////
 
                 //If the SDU was added successfully, continues the loop
-                if(val==-1)
+                if(indexSendingPDU==-1)
                     continue;
 
-                //Else, val contains the Transmission Queue index to perform PDU sending. 
+                //Else, indexSendingPDU contains the Transmission Queue index to perform PDU sending. 
                 //So, perform PDU sending
-                sendPdu(val);
+                sendPdu(indexSendingPDU);
 
                 //Now, it is possible to add SDU to queue
-                mux->addSdu(bufControl,nread, 0,  arp->getMacAddress(i+1));     //<----PROVISIONAL////////////////////////////////////////////////
+                mux->addSdu(bufControl,numberBytesRead, 0,  arp->getMacAddress(i+1));     //<----PROVISIONAL////////////////////////////////////////////////
                 }
             }
         }
@@ -155,9 +144,6 @@ MacController::controlSduCtl(){
     delete macc;
 }
 
-/**
- * @brief Declares and starts all threads necessary for MacController
- */
 void 
 MacController::startThreads(){
     int i;
@@ -189,34 +175,29 @@ MacController::startThreads(){
     delete ports;
 }
 
-/**
- * @brief Performs PDU sending to destination identified by index
- * @param index Index of destination Transmission Queue in Multiplexer
- */
 void 
-MacController::sendPdu(int index){
+MacController::sendPdu(
+    int index)     //Index of TransmissionQueue
+{
     //Declaration of PDU buffer
-    char bufPdu[MAXLINE];
-    bzero(bufPdu, MAXLINE);
+    char bufferPdu[MAXLINE];
+    bzero(bufferPdu, MAXLINE);
 
     //Gets PDU from multiplexer
-    ssize_t nread = mux->getPdu(bufPdu, index);
+    ssize_t numberBytesRead = mux->getPdu(bufferPdu, index);
 
     //Creates a Control Header to this PDU and inserts it
-    MacCtHeader macCt(bs, verbose);
-    nread = macCt.insertControlHeader(bufPdu, nread);
+    MacCtHeader macCt(flagBS, verbose);
+    numberBytesRead = macCt.insertControlHeader(bufferPdu, numberBytesRead);
 
     //Perform CRC calculation
-    crcPackageCalculate(bufPdu, nread);
+    crcPackageCalculate(bufferPdu, numberBytesRead);
 
     //Send PDU to all attached equipments ("to air interface")
     for(int i=0;i<attachedEquipments;i++)
-        l1->sendPdu(bufPdu, nread+2, (l1->getPorts())[i]);
+        l1->sendPdu(bufferPdu, numberBytesRead+2, (l1->getPorts())[i]);
 }
 
-/**
- * @brief Procedure that controls timeout and triggers PDU sending
- */
 void 
 MacController::timeoutController(){
     //Timeout declaration: static
@@ -230,7 +211,7 @@ MacController::timeoutController(){
         /////////////PROVISIONAL: INDEX 0 IN FOLLOWING FUNCTIONS MEANS POINT-TO-POINT//////////////////////////
 
         //If there's no timeout OR the PDU is empty, no transmission is necessary
-        if(queueCv.wait_for(lk, timeout)==cv_status::no_timeout || mux->emptyPdu(0)) continue;    //HERE
+        if(queueConditionVariable.wait_for(lk, timeout)==cv_status::no_timeout || mux->emptyPdu(0)) continue;    //HERE
         //Else, perform PDU transmission
         if(verbose) cout<<"[MacController] Timeout!"<<endl;
         sendPdu(0);         //HERE TOO
@@ -238,13 +219,11 @@ MacController::timeoutController(){
     delete macc;
 }
 
-/**
- * @brief Procedure that performs decoding of PDUs received from L1
- * @param port Receiving socket port
- */
 void 
-MacController::decoding(uint16_t port){
-    int val;
+MacController::decoding(
+    uint16_t port)      //Port of Receiving socket
+{
+    int indexSendingPDU;
     char buf[MAXLINE], ackBuf[MAXLINE];
 
     //Communication infinite loop
@@ -253,33 +232,33 @@ MacController::decoding(uint16_t port){
         bzero(buf,sizeof(buf));
 
         //Read packet from  Socket
-        int r = l1->receivePdu(buf, MAXLINE, port);
+        int numberDecodingBytes = l1->receivePdu(buf, MAXLINE, port);
 
         //Error checking
-        if(r==-1 && verbose){ 
+        if(numberDecodingBytes==-1 && verbose){ 
             cout<<"[MacController] Error reading from socket."<<endl;
             break;
         }
 
         //EOF checking
-        if(r==0) break;
+        if(numberDecodingBytes==0) break;
 
         if(verbose) cout<<"[MacController] Decoding "<<port<<": in progress..."<<endl;
 
         //CRC checking
-        if(!crcPackageChecking(buf, r)){
+        if(!crcPackageChecking(buf, numberDecodingBytes)){
             if(verbose) cout<<"[MacController] Drop packet due to CRC error."<<endl;
         }
 
         //Remove CRC bytes from size count
-        r-=2;
+        numberDecodingBytes-=2;
 
         //Create MacCtHeader object and remove CONTROL header
-        MacCtHeader macCt(bs, buf, r, verbose);
-        r = macCt.removeControlHeader(buf,r);
+        MacCtHeader macCt(flagBS, buf, numberDecodingBytes, verbose);
+        numberDecodingBytes = macCt.removeControlHeader(buf,numberDecodingBytes);
 
         //Create ProtocolPackage object to help removing Mac Header
-        ProtocolPackage pdu(buf, r , verbose);
+        ProtocolPackage pdu(buf, numberDecodingBytes , verbose);
         pdu.removeMacHeader();
 
         //Verify Destination
@@ -290,13 +269,13 @@ MacController::decoding(uint16_t port){
 
         //Create TransmissionQueue object to help unstacking SDUs contained in the PDU
         TransmissionQueue *tqueue = pdu.getMultiplexedSDUs();
-        while((r = tqueue->getSDU(buf))>0){
+        while((numberDecodingBytes = tqueue->getSDU(buf))>0){
             //Test if it is Control SDU
             if(tqueue->getCurrentDCFlag()==0){
-                buf[r] = '\0';
+                buf[numberDecodingBytes] = '\0';
                 if(verbose){
                 	cout<<"[MacController] Control SDU received: ";
-                	for(int i=0;i<r;i++)
+                	for(int i=0;i<numberDecodingBytes;i++)
 						cout<<buf[i];
 					cout<<endl;
                 }
@@ -304,35 +283,33 @@ MacController::decoding(uint16_t port){
                 //PROVISIONAL: BS_MAC=0 AND UE_MAC !=0, ALWAYS//////////////////////////
                 if(macAddr){    //UE needs to return ACK to BS
                     /////////////////ACK/////////////////////
-                    if(mux->emptyPdu(0)) queueCv.notify_all();
+                    if(mux->emptyPdu(0)) queueConditionVariable.notify_all();
                     bzero(ackBuf, MAXLINE);
-                    r = macc->getAck(ackBuf);
+                    numberDecodingBytes = macc->getAck(ackBuf);
                     lock_guard<mutex> lk(queueMutex);
-                    val = mux->addSdu(ackBuf, r, 0,0);
+                    indexSendingPDU = mux->addSdu(ackBuf, numberDecodingBytes, 0,0);
 
-                    if(val==-1) continue;
+                    if(indexSendingPDU==-1) continue;
 
-                    sendPdu(val);
+                    sendPdu(indexSendingPDU);
 
-                    mux->addSdu(ackBuf, r, 0,0);
+                    mux->addSdu(ackBuf, numberDecodingBytes, 0,0);
                 }
                 continue;
             }
             //In case this SDU is Data SDU
             if(verbose) cout<<"[MacController] Received from socket. Forwarding to TUN."<<endl;
-            tunIf->writeTunInterface(buf, r);
+            tunIf->writeTunInterface(buf, numberDecodingBytes);
         }
         delete tqueue;
     }
 }
 
-/**
- * @brief Calculares CRC of current PDU passed as parameter
- * @param buffer Bytes of current PDU
- * @param size Size of PDU in bytes
- */
 void 
-MacController::crcPackageCalculate(char *buffer, int size){
+MacController::crcPackageCalculate(
+    char* buffer,       //Buffer of Bytes of PDU
+    int size)           //PDU size in Bytes
+{
     unsigned short crc = 0x0000;
     for(int i=0;i<size;i++){
         crc = auxCalcCRC(buffer[i],crc);
@@ -342,14 +319,11 @@ MacController::crcPackageCalculate(char *buffer, int size){
     if(verbose) cout<<"[MacController] CRC inserted at the end of the PDU."<<endl;
 }
 
-/**
- * @brief Checks if CRC contained in received PDU matches calculated CRC
- * @param buffer Bytes of current PDU
- * @param size Size of PDU in bytes
- * @returns True if CRC match; False otherwise
- */
 bool 
-MacController::crcPackageChecking(char *buffer, int size){
+MacController::crcPackageChecking(
+    char* buffer,       //Bytes of PDU
+    int size)           //Size of PDU in Bytes
+{
     unsigned short crc1, crc2;
     crc1 = ((buffer[size-2]&255)<<8)|((buffer[size-1])&255);
     crc2 = 0x0000;
@@ -360,14 +334,11 @@ MacController::crcPackageChecking(char *buffer, int size){
     return crc1==crc2;
 }
 
-/**
- * @brief Auxiliary function for CRC calculation
- * @param data Single byte from PDU
- * @param crc CRC history
- * @returns 2-byte CRC calculation
- */
 unsigned short 
-MacController::auxCalcCRC(char data, unsigned short crc){
+MacController::auxCalcCRC(
+    char data,              //Byte from PDU
+    unsigned short crc)     //CRC history
+{
     char i, bit;
     for(i=0x01;i;i<<=1){
         bit = (((crc&0x0001)?1:0)^((data&i)?1:0));
