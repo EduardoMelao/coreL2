@@ -5,40 +5,33 @@
 /*****************************************/
 
 #include "CoreL1.h"
-/**
- * @brief Initializes a new instance of CoreL1 with 0 sockets
- * @param v Verbosity flag
- */
-CoreL1::CoreL1(bool v){
-    verbose = v;
+
+CoreL1::CoreL1(
+    bool _verbose)  //Verbosity flag
+{
+    verbose = _verbose;
     numSockets = 0;
 }
 
-/**
- * @brief Initializes a new instance of CoreL1 with 1 socket which informations were passed as parameters and no verbose
- * @param ip Destination IP address 
- * @param port Socket port
- */
-CoreL1::CoreL1(const char *ip, uint16_t port){
+CoreL1::CoreL1(
+    const char *ip,     //Destinaton socket IP
+    uint16_t port)      //Destination socket port
+{
     CoreL1(ip, port, false);
 }
 
-/**
- * @brief Initializes a new instance of CoreL1 with 1 socket which informations were passed as parameters
- * @param ip Destination IP address 
- * @param port Socket port
- * @param v Verbosity flag
- */
-CoreL1::CoreL1(const char *ip, uint16_t port, bool v){
-    verbose = v;
+CoreL1::CoreL1(
+    const char *ip,     //Destinaton socket IP
+    uint16_t port,      //Destination socket port
+    bool _verbose)      //Verbosity flag
+{
+    verbose = _verbose;
     numSockets = 0;
     addSocket(ip, port);
 }
 
-/**
- * @brief Destructor of CoreL1 object
- */
-CoreL1::~CoreL1(){
+CoreL1::~CoreL1()
+{
     for(int i=0;i<numSockets;i++){
         close(socksIn[i]);
         close(socksOut[i]);
@@ -50,14 +43,11 @@ CoreL1::~CoreL1(){
     delete[] socknames;
 }
 
-/**
- * @brief Adds new socket information in CoreL1. 
- * Declarates a client socket to send information to destination and a server socket to receive information from destination.
- * @param ip Destination IP address
- * @param port Socket port
- */
 void 
-CoreL1::addSocket(const char *ip, uint16_t port){
+CoreL1::addSocket(
+    const char *ip,     //Destinaton socket IP
+    uint16_t port)      //Destination socket port
+{
     //Verify if socket is added already
     if((getSockIn(port)!=-1)||(getSockOut(port)!=-1)){
         if(verbose) cout<<"[CoreL1] Socket "<<port<<" already exists."<<endl;
@@ -124,41 +114,35 @@ CoreL1::addSocket(const char *ip, uint16_t port){
     numSockets++;
 }
 
-/**
- * @brief Send PDU to socket considering there's just one socket added
- * @param buf Information buffer
- * @param n Size of information in bytes
- * @returns If transmission was successfull
- */
 bool 
-CoreL1::sendPdu(const char* buf, size_t n){
-    return sendPdu(buf, n, ports[0]);
+CoreL1::sendPdu(
+    const char* buffer,     //Information buffer
+    size_t size)            //Size of information in bytes
+{
+    return sendPdu(buffer, size, ports[0]);
 }
 
-
-/**
- * @brief Send PDU to socket identified by port
- * @param buf Information buffer
- * @param n Size of information in bytes
- * @param port Socket port to identify which socket to send information
- * @returns True if transmission was successfull; False if it was not
- */
 bool 
-CoreL1::sendPdu(const char* buf, size_t n, uint16_t port){
-    int sockOut, r;
+CoreL1::sendPdu(
+    const char* buffer,     //Information buffer
+    size_t size,            //Size of information in bytes
+    uint16_t port)          //Port of destination socket
+{
+    int sockOut;        //Descriptor of the socket to which data will be sent
+    ssize_t numberSent; //Number of bytes sent
 
     //Gets socket index
-    sockOut=getSockOut(port);
+    sockOut = getSockOut(port);
 
     //Verify if socket exists
     if(sockOut!=-1){
 
-        //Send information in buf to socket
-        r = sendto(socksOut[sockOut], buf, n, MSG_CONFIRM, (const struct sockaddr*)(&(socknames[sockOut])), sizeof(socknames[sockOut]));
+        //Send information in buffer to socket
+        numberSent = sendto(socksOut[sockOut], buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&(socknames[sockOut])), sizeof(socknames[sockOut]));
 
         //Verify if transmission was successful
-        if(r!=-1){
-            if(verbose) cout<<"[CoreL1] Pdu sent:"<<n<<" bytes."<<endl;
+        if(numberSent!=-1){
+            if(verbose) cout<<"[CoreL1] Pdu sent:"<<size<<" bytes."<<endl;
             return true;
         }
     }
@@ -166,26 +150,20 @@ CoreL1::sendPdu(const char* buf, size_t n, uint16_t port){
     return false;
 }
 
-/**
- * @brief Receive PDU from socket considering there's just one socket added
- * @param buf Information buffer to put the information received
- * @param maxSiz Maximum size of buffer
- * @returns Length in bytes of information received
- */
 ssize_t 
-CoreL1::receivePdu(const char* buf, size_t maxSiz){
-    return receivePdu(buf, maxSiz, ports[0]);
+CoreL1::receivePdu(
+    const char* buffer,     //Information buffer
+    size_t maxSiz)          //Maximum size of buffer
+{         
+    return receivePdu(buffer, maxSiz, ports[0]);
 }
 
-/**
- * @brief Receive PDU from socket identified by port
- * @param buf Information buffer to put the information received
- * @param maxSiz Maximum size of buffer
- * @param port Socket port to identify which socket to receive information
- * @returns Length in bytes of information received
- */
 ssize_t 
-CoreL1::receivePdu(const char* buf, size_t maxSiz, uint16_t port){
+CoreL1::receivePdu(
+    const char* buffer,     //Information buffer
+    size_t maxSiz,          //Maximum size of buffer
+    uint16_t port)          //Port of receiving socket
+{
     //Gets socket index
     int sockIn = getSockIn(port);
 
@@ -196,40 +174,31 @@ CoreL1::receivePdu(const char* buf, size_t maxSiz, uint16_t port){
     }
 
     //Returns socket receiving function
-    return recv(socksIn[getSockIn(port)], (void*) buf, maxSiz, MSG_WAITALL);
+    return recv(socksIn[getSockIn(port)], (void*) buffer, maxSiz, MSG_WAITALL);
 }
 
-/**
- * @brief Get index of socket to receive information
- * @param port Socket port
- * @returns Socket index or -1 if socket was not found
- */
 int 
-CoreL1::getSockIn(uint16_t port){
+CoreL1::getSockIn(
+    uint16_t port)  //Socket port
+{
     for(int i=0;i<numSockets;i++)
         if(ports[i] == port)
             return i;
     return -1;
 }
 
-/**
- * @brief Get index of socket to send information
- * @param port Socket port
- * @returns Socket index or -1 if socket was not found
- */
 int 
-CoreL1::getSockOut(uint16_t port){
+CoreL1::getSockOut(
+    uint16_t port)  //Socket port
+{
     for(int i=0;i<numSockets;i++)
         if(ports[i] == port)
             return i;
     return -1;
 }
 
-/**
- * @brief Get ports currently added to CoreL1 object
- * @returns Array of ports
- */
 uint16_t* 
-CoreL1::getPorts(){
+CoreL1::getPorts()
+{
     return ports;
 }

@@ -6,51 +6,36 @@
 
 #include "MacCQueue.h"
 
-/**
- * @brief Constructs an empty Control Queue
- */
 MacCQueue::MacCQueue(){ }
 
-/**
- * @brief Destroys control queue
- */
 MacCQueue::~MacCQueue() { }
 
-/**
- * @brief Gets ACK control message that will be used for UE->BS acknowledgement
- * @param buf Buffer that will store the message
- * @returns Size of the message in bytes
- */
 ssize_t 
-MacCQueue::getAck(char* buf){
+MacCQueue::getAck(
+    char* buffer)   //Buffer where message will be stored
+{
     const char ack[4] = "Ack";
-    memcpy(buf, ack, 3);
+    memcpy(buffer, ack, 3);
     return 3;
 }
 
-/**
- * @brief Gets CSI Control SDU
- * @param buf Buffer that will store the message
- * @returns Size of the message in bytes
- */
 ssize_t 
-MacCQueue::getControlSduCSI(char* buf){
+MacCQueue::getControlSduCSI(
+    char* buffer)   //Buffer where message will be stored
+{
     ////////////////PROVISIONAL/////////////
-    return getControlSduULMCS(buf);
+    return getControlSduULMCS(buffer);
 }
 
-/**
- * @brief Gets ULMCS Control SDU
- * @param buf Buffer that will store the message
- * @returns Size of the message in bytes
- */
 ssize_t 
-MacCQueue::getControlSduULMCS(char* buf){
+MacCQueue::getControlSduULMCS(
+    char* buffer)   //Buffer where message will be stored
+{
     ////////////////PROVISIONAL/////////////
     const char macCSdu[22] = "Control PDU: each 10s";
     ssize_t size = 21;
     ////////////////////////////////////////
     this_thread::sleep_for(chrono::milliseconds(10000));
-    memcpy(buf, macCSdu, size);
+    memcpy(buffer, macCSdu, size);
     return size;
 }

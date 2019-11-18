@@ -13,20 +13,76 @@
  */
 class MacAddressTable{
 private:
-    int numRegs;            //Number of current registers in the table
+    int numRegisters;            //Number of current registers in the table
     uint8_t** ipAddrs;      //Array of IP strings
     uint8_t* macAddrs;      //Array of MAC Addresses
     bool verbose;           //Verbosity flag
 public:
+    /**
+     * @brief Constructs empty table with no verbosity
+     */
     MacAddressTable();
+
+    /**
+     * @brief Constructs empty table with verbosity passed as parameter
+     * @param _verbose Verbosity flag
+     */
     MacAddressTable(bool verbose);
+
+    /**
+     * @brief Destroys MacAddressTable
+     */
     ~MacAddressTable();
-    int getNumRegs();   
-    void printMacTable();   
+
+    /**
+     * @brief Gets the total number of registers in table
+     * @returns Number of current registers on table
+     */
+    int getNumRegisters();  
+    
+    /**
+     * @brief Prints MacAddressTable Table: ID, IP Address and MAC Address
+     */ 
+    void printMacTable();
+    
+    /**
+     * @brief Adds a new entry to the table
+     * @param ipAddress IP Address
+     * @param macAddress Corresponding MAC Address
+     */   
     void addEntry(uint8_t* ipAddress, uint8_t macAddress); 
-    void deleteEntry(int id);   
+
+    /**
+     * @brief Deletes the entry which ID is passed as parameter
+     * @param id Identification of register
+     */
+    void deleteEntry(int id); 
+    
+    /**
+     * @brief Gets MAC Address from table given IP Address
+     * @param ipAddr IP Address
+     * @returns Corresponding MAC Address; -1 if entry is not found
+     */  
     uint8_t getMacAddress(uint8_t* ipAddress);
+
+    /**
+     * @brief Gets MAC Address from table given ID
+     * @param id Entry identification
+     * @returns Corresponding MAC Address; -1 if entry is not found
+     */
     uint8_t getMacAddress(int id);
+
+    /**
+     * @brief Gets IP Address from table given MAC Address
+     * @param macAddr MAC Address
+     * @returns Corresponding IP Address; 0 if entry is not found
+     */
     uint8_t* getIpAddress(uint8_t macAddress);
+
+    /**
+     * @brief Gets IP Address from table given ID
+     * @param id Entry identification
+     * @returns Corresponding IP Address; 0 if entry is not found
+     */
     uint8_t* getIpAddress(int id);
 };

@@ -6,35 +6,27 @@
 
 #include "MacHighQueue.h"
 
-/**
- * @brief Constructs an empty MacHighQueue with a TUN descriptor
- * @param tun TUN Interface object
- * @param v Verbosity flag 
- */
-MacHighQueue::MacHighQueue(TunInterface* tun, bool v){
-    tunIf = tun;
-    verbose = v;
+MacHighQueue::MacHighQueue(
+    TunInterface* tun,      //Tun Interface object
+    bool _verbose)          //Verbosity flag
+{
+    tunInterface = tun;
+    verbose = _verbose;
 }
 
-/**
- * @brief Destroys MacHighQueue
- */
 MacHighQueue::~MacHighQueue(){ }
 
-/**
- * @brief Proceeding that executes forever, receiving packets from L3 and storing them in the queue
- */
 void 
 MacHighQueue::reading(){
-    char *buf;
+    char *buffer;
     ssize_t nread = 0;
     while(1){
         //Allocate buffer
-        buf = new char[MAXLINE];
-        bzero(buf, MAXLINE);
+        buffer = new char[MAXLINE];
+        bzero(buffer, MAXLINE);
 
         //Read from TUN Interface
-        nread = tunIf->readTunInterface(buf, MAXLINE);
+        nread = tunInterface->readTunInterface(buffer, MAXLINE);
         {
             //Lock to write in the queue
             lock_guard<mutex> lk(tunMutex);
@@ -44,35 +36,31 @@ MacHighQueue::reading(){
                 break;
 
             //Check ipv4
-            if(((buf[0]>>4)&15) != 4){
+            if(((buffer[0]>>4)&15) != 4){
                 if(verbose) cout<<"[MacHighQueue] Dropped non-ipv4 packet."<<endl;
                 continue;
             }
 
             //Check broadcast
-            if((buf[DST_OFFSET]==255)&&(buf[DST_OFFSET+1]==255)&&(buf[DST_OFFSET+2]==255)&&(buf[DST_OFFSET+3]==255)){
+            if((buffer[DST_OFFSET]==255)&&(buffer[DST_OFFSET+1]==255)&&(buffer[DST_OFFSET+2]==255)&&(buffer[DST_OFFSET+3]==255)){
                 if(verbose) cout<<"[MacHighQueue] Dropped broadcast packet."<<endl;
                 continue;
             }
 
             //Check multicast
-            if((buf[DST_OFFSET]>=224)&&(buf[DST_OFFSET]<=239)){
+            if((buffer[DST_OFFSET]>=224)&&(buffer[DST_OFFSET]<=239)){
                 if(verbose) cout<<"[MacHighQueue] Dropped multicast packet."<<endl;
                 continue;
             }
             
             //Everything is ok, buffer can be added to queue
-            queue.push_back(buf);
+            queue.push_back(buffer);
             sizes.push_back(nread);
             if(verbose) cout<<"[MacHighQueue] SDU added to Queue. Num SDUs: "<<queue.size()<<endl;
         }
     }
 }
 
-/**
- * @brief Gets number of packets that are currently enqueued
- * @returns Number of packets enqueued
- */
 int 
 MacHighQueue::getNum(){
     //Lock mutex to consult queue size information
@@ -80,14 +68,11 @@ MacHighQueue::getNum(){
     return (int)queue.size();
 }
 
-/**
- * @brief Gets next SDU on queue for treatment
- * @param buf Buffer were SDU will be stored
- * @returns Size of SDU
- */
 ssize_t 
-MacHighQueue::getNextSdu(char* buf){
-    ssize_t retValue;
+MacHighQueue::getNextSdu(
+    char* buffer)       //Buffer to store the SDU
+{          
+    ssize_t retValue;   //Return value
 
     //Lock mutex to remove SDU from the head of the queue
     lock_guard<mutex> lk(tunMutex);
@@ -98,11 +83,11 @@ MacHighQueue::getNextSdu(char* buf){
 
     //Get front values from que vectors
     retValue = sizes.front();
-    char* buf2 = queue.front();
+    char* buffer2 = queue.front();
     for(int i=0;i<sizes.front();i++)
-        buf[i] = buf2[i];           //Copying
+        buffer[i] = buffer2[i];           //Copying
     
-    delete [] buf2;
+    delete [] buffer2;
 
     //Delete front positions
     queue.erase(queue.begin());

@@ -6,14 +6,12 @@
 
 #include "MacCtHeader.h"
 
-/**
- * @brief Builds a Control Header from static information to be used on encoding
- * @param bs BS flag: true for BS; false for UE
- * @param v Verbosity flag
- */
-MacCtHeader::MacCtHeader(bool bs, bool v){
-    flagBS = bs;
-    verbose = v;
+MacCtHeader::MacCtHeader(
+    bool _flagBS,       //BS flag
+    bool _verbose)      //Verbosity flag
+{
+    flagBS = _flagBS;
+    verbose = _verbose;
     id = 4;
     ulMCS = 18;
     rbStart = 1;
@@ -24,36 +22,31 @@ MacCtHeader::MacCtHeader(bool bs, bool v){
     MIMOantenna = 0;
 }
 
-/**
- * @brief Builds a Control Header from a PDU received on decoding and makes possible the use of these informations
- * @param bs BS flag: true for BS; false for UE
- * @param b Buffer containing PDU
- * @param size Size in bytes of PDU
- * @param v Verbosity flag
- */
-MacCtHeader::MacCtHeader(bool bs, char* b, int size, bool v){
-    flagBS = bs;
-    verbose = v;
-    id = b[0];
-    if(!bs){        //Just UE decoding
-        ulMCS = b[1];
-        numRBs = b[2];
-        rbStart = b[3];
-        MIMOon = (b[4]&1);
-        MIMOdiv = (b[4]>>1)&1;
-        MIMOantenna = (b[4]>>2)&1;
-        MIMOolcl = (b[4]>>3)&1;
+MacCtHeader::MacCtHeader(
+    bool _flagBS,       //BS flag
+    char* buffer,       //Receiving PDU buffer
+    int size,           //Size of PDU in Bytes
+    bool _verbose)      //Verbosity flag
+{
+    flagBS = _flagBS;
+    verbose = _verbose;
+    id = buffer[0];
+    if(!_flagBS){        //Just UE decoding
+        ulMCS = buffer[1];
+        numRBs = buffer[2];
+        rbStart = buffer[3];
+        MIMOon = (buffer[4]&1);
+        MIMOdiv = (buffer[4]>>1)&1;
+        MIMOantenna = (buffer[4]>>2)&1;
+        MIMOolcl = (buffer[4]>>3)&1;
     }
 }
 
-/**
- * @brief Inserts a Control Header in PDU's encoding process
- * @param buf Buf containing PDU to be encoded
- * @param size Size of PDU in bytes
- * @returns New PDU size after Header insertion
- */
 ssize_t 
-MacCtHeader::insertControlHeader(char* buf, int size){
+MacCtHeader::insertControlHeader(
+    char* buffer,       //Encoding PDU buffer
+    int size)           //Size of PDU in Bytes
+{
     //Calculates the difference in header length base on BS flag
     int delta = (flagBS?CONTROLBYTES2UE:CONTROLBYTES2BS);
 
@@ -71,26 +64,23 @@ MacCtHeader::insertControlHeader(char* buf, int size){
     if(verbose) cout<<"[MacCtHeader] Control Header inserted successfully!"<<endl;
 
     //Copies the old buffer to the new buffer with header inserted
-    memcpy(buf2+delta, buf, size);
-    memcpy(buf, buf2, size+delta);
+    memcpy(buf2+delta, buffer, size);
+    memcpy(buffer, buf2, size+delta);
     delete buf2;
     return size+delta;
 }
 
-/**
- * @brief Removes a Control Header in PDU's decoding process
- * @param buf Buf containing PDU to be decoded
- * @param size Size of PDU in bytes
- * @returns Size of decoded PDU
- */
 ssize_t 
-MacCtHeader::removeControlHeader(char* buf, int size){
+MacCtHeader::removeControlHeader(
+    char* buffer,       //Decoding PDU buffer
+    int size)           //Size of PDU in bytes
+{
     //Calculates the difference in header length base on BS flag
     int delta = (flagBS?CONTROLBYTES2BS:CONTROLBYTES2UE);
 
     //////////PROVISIONAL: IGNORES THE HEADER////////////////////////////////
     //Copies the buffer shifted by delta bytes
-    memcpy(buf, buf+delta, size-delta);
+    memcpy(buffer, buffer+delta, size-delta);
     if(verbose) cout<<"[MacCtHeader] Control Header removed successfully!"<<endl;
     return size - delta;
 }
