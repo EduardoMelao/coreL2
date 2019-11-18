@@ -20,8 +20,6 @@ class ProtocolPackage;
 class TransmissionQueue{
 private:
     int maxNumberBytes;     //Maximum number of bytes
-    uint8_t numberSDUs;          //Number of SDUs multiplexed
-    int maxNSDUs;           //Maximum number of SDUs multiplexed
     char* buffer;           //Buffer accumulates SDUs
     uint8_t srcAddr;        //Source MAC address
     uint8_t dstAddr;        //Destination MAC address
@@ -47,6 +45,9 @@ private:
      */
     int currentBufferLength();     
 public:
+    uint8_t numberSDUs;          //Number of SDUs multiplexed
+    int maxNSDUs;           //Maximum number of SDUs multiplexed
+
     /**
      * @brief Constructs a new TransmissionQueue to accumulate SDUs for future transmission (encoding)
      * @param maxNumberBytes Maximum number of bytes supported by a single PDU

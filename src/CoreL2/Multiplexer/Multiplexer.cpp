@@ -102,12 +102,12 @@ Multiplexer::addSdu(
     }
 
     //Test if there number of SDUs extrapolates maximum
-    if(transmissionQueues[i]->nSDUs+1 == transmissionQueues[i]->maxNSDUs){
+    if(transmissionQueues[i]->numberSDUs+1 == transmissionQueues[i]->maxNSDUs){
         if(verbose) cout<<"[TransmissionQueue] Tried to multiplex more SDUs than supported."<<endl;
         return i;
     }
 
-    //Attepts to add SDU to TransmissionQueue
+    //Attempts to add SDU to TransmissionQueue
     if(transmissionQueues[i]->addSDU(sdu, size, flagDC)){
         numberBytes[i]+=size;
         if(verbose&&flagDC) cout<< "[Multiplexer] Data SDU added to queue!"<<endl;
