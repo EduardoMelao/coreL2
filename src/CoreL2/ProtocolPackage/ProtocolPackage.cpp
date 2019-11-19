@@ -36,16 +36,16 @@ ProtocolPackage::ProtocolPackage(
 }
 
 ProtocolPackage::ProtocolPackage(
-    uint8_t sourceAddress,          //Source MAC Address
-    uint8_t destinationAddress,     //Destination MAC Address
+    uint8_t _sourceAddress,          //Source MAC Address
+    uint8_t _destinationAddress,     //Destination MAC Address
     uint8_t _numberSDUs,            //Number of SDUs into PDU
     uint16_t* _sizes,               //Array of sizes for each SDU
     uint8_t* _flagsDataControl,     //Array of Data/Control flags for each SDU
     char* _buffer,                  //Buffer containing multiplexed SDUs
     bool _verbose)                  //Verbosity flag
 {
-    sourceAddress = sourceAddress;
-    destinationAddress = destinationAddress;
+    sourceAddress = _sourceAddress;
+    destinationAddress = _destinationAddress;
     numberSDUs = _numberSDUs;
     sizes = _sizes;
     flagsDataControl = _flagsDataControl;

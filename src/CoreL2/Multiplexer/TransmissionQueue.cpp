@@ -26,21 +26,21 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 #include "TransmissionQueue.h"
 
 TransmissionQueue::TransmissionQueue(
-    int _maxNumberBytes,    //Maximum number of Bytes in a PDU
-    uint8_t src,            //Source MAC Address
-    uint8_t dst,            //Destination MAC Address
-    int maxSDUs,            //Maximum number of SDUs supported by a PDU
-    bool _verbose)          //Verbosity flag
+    int _maxNumberBytes,            //Maximum number of Bytes in a PDU
+    uint8_t _sourceAddress,         //Source MAC Address
+    uint8_t _destinationAddress,    //Destination MAC Address
+    int _maximumNumberSDUs,                    //Maximum number of SDUs supported by a PDU
+    bool _verbose)                  //Verbosity flag
 {
     maxNumberBytes = _maxNumberBytes;
     buffer = new char[maxNumberBytes];
-    sourceAddress = src;
-    destinationAddress = dst;
+    sourceAddress = _sourceAddress;
+    destinationAddress = _destinationAddress;
     numberSDUs = 0;
     controlOffset = 0;
-    maxNSDUs = maxSDUs;
-    sizesSDUs = new uint16_t[maxNSDUs];
-    flagsDataControl = new uint8_t[maxNSDUs];
+    maximumNumberSDUs = _maximumNumberSDUs;
+    sizesSDUs = new uint16_t[maximumNumberSDUs];
+    flagsDataControl = new uint8_t[maximumNumberSDUs];
     verbose = _verbose;
 }
 
@@ -131,7 +131,7 @@ TransmissionQueue::addSDU(
 
 ssize_t 
 TransmissionQueue::getSDU(
-    char* buffer)      //Buffer to store SDU
+    char* sdu)      //Buffer to store SDU
 {
     //Test if Decoding queue has ended
     if(offset == numberSDUs){
@@ -146,11 +146,11 @@ TransmissionQueue::getSDU(
     
     //Copy SDU from buffer
     for(int i=0;i<sizesSDUs[offset];i++)
-        buffer[i] = buffer[positionBuffer+i];
+        sdu[i] = buffer[positionBuffer+i];
     
     //Increment decoding offset
     offset++;
-    if(verbose) cout<<"[TransmissionQueue] Demultiplexed SDU "<<offset+1<<endl;
+    if(verbose) cout<<"[TransmissionQueue] Demultiplexed SDU "<<offset<<endl;
     return sizesSDUs[offset-1];
 }
 
@@ -164,8 +164,8 @@ void
 TransmissionQueue::clearBuffer(){
     this->~TransmissionQueue();
     buffer = new char[maxNumberBytes];
-    sizesSDUs = new uint16_t[maxNSDUs];
-    flagsDataControl = new uint8_t[maxNSDUs];
+    sizesSDUs = new uint16_t[maximumNumberSDUs];
+    flagsDataControl = new uint8_t[maximumNumberSDUs];
     numberSDUs=0;
     controlOffset = 0;
 }
