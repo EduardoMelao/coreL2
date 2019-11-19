@@ -46,17 +46,17 @@ private:
     int currentBufferLength();     
 public:
     uint8_t numberSDUs;          //Number of SDUs multiplexed
-    int maxNSDUs;           //Maximum number of SDUs multiplexed
+    int maximumNumberSDUs;           //Maximum number of SDUs multiplexed
 
     /**
      * @brief Constructs a new TransmissionQueue to accumulate SDUs for future transmission (encoding)
      * @param maxNumberBytes Maximum number of bytes supported by a single PDU
-     * @param src Source MAC Address
-     * @param dst Destination MAC Address
-     * @param maxSDUs Maximum number of SDUs supported in one queue
+     * @param sourceAddress Source MAC Address
+     * @param destinationAddress Destination MAC Address
+     * @param _maximumNumberSDUs Maximum number of SDUs supported in one queue
      * @param _verbose Verbosity flag
      */
-    TransmissionQueue(int _maxNumberBytes, uint8_t src, uint8_t dst, int maxSDUs, bool _verbose);
+    TransmissionQueue(int _maxNumberBytes, uint8_t sourceAddress, uint8_t destinationAddress, int _maximumNumberSDUs, bool _verbose);
     
     /**
      * @brief Constructs a TransmissionQueue to help decoding an incoming PDU, dequeueing SDUs contained in it
@@ -89,10 +89,10 @@ public:
 
     /**
      * @brief Function used for getting SDUs while decoding
-     * @param buffer Buffer to store SDU
+     * @param sdu Buffer to store SDU
      * @returns Size of next SDU multiplexed; Returns 0 for EOF
      */
-    ssize_t getSDU(char* buffer);
+    ssize_t getSDU(char* sdu);
     
     /**
      * @brief Creates a new ProtocolPackage object based on information stored in class variables on encoding process
