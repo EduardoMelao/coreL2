@@ -144,7 +144,7 @@ MacController::controlSduControl(){
                 mux->addSdu(bufControl,numberBytesRead, 0, 0);
             }
             else{
-                for(int i=0;i<mux->getNTransmissionQueues();i++){
+                for(int i=0;i<mux->getNumberTransmissionQueues();i++){
                 //Adds SDU to multiplexer
                 indexSendingPDU = mux->addSdu(bufControl, numberBytesRead, 0, ipMacTable->getMacAddress(i+1));   //<----PROVISIONAL////////////////////////////////////////////////
 
@@ -292,7 +292,7 @@ MacController::decoding(
         TransmissionQueue *transmissionQueue = pdu.getMultiplexedSDUs();
         while((numberDecodingBytes = transmissionQueue->getSDU(buffer))>0){
             //Test if it is Control SDU
-            if(transmissionQueue->getCurrentDCFlag()==0){
+            if(transmissionQueue->getCurrentDataControlFlag()==0){
                 buffer[numberDecodingBytes] = '\0';
                 if(verbose){
                 	cout<<"[MacController] Control SDU received: ";
