@@ -13,9 +13,9 @@
  */
 class MacAddressTable{
 private:
-    int numRegisters;            //Number of current registers in the table
-    uint8_t** ipAddrs;      //Array of IP strings
-    uint8_t* macAddrs;      //Array of MAC Addresses
+    int numberRegisters;            //Number of current registers in the table
+    uint8_t** ipAddresses;      //Array of IP strings
+    uint8_t* macAddresses;      //Array of MAC Addresses
     bool verbose;           //Verbosity flag
 public:
     /**
@@ -38,7 +38,7 @@ public:
      * @brief Gets the total number of registers in table
      * @returns Number of current registers on table
      */
-    int getNumRegisters();  
+    int getNumberRegisters();  
     
     /**
      * @brief Prints MacAddressTable Table: ID, IP Address and MAC Address
@@ -59,28 +59,28 @@ public:
     void deleteEntry(int id); 
     
     /**
-     * @brief Gets MAC Address from table given IP Address
+     * @brief Gets MAC Address from table, given IP Address
      * @param ipAddr IP Address
      * @returns Corresponding MAC Address; -1 if entry is not found
      */  
     uint8_t getMacAddress(uint8_t* ipAddress);
 
     /**
-     * @brief Gets MAC Address from table given ID
+     * @brief Gets MAC Address from table, given ID
      * @param id Entry identification
      * @returns Corresponding MAC Address; -1 if entry is not found
      */
     uint8_t getMacAddress(int id);
 
     /**
-     * @brief Gets IP Address from table given MAC Address
+     * @brief Gets IP Address from table given, MAC Address
      * @param macAddr MAC Address
      * @returns Corresponding IP Address; 0 if entry is not found
      */
     uint8_t* getIpAddress(uint8_t macAddress);
 
     /**
-     * @brief Gets IP Address from table given ID
+     * @brief Gets IP Address from table, given ID
      * @param id Entry identification
      * @returns Corresponding IP Address; 0 if entry is not found
      */

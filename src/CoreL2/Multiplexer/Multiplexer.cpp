@@ -3,23 +3,42 @@
 /* Copyright(c)2019 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
+/**
+@Arquive name : Multiplexer.cpp
+@Classification : Multiplexer
+@
+@Last alteration : November 19th, 2019
+@Responsible : Eduardo Melao
+@Email : emelao@cpqd.com.br
+@Telephone extension : 7015
+@Version : v1.0
+
+Project : H2020 5G-Range
+
+Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
+Direction : Diretoria de Operações (DO)
+UA : 1230 - Centro de Competencia - Sistemas Embarcados
+
+@Description : This module manages the queues of SDUs that will generate PDUs 
+    to send to destination. This module is used on Transmission only.
+*/
 
 #include "Multiplexer.h"
 
 Multiplexer::Multiplexer(
-        uint16_t _maxNumberBytes,   //Maximum number of Bytes in PDU
-        uint8_t _srcMac,            //Source MAC Address
-        MacAddressTable* _arp,      //MAC - IP table   
-        int _maxSDUs,               //Maximum number of SDUs in PDU
-        bool _verbose)             //Verbosity flag
+        uint16_t _maxNumberBytes,       //Maximum number of Bytes in PDU
+        uint8_t _sourceMac,             //Source MAC Address
+        MacAddressTable* _ipMacTable,   //MAC - IP table   
+        int _maxSDUs,                   //Maximum number of SDUs in PDU
+        bool _verbose)                  //Verbosity flag
 {
     transmissionQueues = new TransmissionQueue*[MAX_BUFFERS];
-    srcMac = _srcMac;
-    dstMac = new uint8_t[MAX_BUFFERS];
+    sourceMac = _sourceMac;
+    destinationMac = new uint8_t[MAX_BUFFERS];
     numberBytes = new uint16_t[MAX_BUFFERS];
     maxNumberBytes = _maxNumberBytes;
-    nTransmissionQueues = 0;
-    arp = _arp;
+    numberTransmissionQueues = 0;
+    ipMacTable = _ipMacTable;
     maxSDUs = _maxSDUs;
     verbose = _verbose;
     if(_verbose) cout<<"[Multiplexer] Created successfully."<<endl;
@@ -27,32 +46,32 @@ Multiplexer::Multiplexer(
 
 Multiplexer::~Multiplexer()
 {
-    for(int i=0;i<nTransmissionQueues;i++)
+    for(int i=0;i<numberTransmissionQueues;i++)
         delete transmissionQueues[i];
     delete[] transmissionQueues;
-    delete[] dstMac;
+    delete[] destinationMac;
     delete[] numberBytes; 
 }
 
 void 
 Multiplexer::setTransmissionQueue(
-    uint8_t _dstMac)    //Destination MAC Address
+    uint8_t _destinationMac)    //Destination MAC Address
 {
     //Check if array is full
-    if(nTransmissionQueues>MAX_BUFFERS && verbose){
+    if(numberTransmissionQueues>MAX_BUFFERS && verbose){
         cout<<"[Multiplexer] Trying to create more buffers than supported."<<endl;
         exit(1);
     }
 
     //Allocate new TransmissionQueue and stores it in array
-    transmissionQueues[nTransmissionQueues] = new TransmissionQueue(maxNumberBytes, srcMac, _dstMac, maxSDUs, verbose);
+    transmissionQueues[numberTransmissionQueues] = new TransmissionQueue(maxNumberBytes, sourceMac, _destinationMac, maxSDUs, verbose);
     
     //Initialize values of number of bytes and data/control flag
-    dstMac[nTransmissionQueues] = _dstMac;
-    numberBytes[nTransmissionQueues] = 0;
+    destinationMac[numberTransmissionQueues] = _destinationMac;
+    numberBytes[numberTransmissionQueues] = 0;
 
     //Increment counter
-    nTransmissionQueues++;
+    numberTransmissionQueues++;
 }
 
 int 
@@ -61,34 +80,34 @@ Multiplexer::addSdu(
     uint16_t size)      //Number of Bytes in SDU
 {
     uint8_t mac;        //MAC address of destination of the SDU
-    uint8_t ipAddr[4];  //Destination IP address encapsuled into SDU
+    uint8_t ipAddress[4];  //Destination IP address encapsulated into SDU
 
     //Gets IP Address from packet
     for(int i=0;i<4;i++)
-        ipAddr[i] = (uint8_t) sdu[DST_OFFSET+i]; //Copying IP address
+        ipAddress[i] = (uint8_t) sdu[DST_OFFSET+i]; //Copying IP address
     
     //Search IP Address in MacAddressTable
-    mac = arp->getMacAddress(ipAddr);
+    mac = ipMacTable->getMacAddress(ipAddress);
 
     return addSdu(sdu, size, 1, mac);
 }
 
 int 
 Multiplexer::addSdu(
-    char* sdu,          //SDU buffer
-    uint16_t size,         //Number of Bytes of SDU
-    uint8_t flagDC,     //Data/Control flag
-    uint8_t _dstMac)    //Destination MAC Address
+    char* sdu,                  //SDU buffer
+    uint16_t size,              //Number of Bytes of SDU
+    uint8_t flagDataControl,    //Data/Control flag
+    uint8_t _destinationMac)    //Destination MAC Address
 {
     int i;
 
     //Look for TransmissionQueue corresponding to Mac Address
-    for(i=0;i<nTransmissionQueues;i++)
-        if(dstMac[i]==_dstMac)
+    for(i=0;i<numberTransmissionQueues;i++)
+        if(destinationMac[i]==_destinationMac)
             break;
 
     //TransmissionQueue not found
-    if(i==nTransmissionQueues){
+    if(i==numberTransmissionQueues){
         if(verbose){
             cout<<"[Multiplexer] Error: no TransmissionQueue found."<<endl;
             return -2;
@@ -108,10 +127,10 @@ Multiplexer::addSdu(
     }
 
     //Attempts to add SDU to TransmissionQueue
-    if(transmissionQueues[i]->addSDU(sdu, size, flagDC)){
+    if(transmissionQueues[i]->addSDU(sdu, size, flagDataControl)){
         numberBytes[i]+=size;
-        if(verbose&&flagDC) cout<< "[Multiplexer] Data SDU added to queue!"<<endl;
-        if(verbose&&!flagDC) cout<< "[Multiplexer] Control SDU added to queue!"<<endl;
+        if(verbose&&flagDataControl) cout<< "[Multiplexer] Data SDU added to queue!"<<endl;
+        if(verbose&&!flagDataControl) cout<< "[Multiplexer] Control SDU added to queue!"<<endl;
         return -1;
     }
     return -2; 
@@ -125,7 +144,7 @@ Multiplexer::getPdu(
     ssize_t size;
 
     //Test if index is valid, considering transmissionQueues index is sequential
-    if(index>=nTransmissionQueues){
+    if(index>=numberTransmissionQueues){
         if(verbose) cout<<"[Multiplexer] Could not get PDU: index out of bounds."<<endl;
         return -1;
     }
@@ -157,12 +176,12 @@ bool
 Multiplexer::emptyPdu(
     int index)      //Index of TransmissionQueue where PDU is stored
 {
-    if(index>=nTransmissionQueues) return true;
+    if(index>=numberTransmissionQueues) return true;
     return numberBytes[index]==0;
 }
 
 int 
-Multiplexer::getNTransmissionQueues(){
-    return nTransmissionQueues;
+Multiplexer::getNumberTransmissionQueues(){
+    return numberTransmissionQueues;
 }
 

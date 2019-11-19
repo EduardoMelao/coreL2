@@ -19,39 +19,39 @@ class TransmissionQueue;
  */
 class ProtocolPackage{
 private:
-    uint8_t srcAddr;    //Source MAC Address (4 bits)
-    uint8_t dstAddr;    //Destination MAC Address (4 bits)
-    uint8_t numberSDUs;        //Number of MAC SDUs (8 bits)
-    uint16_t *sizes;    //Sizes of each MAC SDU (15 bits each)
-    uint8_t *flagsDC;       //Data(1)/Control(0) flag of each SDU (1 bit each)
-    size_t PDUsize;        //PDU length
-    unsigned short crc; //Cyclic Redundance Check (16 bits)
-    bool verbose;       //Verbosity flag
+    uint8_t sourceAddress;          //Source MAC Address (4 bits)
+    uint8_t destinationAddress;     //Destination MAC Address (4 bits)
+    uint8_t numberSDUs;             //Number of MAC SDUs (8 bits)
+    uint16_t *sizes;                //Sizes of each MAC SDU (15 bits each)
+    uint8_t *flagsDataControl;      //Data(1)/Control(0) flag of each SDU (1 bit each)
+    size_t PDUsize;                 //PDU length
+    unsigned short crc;             //Cyclic Redundancy Check (16 bits)
+    bool verbose;                   //Verbosity flag
 public:
-    char* buffer;       //PDU buffer
+    char* buffer;   //PDU buffer
 
     /**
      * @brief Constructs ProtocolPackage with all information need to encode header and no verbosity
      * @param sourceAddress Source MAC Address
      * @param destinationAddress Destination MAC Address
-     * @param numberSDUs Number of SDUs
+     * @param _numberSDUs Number of SDUs
      * @param _sizes Array of sizes of each SDU
-     * @param _dcs Array of D/C flags of each SDU
-     * @param buf Buffer containing multiplexed SDUs
+     * @param _flagsDataControl Array of D/C flags of each SDU
+     * @param _buffer Buffer containing multiplexed SDUs
      */
-    ProtocolPackage(uint8_t sourceAddress, uint8_t destinationAddress, uint8_t numberSDUs, uint16_t* _sizes, uint8_t* _dcs, char* buf);
+    ProtocolPackage(uint8_t sourceAddress, uint8_t destinationAddress, uint8_t _numberSDUs, uint16_t* _sizes, uint8_t* _flagsDataControl, char* _buffer);
     
     /**
      * @brief Constructs ProtocolPackage with all information need to encode header
      * @param sourceAddress Source MAC Address
      * @param destinationAddress Destination MAC Address
-     * @param numberSDUs Number of SDUs
+     * @param _numberSDUs Number of SDUs
      * @param _sizes Array of sizes of each SDU
-     * @param _dcs Array of D/C flags of each SDU
-     * @param buf Buffer containing multiplexed SDUs
-     * @param v Verbosity flag
+     * @param _flagsDataControl Array of D/C flags of each SDU
+     * @param _buffer Buffer containing multiplexed SDUs
+     * @param _verbosity Verbosity flag
      */
-    ProtocolPackage(uint8_t sourceAddress, uint8_t destinationAddress, uint8_t numberSDUs, uint16_t* _sizes, uint8_t* _dcs, char* buf, bool _verbose);
+    ProtocolPackage(uint8_t sourceAddress, uint8_t destinationAddress, uint8_t _numberSDUs, uint16_t* _sizes, uint8_t* _flagsDataControl, char* _buffer, bool _verbose);
     
     /**
      * @brief Constructs ProtocolPackage with an incoming PDU to be decoded and no verbosity
@@ -64,12 +64,12 @@ public:
      * @brief Constructs ProtocolPackage with an incoming PDU to be decoded
      * @param pdu Buffer containing full PDU
      * @param _size Size of PDU in bytes
-     * @param v Verbosity flag
+     * @param _verbose Verbosity flag
      */
     ProtocolPackage(char* pdu, size_t _size, bool _verbose);
     
     /**
-     * @brief Destructs ProtocolPackage object
+     * @brief Destroys ProtocolPackage object
      */
     ~ProtocolPackage();
         

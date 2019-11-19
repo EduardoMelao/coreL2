@@ -3,35 +3,53 @@
 /* Copyright(c)2019 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
+/**
+@Arquive name : ProtocolPackage.cpp
+@Classification : Protocol Package
+@
+@Last alteration : November 19th, 2019
+@Responsible : Eduardo Melao
+@Email : emelao@cpqd.com.br
+@Telephone extension : 7015
+@Version : v1.0
+
+Project : H2020 5G-Range
+
+Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
+Direction : Diretoria de Operações (DO)
+UA : 1230 - Centro de Competencia - Sistemas Embarcados
+
+@Description : This module encodes and decodes the Control Header, used to communicate with PHY. 
+*/
 
 #include "ProtocolPackage.h"
 
 ProtocolPackage::ProtocolPackage(
-    uint8_t sourceAddress,      //Source MAC Address
-    uint8_t destinationAddress, //Destination MAC Address
-    uint8_t numberSDUs,         //Number of SDUs into PDU
-    uint16_t* _sizes,           //Array of sizes for each SDU
-    uint8_t* _flagsDC,          //Array of Data/Control flags for each SDU
-    char* buffer)                  //Buffer containing multiplexed SDUs
+    uint8_t sourceAddress,          //Source MAC Address
+    uint8_t destinationAddress,     //Destination MAC Address
+    uint8_t _numberSDUs,            //Number of SDUs into PDU
+    uint16_t* _sizes,               //Array of sizes for each SDU
+    uint8_t* _flagsDataControl,     //Array of Data/Control flags for each SDU
+    char* _buffer)                  //Buffer containing multiplexed SDUs
 {
-    ProtocolPackage(sourceAddress, destinationAddress, numberSDUs, _sizes, _flagsDC, buffer, false);
+    ProtocolPackage(sourceAddress, destinationAddress, _numberSDUs, _sizes, _flagsDataControl, _buffer, false);
 }
 
 ProtocolPackage::ProtocolPackage(
-    uint8_t sourceAddress,      //Source MAC Address
-    uint8_t destinationAddress, //Destination MAC Address
-    uint8_t numberSDUs,         //Number of SDUs into PDU
-    uint16_t* _sizes,           //Array of sizes for each SDU
-    uint8_t* _flagsDC,          //Array of Data/Control flags for each SDU
-    char* buffer,               //Buffer containing multiplexed SDUs
-    bool _verbose)              //Verbosity flag
+    uint8_t sourceAddress,          //Source MAC Address
+    uint8_t destinationAddress,     //Destination MAC Address
+    uint8_t _numberSDUs,            //Number of SDUs into PDU
+    uint16_t* _sizes,               //Array of sizes for each SDU
+    uint8_t* _flagsDataControl,     //Array of Data/Control flags for each SDU
+    char* _buffer,                  //Buffer containing multiplexed SDUs
+    bool _verbose)                  //Verbosity flag
 {
-    srcAddr = sourceAddress;
-    dstAddr = destinationAddress;
-    numberSDUs = numberSDUs;
+    sourceAddress = sourceAddress;
+    destinationAddress = destinationAddress;
+    numberSDUs = _numberSDUs;
     sizes = _sizes;
-    flagsDC = _flagsDC;
-    buffer = buffer;
+    flagsDataControl = _flagsDataControl;
+    buffer = _buffer;
     verbose = _verbose;
     PDUsize = 2 + 2*numberSDUs; //SA, DA , NUM and 2 for each SDU ; Only header bytes here
     for(int i=0;i<numberSDUs;i++){
@@ -61,18 +79,18 @@ ProtocolPackage::~ProtocolPackage(){
 
 void 
 ProtocolPackage::insertMacHeader(){
-    int i, j;       //Auxiliar variables
+    int i, j;       //Auxiliary variables
 
     //Allocate new buffer
     char* buffer2 = new char[PDUsize];
 
     //Fills the 2 first slots
-    buffer2[0] = (srcAddr<<4)|(dstAddr&15);
+    buffer2[0] = (sourceAddress<<4)|(destinationAddress&15);
     buffer2[1] = numberSDUs;
 
     //Fills with the SDUs informations
     for(i=0;i<numberSDUs;i++){
-        buffer2[2+2*i] = (flagsDC[i]<<7)|(sizes[i]>>8);
+        buffer2[2+2*i] = (flagsDataControl[i]<<7)|(sizes[i]>>8);
         buffer2[3+2*i] = sizes[i]&255;
     }
 
@@ -88,18 +106,18 @@ ProtocolPackage::insertMacHeader(){
 
 void 
 ProtocolPackage::removeMacHeader(){
-    int i;      //Auxiliar variable
+    int i;      //Auxiliary variable
 
     //Get information from first 2 slots
-    srcAddr = (uint8_t) (buffer[0]>>4);
-    dstAddr = (uint8_t) (buffer[0]&15);
+    sourceAddress = (uint8_t) (buffer[0]>>4);
+    destinationAddress = (uint8_t) (buffer[0]&15);
     numberSDUs = (uint8_t) buffer[1];
 
-    //Declare new sizes and D/Cs arrays and get information for SDUs decoding
-    flagsDC = new uint8_t[numberSDUs];
+    //Declare new sizes and Data/Control flags arrays and get information for SDUs decoding
+    flagsDataControl = new uint8_t[numberSDUs];
     sizes = new uint16_t[numberSDUs];
     for(int i=0;i<numberSDUs;i++){
-        flagsDC[i] = (buffer[2+2*i]&255)>>7;
+        flagsDataControl[i] = (buffer[2+2*i]&255)>>7;
         sizes[i] = ((buffer[2+2*i]&127)<<8)|((buffer[3+2*i])&255);
     }
     i = 2+2*numberSDUs;
@@ -119,7 +137,7 @@ ProtocolPackage::removeMacHeader(){
 
 TransmissionQueue* 
 ProtocolPackage::getMultiplexedSDUs(){
-    TransmissionQueue* tqueue = new TransmissionQueue(buffer, numberSDUs, sizes, flagsDC, verbose);
+    TransmissionQueue* tqueue = new TransmissionQueue(buffer, numberSDUs, sizes, flagsDataControl, verbose);
     return tqueue;
 }
 
@@ -130,5 +148,5 @@ ProtocolPackage::getPduSize(){
 
 uint8_t 
 ProtocolPackage::getDstMac(){
-    return dstAddr;
+    return destinationAddress;
 }

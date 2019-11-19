@@ -19,11 +19,11 @@ using namespace std;
  */
 class MacHighQueue{
 private:
-    TunInterface* tunInterface;    //Tun Interface object
-    vector<char*> queue;    //Vector of L3 packets
-    vector<ssize_t> sizes;  //Vector containing size of each packet
-    mutex tunMutex;         //Mutex to control access to queue
-    bool verbose;           //Verbosity flag
+    TunInterface* tunInterface;     //Tun Interface object
+    vector<char*> queue;            //Vector of L3 packets
+    vector<ssize_t> sizes;          //Vector containing size of each packet
+    mutex tunMutex;                 //Mutex to control access to queue
+    bool verbose;                   //Verbosity flag
 public:
     
     /**
