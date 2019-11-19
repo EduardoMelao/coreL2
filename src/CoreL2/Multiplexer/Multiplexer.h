@@ -73,17 +73,17 @@ public:
     /**
      * @brief Gets the multiplexed PDU with MacHeader from TransmissionQueue identified by index
      * @param buffer Buffer where PDU will be stored
-     * @param index Identification of the TransmissionQueue to get the PDU
+     * @param macAddress Destination MAC Address of PDU
      * @returns Size of the PDU
      */    
-    ssize_t getPdu(char* buffer, int index);
+    ssize_t getPdu(char* buffer, uint8_t macAddress);
     
     /**
      * @brief Verifies if PDU is empty
-     * @param index Identification of TransmissionQueue where PDU is being stored
+     * @param macAddress Destination MAC Address of PDU
      * @returns true if empty; false otherwise
      */    
-    bool emptyPdu(int index);
+    bool emptyPdu(uint8_t macAddress);
     
     /**
      * @brief Gets the number of TransmissionQueues allocated in the Multiplexer

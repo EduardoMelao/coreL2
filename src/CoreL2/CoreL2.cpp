@@ -36,39 +36,47 @@ using namespace std;
 
 int main(int argc, char** argv){
     int* ports;                     //Array of ports that will be used on sockets
+    uint8_t* macAddresses;          //Array of 5GR MAC Addresses of attached equipments
     int numberEquipments;           //Number of attached equipments
     bool verbose = false;           //Verbosity flag
     char *devname = NULL;           //Tun interface name
     uint16_t maxNumberBytes;        //Maximum number of bytes in PDU
+    bool flagBS;                    //Base Station flag: true if BS, false if UE
 
     //Print message if wrong usage of command line
     if(argc<2){
-        cout<<"Usage: sudo ./a.out numberEquipments ip1 port1 ... ipN portN MaxNBytes MacAddr [--v] [devname]"<<endl;
+        cout<<"Usage BS: sudo ./a.out 0(BS) numberEquipments ip1 port1 UE_macAddr1 ... ipN portN UE_macAddrN MaxNBytes BS_macAddr [--v] [devname]"<<endl;
+        cout<<"Usage UE: sudo ./a.out 1(UE) BS_ip BS_port BS_macAddr MaxNBytes UE_macAddr [--v] [devname]"<<endl;
         exit(1);
     }
 
-    //First argument: numberEquipments (considering 9 as maximum)
-    numberEquipments = argv[1][0] - 48;  //Converting char to int
+    //Verifying Base Station flag
+    flagBS = (argv[1][0] == 0);
+
+    //Atributing value to numberEquipments
+    numberEquipments = flagBS? (argv[2][0] - 48):1;
 
     //Verbosity and devName arguments 
-    if(argc==(2+numberEquipments*2+3)){
-        if(argv[2+numberEquipments*2+2][0]=='-')
+    if(argc==(3+numberEquipments*3+3)){
+        if(argv[3+numberEquipments*3+2][0]=='-')
             verbose = true;
-        else devname = argv[2+numberEquipments*2+2];
+        else devname = argv[3+numberEquipments*3+2];
     }
-    else if(argc==(2+numberEquipments*2+4)){
+    else if(argc==(3+numberEquipments*3+4)){
         verbose = true;
-        devname = argv[2+numberEquipments*2+3];
+        devname = argv[3+numberEquipments*3+3];
     }
 
     //Creates a new L1 empty object
     CoreL1* l1 = new CoreL1(verbose);
 
-    //Allocates ports array, get ports and IP addresses from command line and adds one socket for each port
+    //Allocates ports array, get ports, MAC addresses and IP addresses from command line and adds one socket for each port
     ports = new int[numberEquipments];
+    macAddresses = new uint8_t[numberEquipments];
     for(int i=0;i<numberEquipments;i++){
-        ports[i] = (int) strtol(argv[2+i*numberEquipments+1], NULL, 10);
-        l1->addSocket(argv[2+i*numberEquipments], ports[i]);
+        ports[i] = (int) strtol(argv[3+i*3+1], NULL, 10);
+        macAddresses[i] = (uint8_t) strtol(argv[3+i*3+2], NULL, 10);
+        l1->addSocket(argv[3+i*3], ports[i]);
     }
 
     //Creates and initializes a MacAddressTable with static informations
@@ -76,20 +84,21 @@ int main(int argc, char** argv){
     uint8_t addressEntry0[4] = {10,0,0,10};
     uint8_t addressEntry1[4] = {10,0,0,11};
     uint8_t addressEntry2[4] = {10,0,0,12};
-    ipMacTable->addEntry(addressEntry0, 0);
-    ipMacTable->addEntry(addressEntry1, 1);
-    ipMacTable->addEntry(addressEntry2, 2);
+    ipMacTable->addEntry(addressEntry0, 0, true);
+    ipMacTable->addEntry(addressEntry1, 1, false);
+    ipMacTable->addEntry(addressEntry2, 2, false);
     
     //Get maxNumberBytes from command line
-    maxNumberBytes = (uint16_t) strtol(argv[2+numberEquipments*2], NULL, 10);
+    maxNumberBytes = (uint16_t) strtol(argv[3+numberEquipments*3], NULL, 10);
 
     //Create a new MacController object
-    MacController equipment(numberEquipments, (uint16_t) maxNumberBytes, devname, ipMacTable, (int) argv[2+numberEquipments*2+1][0] - 48, l1, verbose);
+    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, (int) argv[3+numberEquipments*3+1][0] - 48, l1, verbose);
     
     //Finnally start threads
     equipment.startThreads();
 
-    delete ports;
+    delete [] ports;
     delete ipMacTable;
     delete l1;
+    delete [] macAddresses;
 }

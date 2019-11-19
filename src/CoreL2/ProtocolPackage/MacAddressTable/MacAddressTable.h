@@ -13,10 +13,11 @@
  */
 class MacAddressTable{
 private:
-    int numberRegisters;            //Number of current registers in the table
+    int numberRegisters;        //Number of current registers in the table
     uint8_t** ipAddresses;      //Array of IP strings
     uint8_t* macAddresses;      //Array of MAC Addresses
-    bool verbose;           //Verbosity flag
+    bool* flagsBS;              //Array of flags indicating if the equipment is BS
+    bool verbose;               //Verbosity flag
 public:
     /**
      * @brief Constructs empty table with no verbosity
@@ -49,8 +50,9 @@ public:
      * @brief Adds a new entry to the table
      * @param ipAddress IP Address
      * @param macAddress Corresponding MAC Address
+     * @param flagBS Flag indicating if it is BS
      */   
-    void addEntry(uint8_t* ipAddress, uint8_t macAddress); 
+    void addEntry(uint8_t* ipAddress, uint8_t macAddress, bool flagBS); 
 
     /**
      * @brief Deletes the entry which ID is passed as parameter
@@ -85,4 +87,11 @@ public:
      * @returns Corresponding IP Address; 0 if entry is not found
      */
     uint8_t* getIpAddress(int id);
+
+    /**
+     * @brief Gets Base Station flag, given MAC address
+     * @param mac Entry identification
+     * @returns Corresponding BS flag; true if BS, false if UE
+     */
+    bool getFlagBS(uint8_t mac);
 };

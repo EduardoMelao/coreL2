@@ -138,14 +138,19 @@ Multiplexer::addSdu(
 
 ssize_t 
 Multiplexer::getPdu(
-    char* buffer,   //Buffer to store PDU
-    int index)      //Index of TransmissionQueue where PDU is stored
+    char* buffer,       //Buffer to store PDU
+    uint8_t macAddress) //Destination MAC Address of PDU
 {
-    ssize_t size;
+    ssize_t size;   //Size of PDU
+    int index;      //Auxiliary variable for loop
 
-    //Test if index is valid, considering transmissionQueues index is sequential
-    if(index>=numberTransmissionQueues){
-        if(verbose) cout<<"[Multiplexer] Could not get PDU: index out of bounds."<<endl;
+    for(index=0;index<numberTransmissionQueues;index++){
+        if(destinationMac[index]==macAddress)
+            break;
+    }
+    //Test if macAddress was found
+    if(index==numberTransmissionQueues){
+        if(verbose) cout<<"[Multiplexer] Could not get PDU: MAC Address not found."<<endl;
         return -1;
     }
 
@@ -174,10 +179,14 @@ Multiplexer::getPdu(
 
 bool 
 Multiplexer::emptyPdu(
-    int index)      //Index of TransmissionQueue where PDU is stored
+    uint8_t macAddress)      //Destination MAC Address of PDU
 {
-    if(index>=numberTransmissionQueues) return true;
-    return numberBytes[index]==0;
+    for(int i=0;i<numberTransmissionQueues;i++){
+        if(destinationMac[i]==macAddress)
+            return numberBytes[i]==0;
+    }
+    if(verbose) cout<<"[Multiplexer] MAC address not found verifying empty PDU."<<endl;
+    return true;
 }
 
 int 

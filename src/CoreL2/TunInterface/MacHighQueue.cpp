@@ -81,7 +81,7 @@ MacHighQueue::reading(){
 }
 
 int 
-MacHighQueue::getNum(){
+MacHighQueue::getNumberPackets(){
     //Lock mutex to consult queue size information
     lock_guard<mutex> lk(tunMutex);
     return (int)queue.size();
