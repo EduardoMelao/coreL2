@@ -18,13 +18,13 @@ using namespace std;
  */
 class CoreL1{
 private:
-    int *socksIn;                   //Array of socket descriptors used to RECEIVE messages
-    int *socksOut;                  //Array of sockets descriptors used to SEND messages
-    struct sockaddr_in *socknames;  //Array of socket addess structs
-    const char **ipServers;         //Array of IP addresses to which messages will be sent
-    uint16_t *ports;                //Array of ports used to define IN and OUT sockets 
-    int numSockets;                 //Number of actual sockets stored
-    bool verbose;                   //Verbosity flag
+    int *socketsIn;                     //Array of socket descriptors used to RECEIVE messages
+    int *socketsOut;                    //Array of sockets descriptors used to SEND messages
+    struct sockaddr_in *socketNames;    //Array of socket address structs
+    const char **ipServers;             //Array of IP addresses to which messages will be sent
+    uint16_t *ports;                    //Array of ports used to define IN and OUT sockets 
+    int numberSockets;                  //Number of actual sockets stored
+    bool verbose;                       //Verbosity flag
 
 public:
 
@@ -66,7 +66,7 @@ public:
      * @brief Send PDU to socket considering there's just one socket added
      * @param buffer Information buffer
      * @param size Size of information in bytes
-     * @returns If transmission was successfull
+     * @returns If transmission was successful
      */ 
     bool sendPdu(const char* buffer, size_t size);  
 
@@ -75,7 +75,7 @@ public:
      * @param buffer Information buffer
      * @param size Size of information in bytes
      * @param port Socket port to identify which socket to send information
-     * @returns True if transmission was successfull; False if it was not
+     * @returns True if transmission was successful; False if it was not
      */
     bool sendPdu(const char* buffer, size_t size, uint16_t port);
 
@@ -101,14 +101,14 @@ public:
      * @param port Socket port
      * @returns Socket index or -1 if socket was not found
      */
-    int getSockIn(uint16_t port);
+    int getSocketIn(uint16_t port);
 
     /**
      * @brief Get index of socket to send information
      * @param port Socket port
      * @returns Socket index or -1 if socket was not found
      */
-    int getSockOut(uint16_t port);
+    int getSocketOut(uint16_t port);
 
     /**
      * @brief Get ports currently added to CoreL1 object

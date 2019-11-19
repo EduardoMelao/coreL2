@@ -1,8 +1,27 @@
 /* ***************************************/
+/* ***************************************/
 /* Copyright Notice                      */
 /* Copyright(c)2019 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
+/**
+@Arquive name : MacHighQueue.cpp
+@Classification : MAC High Queue
+@
+@Last alteration : November 19th, 2019
+@Responsible : Eduardo Melao
+@Email : emelao@cpqd.com.br
+@Telephone extension : 7015
+@Version : v1.0
+
+Project : H2020 5G-Range
+
+Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
+Direction : Diretoria de Operações (DO)
+UA : 1230 - Centro de Competencia - Sistemas Embarcados
+
+@Description : This module enqueues L3 packets received via TUN Interface. 
+*/
 
 #include "MacHighQueue.h"
 
@@ -19,20 +38,20 @@ MacHighQueue::~MacHighQueue(){ }
 void 
 MacHighQueue::reading(){
     char *buffer;
-    ssize_t nread = 0;
+    ssize_t numberBytesRead = 0;
     while(1){
         //Allocate buffer
         buffer = new char[MAXLINE];
         bzero(buffer, MAXLINE);
 
         //Read from TUN Interface
-        nread = tunInterface->readTunInterface(buffer, MAXLINE);
+        numberBytesRead = tunInterface->readTunInterface(buffer, MAXLINE);
         {
             //Lock to write in the queue
             lock_guard<mutex> lk(tunMutex);
             
             //Check EOF
-            if(nread==0)
+            if(numberBytesRead==0)
                 break;
 
             //Check ipv4
@@ -55,7 +74,7 @@ MacHighQueue::reading(){
             
             //Everything is ok, buffer can be added to queue
             queue.push_back(buffer);
-            sizes.push_back(nread);
+            sizes.push_back(numberBytesRead);
             if(verbose) cout<<"[MacHighQueue] SDU added to Queue. Num SDUs: "<<queue.size()<<endl;
         }
     }
@@ -72,7 +91,7 @@ ssize_t
 MacHighQueue::getNextSdu(
     char* buffer)       //Buffer to store the SDU
 {          
-    ssize_t retValue;   //Return value
+    ssize_t returnValue;   //Return value
 
     //Lock mutex to remove SDU from the head of the queue
     lock_guard<mutex> lk(tunMutex);
@@ -81,8 +100,8 @@ MacHighQueue::getNextSdu(
         return -1;
     }
 
-    //Get front values from que vectors
-    retValue = sizes.front();
+    //Get front values from the vectors
+    returnValue = sizes.front();
     char* buffer2 = queue.front();
     for(int i=0;i<sizes.front();i++)
         buffer[i] = buffer2[i];           //Copying
@@ -95,5 +114,5 @@ MacHighQueue::getNextSdu(
 
     if(verbose) cout<<"[MacHighQueue] Got SDU from L3 queue."<<endl;
 
-    return retValue;
+    return returnValue;
 }

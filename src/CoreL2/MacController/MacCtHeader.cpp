@@ -3,6 +3,24 @@
 /* Copyright(c)2019 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
+/**
+@Arquive name : MacCtHeader.cpp
+@Classification : MAC Control Encoder
+@
+@Last alteration : November 19th, 2019
+@Responsible : Eduardo Melao
+@Email : emelao@cpqd.com.br
+@Telephone extension : 7015
+@Version : v1.0
+
+Project : H2020 5G-Range
+
+Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
+Direction : Diretoria de Operações (DO)
+UA : 1230 - Centro de Competencia - Sistemas Embarcados
+
+@Description : This module encodes and decodes the Control Header, used to communicate with PHY. 
+*/
 
 #include "MacCtHeader.h"
 
@@ -13,12 +31,12 @@ MacCtHeader::MacCtHeader(
     flagBS = _flagBS;
     verbose = _verbose;
     id = 4;
-    ulMCS = 18;
+    uplinkMCS = 18;
     rbStart = 1;
-    numRBs = 2;
+    numberRBs = 2;
     MIMOon = 1;
-    MIMOdiv = 0;
-    MIMOolcl = 1;
+    MIMOdiversity = 0;
+    MIMOopenLoopClosedLoop = 1;
     MIMOantenna = 0;
 }
 
@@ -32,13 +50,13 @@ MacCtHeader::MacCtHeader(
     verbose = _verbose;
     id = buffer[0];
     if(!_flagBS){        //Just UE decoding
-        ulMCS = buffer[1];
-        numRBs = buffer[2];
+        uplinkMCS = buffer[1];
+        numberRBs = buffer[2];
         rbStart = buffer[3];
         MIMOon = (buffer[4]&1);
-        MIMOdiv = (buffer[4]>>1)&1;
+        MIMOdiversity = (buffer[4]>>1)&1;
         MIMOantenna = (buffer[4]>>2)&1;
-        MIMOolcl = (buffer[4]>>3)&1;
+        MIMOopenLoopClosedLoop = (buffer[4]>>3)&1;
     }
 }
 
@@ -51,22 +69,22 @@ MacCtHeader::insertControlHeader(
     int delta = (flagBS?CONTROLBYTES2UE:CONTROLBYTES2BS);
 
     //Dynamically allocates buffer
-    char *buf2 = new char[size+delta];
+    char *buffer2 = new char[size+delta];
 
     //Inserts header in new buffer
-    buf2[0] = id;
+    buffer2[0] = id;
     if(flagBS){     //Just BS encoding
-        buf2[1] = ulMCS;
-        buf2[2] = numRBs;
-        buf2[3] = rbStart;
-        buf2[4] = (MIMOon&(MIMOdiv<<1)&(MIMOantenna<<2)&(MIMOolcl<<3));
+        buffer2[1] = uplinkMCS;
+        buffer2[2] = numberRBs;
+        buffer2[3] = rbStart;
+        buffer2[4] = (MIMOon&(MIMOdiversity<<1)&(MIMOantenna<<2)&(MIMOopenLoopClosedLoop<<3));
     }
     if(verbose) cout<<"[MacCtHeader] Control Header inserted successfully!"<<endl;
 
     //Copies the old buffer to the new buffer with header inserted
-    memcpy(buf2+delta, buffer, size);
-    memcpy(buffer, buf2, size+delta);
-    delete buf2;
+    memcpy(buffer2+delta, buffer, size);
+    memcpy(buffer, buffer2, size+delta);
+    delete buffer2;
     return size+delta;
 }
 

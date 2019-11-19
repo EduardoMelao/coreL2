@@ -3,6 +3,24 @@
 /* Copyright(c)2019 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
+/**
+@Arquive name : MacCQueue.cpp
+@Classification : Protocol Control
+@
+@Last alteration : November 19th, 2019
+@Responsible : Eduardo Melao
+@Email : emelao@cpqd.com.br
+@Telephone extension : 7015
+@Version : v1.0
+
+Project : H2020 5G-Range
+
+Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
+Direction : Diretoria de Operações (DO)
+UA : 1230 - Centro de Competencia - Sistemas Embarcados
+
+@Description : This module is currently generating Control SDUs.
+*/
 
 #include "MacCQueue.h"
 

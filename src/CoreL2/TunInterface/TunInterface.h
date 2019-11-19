@@ -36,16 +36,16 @@ public:
     
     /**
      * @brief Creates interface with no verbosity
-     * @param devName Interface name
+     * @param deviceName Interface name
      */
-    TunInterface(const char* devName);
+    TunInterface(const char* deviceName);
    
     /**
      * @brief Creates interface
-     * @param devName Interface name
+     * @param deviceName Interface name
      * @param _verbose Verbosity flag
      */
-    TunInterface(const char* devName, bool _verbose);
+    TunInterface(const char* deviceName, bool _verbose);
     
     /**
      * @brief Destroys TUN interface
@@ -70,7 +70,7 @@ public:
      * @brief Performs writing in TUN interface to take packet back to Linux system
      * @param buffer Buffer containing L3 packet
      * @param numberBytes Number of bytes to write
-     * @returns true if writing was successfull, false otherwise
+     * @returns true if writing was successful, false otherwise
      */   
     bool writeTunInterface(char* buffer, size_t numberBytes);
 };

@@ -33,7 +33,7 @@ public:
     ~MacCQueue();
 
     /**
-     * @brief Gets ACK control message that will be used for UE->BS acknowledgement
+     * @brief Gets ACK control message that will be used for UE->BS acknowledgment
      * @param buffer Buffer that will store the message
      * @returns Size of the message in bytes
      */
