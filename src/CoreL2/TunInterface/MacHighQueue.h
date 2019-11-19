@@ -47,7 +47,7 @@ public:
      * @brief Gets number of packets that are currently enqueued
      * @returns Number of packets enqueued
      */
-    int getNum();
+    int getNumberPackets();
     
     /**
      * @brief Gets next SDU on queue for treatment

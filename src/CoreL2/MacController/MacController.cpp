@@ -28,19 +28,22 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 MacController::MacController(
         int numberEquipments,           //Number of equipments attached
+        uint8_t* _macAddressEquipments, //MAC Address of each attached equipment
         uint16_t _maxNumberBytes,       //Maximum number of Bytes in PDU
         const char* _deviceNameTun,     //TUN device name
         MacAddressTable* _ipMacTable,   //MAC address - IP address table
-        uint8_t _macAddr,               //5GR MAC address
+        uint8_t _macAddress,            //5GR MAC address
         CoreL1* _l1,                    //L1 object
         bool _verbose)                  //Verbosity flag
 {
     attachedEquipments = numberEquipments;
+    macAddressEquipents = _macAddressEquipments;
     maxNumberBytes = _maxNumberBytes;
     tunInterface = new TunInterface(_deviceNameTun, _verbose);
     verbose = _verbose;
     ipMacTable = _ipMacTable;
-    macAddr = _macAddr;
+    macAddress = _macAddress;
+    queueConditionVariables = new condition_variable[numberEquipments];
 
     l1 = _l1;
     if(!(tunInterface->allocTunInterface())){
@@ -50,24 +53,25 @@ MacController::MacController(
 
     macHigh = new MacHighQueue(tunInterface, _verbose);
 
-    threads = new thread[4+attachedEquipments]; //4 threads : Tun reading, L3 SDU multiplexing, Control PDU generation, Timeout control
+    threads = new thread[3+2*attachedEquipments]; //4 threads : Tun reading, L3 SDU multiplexing, Control PDU generation, Timeout controls, decondings
 
-    mux = new Multiplexer(maxNumberBytes, macAddr, ipMacTable, MAXSDUS, verbose);
+    mux = new Multiplexer(maxNumberBytes, macAddress, ipMacTable, MAXSDUS, verbose);
 
-    ///////PROVISIONAL: BS MAC ADDR = 0//////////////////////////////////////
-    flagBS = (macAddr==0);
+    flagBS = ipMacTable->getFlagBS(macAddress);
+
     if(flagBS){
     	for(int i=0;i<numberEquipments;i++)
-    		mux->setTransmissionQueue(ipMacTable->getMacAddress(i+1));
+    		mux->setTransmissionQueue(macAddressEquipents[i]);
     }
-    else mux->setTransmissionQueue(0);
+    else mux->setTransmissionQueue(macAddressEquipents[0]);
 }
 
 MacController::~MacController(){
     delete mux;
     delete macHigh;
     delete tunInterface;
-    delete threads;
+    delete [] threads;
+    delete [] queueConditionVariables;
 }
 
 void 
@@ -78,10 +82,12 @@ MacController::readTunControl(){
     while(1){
 
         //Test if MacHigh Queue is not empty, i.e. there are SDUs to enqueue
-        if(macHigh->getNum()){
+        if(macHigh->getNumberPackets()){
 
             //If multiplexer queue is empty, notify condition variable to trigger timeout timer
-            if(mux->emptyPdu(0)) queueConditionVariable.notify_all();
+            for(int i=0;i<attachedEquipments;i++)
+                if(mux->emptyPdu(macAddressEquipents[i])) 
+                    queueConditionVariables[i].notify_all();
 
             //Fulfill bufferData with zeros 
             bzero(bufferData, MAXLINE);
@@ -120,17 +126,23 @@ MacController::controlSduControl(){
     ssize_t numberBytesRead = 0;
     while (1){
         //If multiplexing queue is empty, notify condition variable to trigger timeout timer
-        if(mux->emptyPdu(0)) queueConditionVariable.notify_all();
+        for(int i=0;i<attachedEquipments;i++)
+            if(mux->emptyPdu(macAddressEquipents[i])) 
+                queueConditionVariables[i].notify_all();
+
+        //Fulfill bufferControl with zeros        
         bzero(bufControl, MAXLINE);
 
         //Test if it is BS or UE and decides which Control SDU to get
-        numberBytesRead = macAddr? macc->getControlSduCSI(bufControl): macc->getControlSduULMCS(bufControl);
+        numberBytesRead = flagBS? macc->getControlSduCSI(bufControl): macc->getControlSduULMCS(bufControl);
         {   
             //Locks mutex to write in multiplexer queue
             lock_guard<mutex> lk(queueMutex);
-            if(!flagBS){
+            
+            //Send control PDU to all attached equipments
+            for(int i=0;i<attachedEquipments;i++){
                 //Adds SDU to multiplexer
-                indexSendingPDU = mux->addSdu(bufControl, numberBytesRead, 0, 0);
+                indexSendingPDU = mux->addSdu(bufControl, numberBytesRead, 0, macAddressEquipents[i]);
 
                 //If the SDU was added successfully, continues the loop
                 if(indexSendingPDU==-1)
@@ -141,24 +153,7 @@ MacController::controlSduControl(){
                 sendPdu(indexSendingPDU);
 
                 //Now, it is possible to add SDU to queue
-                mux->addSdu(bufControl,numberBytesRead, 0, 0);
-            }
-            else{
-                for(int i=0;i<mux->getNumberTransmissionQueues();i++){
-                //Adds SDU to multiplexer
-                indexSendingPDU = mux->addSdu(bufControl, numberBytesRead, 0, ipMacTable->getMacAddress(i+1));   //<----PROVISIONAL////////////////////////////////////////////////
-
-                //If the SDU was added successfully, continues the loop
-                if(indexSendingPDU==-1)
-                    continue;
-
-                //Else, indexSendingPDU contains the Transmission Queue index to perform PDU sending. 
-                //So, perform PDU sending
-                sendPdu(indexSendingPDU);
-
-                //Now, it is possible to add SDU to queue
-                mux->addSdu(bufControl,numberBytesRead, 0,  ipMacTable->getMacAddress(i+1));     //<----PROVISIONAL////////////////////////////////////////////////
-                }
+                mux->addSdu(bufControl,numberBytesRead, 0,  macAddressEquipents[i]);
             }
         }
     }
@@ -167,30 +162,33 @@ MacController::controlSduControl(){
 
 void 
 MacController::startThreads(){
-    int i;
+    int i, j;   //Auxiliary variables for loops
 
     //Gets all ports to declare decoding procedures
     uint16_t* ports = l1->getPorts();
 
     //For each port
     for(i=0;i<attachedEquipments;i++){
-        //Decoding threads - threads[0-attachetEquipments]
+        //Decoding threads - threads[0 .. attachedEquipments]
         threads[i] = thread(&MacController::decoding, this, ports[i]);
     }
-    //timeoutController thread
-    threads[i] = thread(&MacController::timeoutController, this);
+
+    for(j=0;j<attachedEquipments;j++){
+        //timeoutController threads - threads[attachedEquipments .. 2*attachedEquipments-1]
+        threads[i+j] = thread(&MacController::timeoutController, this, j);
+    }
 
     //TUN queue control thread
-    threads[i+1] = thread(&MacController::readTunControl, this);
+    threads[i+j] = thread(&MacController::readTunControl, this);
 
     //Control SDUs controller thread
-    threads[i+2] = thread(&MacController::controlSduControl, this);
+    threads[i+j+1] = thread(&MacController::controlSduControl, this);
 
     //TUN reading and enqueueing thread
-    threads[i+3] = thread(&MacHighQueue::reading, macHigh);
+    threads[i+j+2] = thread(&MacHighQueue::reading, macHigh);
 
     //Join all threads
-    for(i=0;i<attachedEquipments+3;i++)
+    for(i=0;i<2*attachedEquipments+3;i++)
         threads[i].join();
     
     delete ports;
@@ -198,14 +196,14 @@ MacController::startThreads(){
 
 void 
 MacController::sendPdu(
-    int index)     //Index of TransmissionQueue
+    uint8_t macAddress)     //Index of TransmissionQueue
 {
     //Declaration of PDU buffer
     char bufferPdu[MAXLINE];
     bzero(bufferPdu, MAXLINE);
 
     //Gets PDU from multiplexer
-    ssize_t numberBytesRead = mux->getPdu(bufferPdu, index);
+    ssize_t numberBytesRead = mux->getPdu(bufferPdu, macAddress);
 
     //Creates a Control Header to this PDU and inserts it
     MacCtHeader macControlHeader(flagBS, verbose);
@@ -220,7 +218,9 @@ MacController::sendPdu(
 }
 
 void 
-MacController::timeoutController(){
+MacController::timeoutController(
+    int index)      //Index that identifies the condition variable and destination MAC Address of a queue 
+{
     //Timeout declaration: static
     chrono::milliseconds timeout = chrono::milliseconds(TIMEOUT);    //ms
 
@@ -229,15 +229,12 @@ MacController::timeoutController(){
         //Lock mutex one time to read
         unique_lock<mutex> lk(queueMutex);
         
-        /////////////PROVISIONAL: INDEX 0 IN FOLLOWING FUNCTIONS MEANS POINT-TO-POINT//////////////////////////
-
         //If there's no timeout OR the PDU is empty, no transmission is necessary
-        if(queueConditionVariable.wait_for(lk, timeout)==cv_status::no_timeout || mux->emptyPdu(0)) continue;    //HERE
+        if(queueConditionVariables[index].wait_for(lk, timeout)==cv_status::no_timeout || mux->emptyPdu(macAddressEquipents[index])) continue; 
         //Else, perform PDU transmission
         if(verbose) cout<<"[MacController] Timeout!"<<endl;
-        sendPdu(0);         //HERE TOO
+        sendPdu(macAddressEquipents[index]);
     }
-    delete macControlQueue;
 }
 
 void 
@@ -283,7 +280,7 @@ MacController::decoding(
         pdu.removeMacHeader();
 
         //Verify Destination
-        if(pdu.getDstMac()!=macAddr){
+        if(pdu.getDstMac()!=macAddress){
             if(verbose) cout<<"[MacController] Drop package: Wrong destination."<<endl;
             continue;       //Drop packet
         }
@@ -302,7 +299,7 @@ MacController::decoding(
                 }
 
                 //PROVISIONAL: BS_MAC=0 AND UE_MAC !=0, ALWAYS//////////////////////////
-                if(macAddr){    //UE needs to return ACK to BS
+                if(macAddress){    //UE needs to return ACK to BS
                     /////////////////ACK/////////////////////
                     if(mux->emptyPdu(0)) queueConditionVariable.notify_all();
                     bzero(ackBuffer, MAXLINE);
