@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : November 19th, 2019
+@Last alteration : November 21st, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -76,7 +76,7 @@ MacController::~MacController(){
 
 void 
 MacController::readTunControl(){
-    int indexSendingPDU;
+    uint8_t macSendingPDU;
     char bufferData[MAXLINE];
     ssize_t numberBytesRead = 0;
     while(1){
@@ -99,15 +99,15 @@ MacController::readTunControl(){
                 lock_guard<mutex> lk(queueMutex);
                 
                 //Adds SDU to multiplexer
-                indexSendingPDU = mux->addSdu(bufferData, numberBytesRead);
+                macSendingPDU = mux->addSdu(bufferData, numberBytesRead);
 
                 //If the SDU was added successfully, continues the loop
-                if(indexSendingPDU==-1)
+                if(macSendingPDU==-1)
                     continue;
 
-                //Else, indexSendingPDU contains the Transmission Queue index to perform PDU sending. 
+                //Else, macSendingPDU contains the Transmission Queue destination MAC to perform PDU sending. 
                 //So, perform PDU sending
-                sendPdu(indexSendingPDU);
+                sendPdu(macSendingPDU);
 
                 //Now, it is possible to add SDU to queue
                 mux->addSdu(bufferData,numberBytesRead);
@@ -118,7 +118,7 @@ MacController::readTunControl(){
 
 void 
 MacController::controlSduControl(){
-    int indexSendingPDU;
+    int macSendingPDU;
     char bufControl[MAXLINE];
 
     //Creates a new MacCQueue object to generate Control SDUs
@@ -142,15 +142,15 @@ MacController::controlSduControl(){
             //Send control PDU to all attached equipments
             for(int i=0;i<attachedEquipments;i++){
                 //Adds SDU to multiplexer
-                indexSendingPDU = mux->addSdu(bufControl, numberBytesRead, 0, macAddressEquipents[i]);
+                macSendingPDU = mux->addSdu(bufControl, numberBytesRead, 0, macAddressEquipents[i]);
 
                 //If the SDU was added successfully, continues the loop
-                if(indexSendingPDU==-1)
+                if(macSendingPDU==-1)
                     continue;
 
-                //Else, indexSendingPDU contains the Transmission Queue index to perform PDU sending. 
+                //Else, macSendingPDU contains the Transmission Queue MAC Address to perform PDU sending. 
                 //So, perform PDU sending
-                sendPdu(indexSendingPDU);
+                sendPdu(macSendingPDU);
 
                 //Now, it is possible to add SDU to queue
                 mux->addSdu(bufControl,numberBytesRead, 0,  macAddressEquipents[i]);
@@ -196,7 +196,7 @@ MacController::startThreads(){
 
 void 
 MacController::sendPdu(
-    uint8_t macAddress)     //Index of TransmissionQueue
+    uint8_t macAddress)     //Destination MAC Address of TransmissionQueue
 {
     //Declaration of PDU buffer
     char bufferPdu[MAXLINE];
@@ -241,7 +241,7 @@ void
 MacController::decoding(
     uint16_t port)      //Port of Receiving socket
 {
-    int indexSendingPDU;
+    int macSendingPDU;
     char buffer[MAXLINE], ackBuffer[MAXLINE];
 
     //Communication infinite loop
@@ -298,18 +298,17 @@ MacController::decoding(
 					cout<<endl;
                 }
 
-                //PROVISIONAL: BS_MAC=0 AND UE_MAC !=0, ALWAYS//////////////////////////
-                if(macAddress){    //UE needs to return ACK to BS
-                    /////////////////ACK/////////////////////
-                    if(mux->emptyPdu(0)) queueConditionVariable.notify_all();
+                if(!flagBS){    //UE needs to return ACK to BS
+                    // ACK
+                    if(macAddressEquipents[0]) queueConditionVariables[0].notify_all();     //index 0: UE has only BS as equipment
                     bzero(ackBuffer, MAXLINE);
                     numberDecodingBytes = macControlQueue->getAck(ackBuffer);
                     lock_guard<mutex> lk(queueMutex);
-                    indexSendingPDU = mux->addSdu(ackBuffer, numberDecodingBytes, 0,0);
+                    macSendingPDU = mux->addSdu(ackBuffer, numberDecodingBytes, 0,0);
 
-                    if(indexSendingPDU==-1) continue;
+                    if(macSendingPDU==-1) continue;
 
-                    sendPdu(indexSendingPDU);
+                    sendPdu(macSendingPDU);
 
                     mux->addSdu(ackBuffer, numberDecodingBytes, 0,0);
                 }

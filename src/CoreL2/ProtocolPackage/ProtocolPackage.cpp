@@ -7,7 +7,7 @@
 @Arquive name : ProtocolPackage.cpp
 @Classification : Protocol Package
 @
-@Last alteration : November 19th, 2019
+@Last alteration : November 21st, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -149,4 +149,9 @@ ProtocolPackage::getPduSize(){
 uint8_t 
 ProtocolPackage::getDstMac(){
     return destinationAddress;
+}
+
+uint8_t 
+ProtocolPackage::getSrcMac(){
+    return sourceAddress;
 }

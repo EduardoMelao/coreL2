@@ -92,8 +92,8 @@ public:
     void startThreads();
 
     /**
-     * @brief Performs PDU sending to destination identified by index
-     * @param index MAC Address of destination
+     * @brief Performs PDU sending to destination identified by macAddress
+     * @param macAddress MAC Address of destination
      */
     void sendPdu(uint8_t macAddress);
 

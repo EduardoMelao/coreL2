@@ -7,7 +7,7 @@
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : November 19th, 2019
+@Last alteration : November 21st, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -114,16 +114,16 @@ Multiplexer::addSdu(
         }
     }
 
-    //Test if queue is full: if so, returns the index
+    //Test if queue is full: if so, returns the MAC Address
     if((size + 2 + transmissionQueues[i]->getNumberofBytes())>maxNumberBytes){
-        if(verbose) cout<<"[Multiplexer] Number of bytes exceed buffer max length. Returning index."<<endl;
-        return i;
+        if(verbose) cout<<"[Multiplexer] Number of bytes exceed buffer max length. Returning MAC Address."<<endl;
+        return _destinationMac;
     }
 
     //Test if there number of SDUs extrapolates maximum
     if(transmissionQueues[i]->numberSDUs+1 == transmissionQueues[i]->maximumNumberSDUs){
         if(verbose) cout<<"[TransmissionQueue] Tried to multiplex more SDUs than supported."<<endl;
-        return i;
+        return _destinationMac;
     }
 
     //Attempts to add SDU to TransmissionQueue
