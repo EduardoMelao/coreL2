@@ -38,6 +38,7 @@ int main(int argc, char** argv){
     int* ports;                     //Array of ports that will be used on sockets
     uint8_t* macAddresses;          //Array of 5GR MAC Addresses of attached equipments
     int numberEquipments;           //Number of attached equipments
+    int argumentsOffset;			//Arguments interpretation offset
     bool verbose = false;           //Verbosity flag
     char *devname = NULL;           //Tun interface name
     uint16_t maxNumberBytes;        //Maximum number of bytes in PDU
@@ -56,15 +57,18 @@ int main(int argc, char** argv){
     //Atributing value to numberEquipments
     numberEquipments = flagBS? (argv[2][0] - 48):1;
 
+    //Defining arguments offset
+    argumentsOffset = flagBS? 3:2;
+
     //Verbosity and devName arguments 
-    if(argc==(3+numberEquipments*3+3)){
-        if(argv[3+numberEquipments*3+2][0]=='-')
+    if(argc==(argumentsOffset+numberEquipments*3+3)){
+        if(argv[argumentsOffset+numberEquipments*3+2][0]=='-')
             verbose = true;
-        else devname = argv[3+numberEquipments*3+2];
+        else devname = argv[argumentsOffset+numberEquipments*3+2];
     }
-    else if(argc==(3+numberEquipments*3+4)){
+    else if(argc==(argumentsOffset+numberEquipments*3+4)){
         verbose = true;
-        devname = argv[3+numberEquipments*3+3];
+        devname = argv[argumentsOffset+numberEquipments*3+3];
     }
 
     //Creates a new L1 empty object
@@ -74,9 +78,9 @@ int main(int argc, char** argv){
     ports = new int[numberEquipments];
     macAddresses = new uint8_t[numberEquipments];
     for(int i=0;i<numberEquipments;i++){
-        ports[i] = (int) strtol(argv[3+i*3+1], NULL, 10);
-        macAddresses[i] = (uint8_t) strtol(argv[3+i*3+2], NULL, 10);
-        l1->addSocket(argv[3+i*3], ports[i]);
+        ports[i] = (int) strtol(argv[argumentsOffset+i*3+1], NULL, 10);
+        macAddresses[i] = (uint8_t) strtol(argv[argumentsOffset+i*3+2], NULL, 10);
+        l1->addSocket(argv[argumentsOffset+i*3], ports[i]);
     }
 
     //Creates and initializes a MacAddressTable with static informations
@@ -89,10 +93,10 @@ int main(int argc, char** argv){
     ipMacTable->addEntry(addressEntry2, 2, false);
     
     //Get maxNumberBytes from command line
-    maxNumberBytes = (uint16_t) strtol(argv[3+numberEquipments*3], NULL, 10);
+    maxNumberBytes = (uint16_t) strtol(argv[argumentsOffset+numberEquipments*3], NULL, 10);
 
     //Create a new MacController object
-    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, (int) argv[3+numberEquipments*3+1][0] - 48, l1, verbose);
+    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, (int) argv[argumentsOffset+numberEquipments*3+1][0] - 48, l1, verbose);
     
     //Finnally start threads
     equipment.startThreads();
