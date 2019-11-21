@@ -55,7 +55,7 @@ MacController::MacController(
 
     threads = new thread[3+2*attachedEquipments]; //4 threads : Tun reading, L3 SDU multiplexing, Control PDU generation, Timeout controls, decondings
 
-    mux = new Multiplexer(maxNumberBytes, macAddress, ipMacTable, MAXSDUS, verbose);
+    mux = new Multiplexer(maxNumberBytes, macAddress, ipMacTable, MAXSDUS, flagBS, verbose);
 
     flagBS = ipMacTable->getFlagBS(macAddress);
 

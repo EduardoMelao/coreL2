@@ -27,6 +27,7 @@ private:
     int numberTransmissionQueues;               //Number of TransmissionQueues actually stored in Multiplexer
     int maxSDUs;                                //Maximum number of SDUs multiplexed
     MacAddressTable* ipMacTable;                //Table of correlation of IP Addresses and MAC5GR Addresses
+    bool flagBS;                                //Flag to know if equipment is BS or UE
     bool verbose;                               //Verbosity flag
 public:
     /**
@@ -35,9 +36,10 @@ public:
      * @param _sourceMac Source MAC Address
      * @param _ipMacTable Static declared MacAddressTable
      * @param _maxSDUs Maximum number of SDUs supported in a single PDU
+     * @param _flagBS Flag that is true if equipment is BS
      * @param _verbose Verbosity flag
      */
-    Multiplexer(uint16_t _maxNumberBytes, uint8_t _sourceMac, MacAddressTable* _ipMacTable, int _maxSDUs, bool _verbose);
+    Multiplexer(uint16_t _maxNumberBytes, uint8_t _sourceMac, MacAddressTable* _ipMacTable, int _maxSDUs, bool _flagBS, bool _verbose);
     
     /**
      * @brief Destroys the Multiplexer object and unallocates memory
