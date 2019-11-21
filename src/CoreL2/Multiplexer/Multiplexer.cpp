@@ -30,6 +30,7 @@ Multiplexer::Multiplexer(
         uint8_t _sourceMac,             //Source MAC Address
         MacAddressTable* _ipMacTable,   //MAC - IP table   
         int _maxSDUs,                   //Maximum number of SDUs in PDU
+        bool _flagBS,                   //Flag true if equipment is BS, otherwise it is UE
         bool _verbose)                  //Verbosity flag
 {
     transmissionQueues = new TransmissionQueue*[MAX_BUFFERS];
@@ -40,6 +41,7 @@ Multiplexer::Multiplexer(
     numberTransmissionQueues = 0;
     ipMacTable = _ipMacTable;
     maxSDUs = _maxSDUs;
+    flagBS = _flagBS;
     verbose = _verbose;
     if(_verbose) cout<<"[Multiplexer] Created successfully."<<endl;
 }
@@ -108,7 +110,11 @@ Multiplexer::addSdu(
 
     //TransmissionQueue not found
     if(i==numberTransmissionQueues){
-        if(verbose){
+        if(!flagBS){
+            if(verbose) cout<<"[Multiplexer] No TransmissionQueue found. Forwarding to BS..."<<endl;
+            i = 0;      //BS index of TransmissionQueues (only this TransmissionQueue)
+        }
+        else if(verbose){
             cout<<"[Multiplexer] Error: no TransmissionQueue found."<<endl;
             return -2;
         }
