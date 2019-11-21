@@ -7,7 +7,7 @@
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : November 19th, 2019
+@Last alteration : November 21st, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -30,6 +30,7 @@ Multiplexer::Multiplexer(
         uint8_t _sourceMac,             //Source MAC Address
         MacAddressTable* _ipMacTable,   //MAC - IP table   
         int _maxSDUs,                   //Maximum number of SDUs in PDU
+        bool _flagBS,                   //Flag true if equipment is BS, otherwise it is UE
         bool _verbose)                  //Verbosity flag
 {
     transmissionQueues = new TransmissionQueue*[MAX_BUFFERS];
@@ -40,6 +41,7 @@ Multiplexer::Multiplexer(
     numberTransmissionQueues = 0;
     ipMacTable = _ipMacTable;
     maxSDUs = _maxSDUs;
+    flagBS = _flagBS;
     verbose = _verbose;
     if(_verbose) cout<<"[Multiplexer] Created successfully."<<endl;
 }
@@ -108,22 +110,26 @@ Multiplexer::addSdu(
 
     //TransmissionQueue not found
     if(i==numberTransmissionQueues){
-        if(verbose){
+        if(!flagBS){
+            if(verbose) cout<<"[Multiplexer] No TransmissionQueue found. Forwarding to BS..."<<endl;
+            i = 0;      //BS index of TransmissionQueues (only this TransmissionQueue)
+        }
+        else if(verbose){
             cout<<"[Multiplexer] Error: no TransmissionQueue found."<<endl;
             return -2;
         }
     }
 
-    //Test if queue is full: if so, returns the index
+    //Test if queue is full: if so, returns the MAC Address
     if((size + 2 + transmissionQueues[i]->getNumberofBytes())>maxNumberBytes){
-        if(verbose) cout<<"[Multiplexer] Number of bytes exceed buffer max length. Returning index."<<endl;
-        return i;
+        if(verbose) cout<<"[Multiplexer] Number of bytes exceed buffer max length. Returning MAC Address."<<endl;
+        return _destinationMac;
     }
 
     //Test if there number of SDUs extrapolates maximum
     if(transmissionQueues[i]->numberSDUs+1 == transmissionQueues[i]->maximumNumberSDUs){
         if(verbose) cout<<"[TransmissionQueue] Tried to multiplex more SDUs than supported."<<endl;
-        return i;
+        return _destinationMac;
     }
 
     //Attempts to add SDU to TransmissionQueue
@@ -138,14 +144,19 @@ Multiplexer::addSdu(
 
 ssize_t 
 Multiplexer::getPdu(
-    char* buffer,   //Buffer to store PDU
-    int index)      //Index of TransmissionQueue where PDU is stored
+    char* buffer,       //Buffer to store PDU
+    uint8_t macAddress) //Destination MAC Address of PDU
 {
-    ssize_t size;
+    ssize_t size;   //Size of PDU
+    int index;      //Auxiliary variable for loop
 
-    //Test if index is valid, considering transmissionQueues index is sequential
-    if(index>=numberTransmissionQueues){
-        if(verbose) cout<<"[Multiplexer] Could not get PDU: index out of bounds."<<endl;
+    for(index=0;index<numberTransmissionQueues;index++){
+        if(destinationMac[index]==macAddress)
+            break;
+    }
+    //Test if macAddress was found
+    if(index==numberTransmissionQueues){
+        if(verbose) cout<<"[Multiplexer] Could not get PDU: MAC Address not found."<<endl;
         return -1;
     }
 
@@ -174,10 +185,14 @@ Multiplexer::getPdu(
 
 bool 
 Multiplexer::emptyPdu(
-    int index)      //Index of TransmissionQueue where PDU is stored
+    uint8_t macAddress)      //Destination MAC Address of PDU
 {
-    if(index>=numberTransmissionQueues) return true;
-    return numberBytes[index]==0;
+    for(int i=0;i<numberTransmissionQueues;i++){
+        if(destinationMac[i]==macAddress)
+            return numberBytes[i]==0;
+    }
+    if(verbose) cout<<"[Multiplexer] MAC address not found verifying empty PDU."<<endl;
+    return true;
 }
 
 int 

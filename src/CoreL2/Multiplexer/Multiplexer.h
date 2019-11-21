@@ -27,6 +27,7 @@ private:
     int numberTransmissionQueues;               //Number of TransmissionQueues actually stored in Multiplexer
     int maxSDUs;                                //Maximum number of SDUs multiplexed
     MacAddressTable* ipMacTable;                //Table of correlation of IP Addresses and MAC5GR Addresses
+    bool flagBS;                                //Flag to know if equipment is BS or UE
     bool verbose;                               //Verbosity flag
 public:
     /**
@@ -35,9 +36,10 @@ public:
      * @param _sourceMac Source MAC Address
      * @param _ipMacTable Static declared MacAddressTable
      * @param _maxSDUs Maximum number of SDUs supported in a single PDU
+     * @param _flagBS Flag that is true if equipment is BS
      * @param _verbose Verbosity flag
      */
-    Multiplexer(uint16_t _maxNumberBytes, uint8_t _sourceMac, MacAddressTable* _ipMacTable, int _maxSDUs, bool _verbose);
+    Multiplexer(uint16_t _maxNumberBytes, uint8_t _sourceMac, MacAddressTable* _ipMacTable, int _maxSDUs, bool _flagBS, bool _verbose);
     
     /**
      * @brief Destroys the Multiplexer object and unallocates memory
@@ -56,7 +58,7 @@ public:
      * @brief Adds a new DATA SDU to the TransmissionQueue that corresponds with IP Address of the L3 Packet
      * @param sdu Data SDU received from TUN interface
      * @param size Number of bytes in SDU
-     * @returns -1 if successful; index of queue to send data if queue is full for Tx; -2 for errors
+     * @returns -1 if successful; MAC Address of queue to send data if queue is full for Tx; -2 for errors
      */
     int addSdu(char* sdu, uint16_t size);
     
@@ -66,24 +68,24 @@ public:
      * @param size Number of bytes of SDU
      * @param flagDataControl Data/Control Flag
      * @param _destinationMac Destination MAC Address
-     * @returns -1 if successful; index of queue to send data if queue is full for Tx; -2 for errors
+     * @returns -1 if successful; MAC Address of queue to send data if queue is full for Tx; -2 for errors
      */    
     int addSdu(char* sdu, uint16_t size, uint8_t flagDataControl, uint8_t _destinationMac);
     
     /**
-     * @brief Gets the multiplexed PDU with MacHeader from TransmissionQueue identified by index
+     * @brief Gets the multiplexed PDU with MacHeader from TransmissionQueue identified by MAC Address
      * @param buffer Buffer where PDU will be stored
-     * @param index Identification of the TransmissionQueue to get the PDU
+     * @param macAddress Destination MAC Address of PDU
      * @returns Size of the PDU
      */    
-    ssize_t getPdu(char* buffer, int index);
+    ssize_t getPdu(char* buffer, uint8_t macAddress);
     
     /**
      * @brief Verifies if PDU is empty
-     * @param index Identification of TransmissionQueue where PDU is being stored
+     * @param macAddress Destination MAC Address of PDU
      * @returns true if empty; false otherwise
      */    
-    bool emptyPdu(int index);
+    bool emptyPdu(uint8_t macAddress);
     
     /**
      * @brief Gets the number of TransmissionQueues allocated in the Multiplexer

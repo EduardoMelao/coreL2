@@ -7,7 +7,7 @@
 @Arquive name : TransmissionQueue.cpp
 @Classification : Multiplexer
 @
-@Last alteration : November 19th, 2019
+@Last alteration : November 21st, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -108,7 +108,7 @@ TransmissionQueue::addSduPosition(
     for(int i=0;i<size;i++)
         buffer[length-bufferOffset+i] = sdu[i];
     numberSDUs++;
-    controlOffset++;
+    if(!flagDataControl) controlOffset++;
     if(verbose) cout<<"[TransmissionQueue] Multiplexed "<<(int)numberSDUs<<" SDUs into PDU."<<endl;
     return true;
 }

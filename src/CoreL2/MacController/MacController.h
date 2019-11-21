@@ -33,20 +33,21 @@ using namespace std;
  */
 class MacController{
 private:
-    int attachedEquipments;     //Number of equipments attached. It must be 1 for UEs.
-    uint16_t maxNumberBytes;    //Maximum number of Bytes of MAC 5G-RANGE PDU
-    uint8_t macAddr;            //MAC Address of equipment
-    TunInterface* tunInterface;        //TunInterface object to perform L3 packet capture
-    MacHighQueue* macHigh;      //Queue to receive and enqueue L3 packets
-    MacAddressTable* ipMacTable;       //Table to associate IP addresses to 5G-RANGE domain MAC addresses
-    condition_variable queueConditionVariable;  //Condition variable to manage access to Multiplexer Queue
-    mutex queueMutex;           //Mutex to control access to Transmission Queue
-    Multiplexer* mux;           //Multiplexes various SDUs to multiple destinations
-    MacCQueue* macControlQueue;            //Queue to store Control PDUs
-    CoreL1* l1;                 //CoreL1 object that performs sending and receiving operations in PHY level
-    thread *threads;            //Threads array
-    bool flagBS;                //BaseStation flag: 1 for BS; 0 for UE
-    bool verbose;               //Verbosity flag
+    int attachedEquipments;         //Number of equipments attached. It must be 1 for UEs.
+    uint8_t* macAddressEquipents;   //Attached equipments 5GR MAC Address
+    uint16_t maxNumberBytes;        //Maximum number of Bytes of MAC 5G-RANGE PDU
+    uint8_t macAddress;             //MAC Address of equipment
+    TunInterface* tunInterface;     //TunInterface object to perform L3 packet capture
+    MacHighQueue* macHigh;          //Queue to receive and enqueue L3 packets
+    MacAddressTable* ipMacTable;    //Table to associate IP addresses to 5G-RANGE domain MAC addresses
+    condition_variable* queueConditionVariables;  //Condition variables to manage access to Multiplexer Queues
+    mutex queueMutex;               //Mutex to control access to Transmission Queue
+    Multiplexer* mux;               //Multiplexes various SDUs to multiple destinations
+    MacCQueue* macControlQueue;     //Queue to store Control PDUs
+    CoreL1* l1;                     //CoreL1 object that performs sending and receiving operations in PHY level
+    thread *threads;                //Threads array
+    bool flagBS;                    //BaseStation flag: 1 for BS; 0 for UE
+    bool verbose;                   //Verbosity flag
 
     /**
      * @brief Auxiliary function for CRC calculation
@@ -59,14 +60,16 @@ public:
     /**
      * @brief Initializes a MacController object to manage all 5G RANGE MAC Operations
      * @param numberEquipments Number of attached equipments. Must be 1 for UEs
+     * @param _macAddressEquipments MAC Address of each attached equipment
      * @param _maxNumberBytes Maximum number of PDU in Bytes 
      * @param _deviceNameTun Customized name for TUN Interface
      * @param _ipMacTable Static table to link IP addresses to 5G-RANGE MAC addresses
-     * @param _macAddr Current MAC address
+     * @param _macAddress Current MAC address
      * @param _l1 Configured CoreL1 object
      * @param _verbose Verbosity flag
      */
-    MacController(int numberEquipments, uint16_t _maxNumberBytes, const char* _deviceNameTun, MacAddressTable* _ipMacTable, uint8_t _macAddr, CoreL1* _l1, bool _verbose);
+    MacController(int numberEquipments, uint8_t* _macAddressessEquipments, uint16_t _maxNumberBytes, 
+        const char* _deviceNameTun, MacAddressTable* _ipMacTable, uint8_t _macAddress, CoreL1* _l1, bool _verbose);
     
     /**
      * @brief Destructs MacController object
@@ -89,15 +92,16 @@ public:
     void startThreads();
 
     /**
-     * @brief Performs PDU sending to destination identified by index
-     * @param index Index of destination Transmission Queue in Multiplexer
+     * @brief Performs PDU sending to destination identified by macAddress
+     * @param macAddress MAC Address of destination
      */
-    void sendPdu(int index);
+    void sendPdu(uint8_t macAddress);
 
     /**
      * @brief Procedure that controls timeout and triggers PDU sending
+     * @param index Index of MAC Addresses of equipments and Condition Variables Arrays
      */
-    void timeoutController();
+    void timeoutController(int index);
 
     /**
      * @brief Procedure that performs decoding of PDUs received from L1

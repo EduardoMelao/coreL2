@@ -60,29 +60,35 @@ MacAddressTable::printMacTable(){
 void 
 MacAddressTable::addEntry(
     uint8_t* ipAddress,     //Entry IP Address
-    uint8_t macAddress)     //Entry 5GR MAC Address
+    uint8_t macAddress,     //Entry 5GR MAC Address
+    bool flagBS)            //Entry flag indicating if it is a Base Station or not
 {
     //Relocate arrays
     uint8_t** _ipAddresses = new uint8_t*[numberRegisters+1];
     uint8_t* _macAddresses = new uint8_t[numberRegisters+1];
+    bool* _flagsBS = new bool[numberRegisters+1];
 
     //Copy old information
     for(int i=0;i<numberRegisters;i++){
         _ipAddresses[i] = ipAddresses[i];
         _macAddresses[i] = macAddresses[i];
+        _flagsBS[i] = flagsBS[i];
     }
 
     //Add new information
     _ipAddresses[numberRegisters] = ipAddress;
     _macAddresses[numberRegisters] = macAddress;
+    _flagsBS[numberRegisters] = flagBS;
 
     //Delete old arrays
     delete[] ipAddresses;
     delete[] macAddresses;
+    delete[] flagsBS;
 
     //Renew class arrays
     this->ipAddresses = _ipAddresses;
     this->macAddresses = _macAddresses;
+    this->flagsBS = _flagsBS;
     if(verbose) cout<<"[MacAddressTable] Entry added"<<endl;
 
     //Increment number of registers
@@ -166,4 +172,15 @@ uint8_t* MacAddressTable::getIpAddress(
 {
     if(id>=numberRegisters) return 0;
     return ipAddresses[id];
+}
+
+bool MacAddressTable::getFlagBS(
+    uint8_t mac)
+{
+    for(int i=0;i<numberRegisters;i++){
+        if(macAddresses[i]==mac)
+            return flagsBS[i];
+    }
+    if(verbose) cout<<"[MacAddressTable] Entry not found for flagBS."<<endl;
+    return false;
 }
