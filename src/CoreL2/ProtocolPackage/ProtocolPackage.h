@@ -100,4 +100,10 @@ public:
      * @returns Destination MAC address
      */
     uint8_t getDstMac();
+
+    /**
+     * @brief Gets source MAC Address of the ProtocolPackage
+     * @returns Source MAC address
+     */
+    uint8_t getSrcMac();
 };

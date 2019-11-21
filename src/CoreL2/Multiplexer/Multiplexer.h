@@ -56,7 +56,7 @@ public:
      * @brief Adds a new DATA SDU to the TransmissionQueue that corresponds with IP Address of the L3 Packet
      * @param sdu Data SDU received from TUN interface
      * @param size Number of bytes in SDU
-     * @returns -1 if successful; index of queue to send data if queue is full for Tx; -2 for errors
+     * @returns -1 if successful; MAC Address of queue to send data if queue is full for Tx; -2 for errors
      */
     int addSdu(char* sdu, uint16_t size);
     
@@ -66,12 +66,12 @@ public:
      * @param size Number of bytes of SDU
      * @param flagDataControl Data/Control Flag
      * @param _destinationMac Destination MAC Address
-     * @returns -1 if successful; index of queue to send data if queue is full for Tx; -2 for errors
+     * @returns -1 if successful; MAC Address of queue to send data if queue is full for Tx; -2 for errors
      */    
     int addSdu(char* sdu, uint16_t size, uint8_t flagDataControl, uint8_t _destinationMac);
     
     /**
-     * @brief Gets the multiplexed PDU with MacHeader from TransmissionQueue identified by index
+     * @brief Gets the multiplexed PDU with MacHeader from TransmissionQueue identified by MAC Address
      * @param buffer Buffer where PDU will be stored
      * @param macAddress Destination MAC Address of PDU
      * @returns Size of the PDU
