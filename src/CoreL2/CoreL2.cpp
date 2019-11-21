@@ -52,7 +52,7 @@ int main(int argc, char** argv){
     }
 
     //Verifying Base Station flag
-    flagBS = (argv[1][0] == 0);
+    flagBS = (argv[1][0] == '0');
 
     //Atributing value to numberEquipments
     numberEquipments = flagBS? (argv[2][0] - 48):1;
