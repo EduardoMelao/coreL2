@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : November 19th, 2019
+@Last alteration : November 21st, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
