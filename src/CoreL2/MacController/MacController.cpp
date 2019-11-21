@@ -76,7 +76,7 @@ MacController::~MacController(){
 
 void 
 MacController::readTunControl(){
-    uint8_t macSendingPDU;
+    int macSendingPDU;
     char bufferData[MAXLINE];
     ssize_t numberBytesRead = 0;
     while(1){
