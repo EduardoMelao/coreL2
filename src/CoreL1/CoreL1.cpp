@@ -7,7 +7,7 @@
 @Arquive name : CoreL1.cpp
 @Classification : [STUB] PHY Layer
 @
-@Last alteration : November 19th, 2019
+@Last alteration : November 27th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -55,11 +55,13 @@ CoreL1::~CoreL1()
         close(socketsIn[i]);
         close(socketsOut[i]);
     }
-    delete[] socketsIn;
-    delete[] socketsOut;
-    delete[] ipServers;
-    delete[] ports;
-    delete[] socketNames;
+    if(numberSockets){
+        delete[] socketsIn;
+        delete[] socketsOut;
+        delete[] ipServers;
+        delete[] ports;
+        delete[] socketNames;
+    }
 }
 
 void 
@@ -89,12 +91,14 @@ CoreL1::addSocket(
         socketNames2[i] = socketNames[i];
     }
 
-    //Delete old arrays
-    delete[] socketsIn;   socketsIn = socketsIn2;
-    delete[] socketsOut;  socketsOut = socketsOut2;
-    delete[] ipServers; ipServers = ipServers2;
-    delete[] ports;     ports = ports2;
-    delete socketNames;   socketNames = socketNames2;
+    //If they exist, delete old arrays
+    if(numberSockets){
+        delete[] socketsIn;   socketsIn = socketsIn2;
+        delete[] socketsOut;  socketsOut = socketsOut2;
+        delete[] ipServers; ipServers = ipServers2;
+        delete[] ports;     ports = ports2;
+        delete socketNames;   socketNames = socketNames2;
+    }
 
     //Add new values
     ports[numberSockets] = port;

@@ -7,7 +7,7 @@
 @Arquive name : MacAddressTable.cpp
 @Classification : MAC Address Table
 @
-@Last alteration : November 19th, 2019
+@Last alteration : November 27th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -80,10 +80,12 @@ MacAddressTable::addEntry(
     _macAddresses[numberRegisters] = macAddress;
     _flagsBS[numberRegisters] = flagBS;
 
-    //Delete old arrays
-    delete[] ipAddresses;
-    delete[] macAddresses;
-    delete[] flagsBS;
+    //Delete old arrays, if they exist
+    if(numberRegisters){
+        delete[] ipAddresses;
+        delete[] macAddresses;
+        delete[] flagsBS;
+    }
 
     //Renew class arrays
     this->ipAddresses = _ipAddresses;

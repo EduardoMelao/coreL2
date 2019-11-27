@@ -8,7 +8,7 @@
 @Arquive name : MacHighQueue.cpp
 @Classification : MAC High Queue
 @
-@Last alteration : November 19th, 2019
+@Last alteration : November 27th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -33,7 +33,14 @@ MacHighQueue::MacHighQueue(
     verbose = _verbose;
 }
 
-MacHighQueue::~MacHighQueue(){ }
+MacHighQueue::~MacHighQueue(){
+    while(queue.size>0){
+        char* buffer = queue.front;
+        delete [] buffer;
+        queue.erase(queue.front);
+        sizes.erase(sizes.front);
+    }
+ }
 
 void 
 MacHighQueue::reading(){
