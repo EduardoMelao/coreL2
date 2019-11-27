@@ -93,12 +93,19 @@ CoreL1::addSocket(
 
     //If they exist, delete old arrays
     if(numberSockets){
-        delete[] socketsIn;   socketsIn = socketsIn2;
-        delete[] socketsOut;  socketsOut = socketsOut2;
-        delete[] ipServers; ipServers = ipServers2;
-        delete[] ports;     ports = ports2;
-        delete socketNames;   socketNames = socketNames2;
+        delete[] socketsIn;
+        delete[] socketsOut;
+        delete[] ipServers;
+        delete[] ports;
+        delete socketNames;
     }
+
+    //Assign new values
+    socketsIn = socketsIn2;
+    socketsOut = socketsOut2;
+    ipServers = ipServers2;
+    ports = ports2;
+    socketNames = socketNames2;
 
     //Add new values
     ports[numberSockets] = port;
