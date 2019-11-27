@@ -7,7 +7,7 @@
 @Arquive name : MacCtHeader.cpp
 @Classification : MAC Control Encoder
 @
-@Last alteration : November 19th, 2019
+@Last alteration : November 27th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -40,65 +40,22 @@ MacCtHeader::MacCtHeader(
     MIMOantenna = 0;
 }
 
-MacCtHeader::MacCtHeader(
-    bool _flagBS,       //BS flag
-    char* buffer,       //Receiving PDU buffer
-    int size,           //Size of PDU in Bytes
-    bool _verbose)      //Verbosity flag
-{
-    flagBS = _flagBS;
-    verbose = _verbose;
-    id = buffer[0];
-    if(!_flagBS){        //Just UE decoding
-        uplinkMCS = buffer[1];
-        numberRBs = buffer[2];
-        rbStart = buffer[3];
-        MIMOon = (buffer[4]&1);
-        MIMOdiversity = (buffer[4]>>1)&1;
-        MIMOantenna = (buffer[4]>>2)&1;
-        MIMOopenLoopClosedLoop = (buffer[4]>>3)&1;
-    }
-}
-
 ssize_t 
-MacCtHeader::insertControlHeader(
-    char* buffer,       //Encoding PDU buffer
-    int size)           //Size of PDU in Bytes
+MacCtHeader::getControlData(
+    char* buffer)	//Buffer to store control data
 {
     //Calculates the difference in header length base on BS flag
-    int delta = (flagBS?CONTROLBYTES2UE:CONTROLBYTES2BS);
-
-    //Dynamically allocates buffer
-    char *buffer2 = new char[size+delta];
+    int size = (flagBS?CONTROLBYTES2UE:CONTROLBYTES2BS);
 
     //Inserts header in new buffer
-    buffer2[0] = id;
+    buffer[0] = id;
     if(flagBS){     //Just BS encoding
-        buffer2[1] = uplinkMCS;
-        buffer2[2] = numberRBs;
-        buffer2[3] = rbStart;
-        buffer2[4] = (MIMOon&(MIMOdiversity<<1)&(MIMOantenna<<2)&(MIMOopenLoopClosedLoop<<3));
+        buffer[1] = uplinkMCS;
+        buffer[2] = numberRBs;
+        buffer[3] = rbStart;
+        buffer[4] = (MIMOon&(MIMOdiversity<<1)&(MIMOantenna<<2)&(MIMOopenLoopClosedLoop<<3));
     }
-    if(verbose) cout<<"[MacCtHeader] Control Header inserted successfully!"<<endl;
+    if(verbose) cout<<"[MacCtHeader] Got Control Information to send to PHY!"<<endl;
 
-    //Copies the old buffer to the new buffer with header inserted
-    memcpy(buffer2+delta, buffer, size);
-    memcpy(buffer, buffer2, size+delta);
-    delete buffer2;
-    return size+delta;
-}
-
-ssize_t 
-MacCtHeader::removeControlHeader(
-    char* buffer,       //Decoding PDU buffer
-    int size)           //Size of PDU in bytes
-{
-    //Calculates the difference in header length base on BS flag
-    int delta = (flagBS?CONTROLBYTES2BS:CONTROLBYTES2UE);
-
-    //////////PROVISIONAL: IGNORES THE HEADER////////////////////////////////
-    //Copies the buffer shifted by delta bytes
-    memcpy(buffer, buffer+delta, size-delta);
-    if(verbose) cout<<"[MacCtHeader] Control Header removed successfully!"<<endl;
-    return size - delta;
+    return size;
 }

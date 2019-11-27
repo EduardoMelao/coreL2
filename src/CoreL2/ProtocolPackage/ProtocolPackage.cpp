@@ -7,7 +7,7 @@
 @Arquive name : ProtocolPackage.cpp
 @Classification : Protocol Package
 @
-@Last alteration : November 21st, 2019
+@Last alteration : November 27th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -99,7 +99,9 @@ ProtocolPackage::insertMacHeader(){
         buffer2[i] = buffer[j];
     }
 
-    buffer = buffer2;
+    memcpy(buffer, buffer2, PDUsize);
+
+    delete [] buffer2;
 
     if(verbose) cout<<"[ProtocolPackage] MAC Header inserted."<<endl;
 }

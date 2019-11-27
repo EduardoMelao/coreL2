@@ -7,7 +7,7 @@
 @Arquive name : TransmissionQueue.cpp
 @Classification : Multiplexer
 @
-@Last alteration : November 21st, 2019
+@Last alteration : November 27th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -122,7 +122,7 @@ TransmissionQueue::addSDU(
     //Verify if it is possible to insert SDU
     if((size+2+getNumberofBytes())>maxNumberBytes){
         if(verbose) cout<<"[TransmissionQueue] Tried to multiplex SDU which size extrapolates maxNumberBytes."<<endl;
-        return false;
+        exit(4);
     }
 
     //Adds SDU to position depending if it is Data or Control SDU

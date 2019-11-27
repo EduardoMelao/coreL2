@@ -7,6 +7,7 @@
 #pragma once
 #include <stdint.h> //uint8_t
 #include <iostream> //cout
+#include <string.h>	//memcpy
 using namespace std;
 
 #include "../Multiplexer/TransmissionQueue.h"
