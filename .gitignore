@@ -33,3 +33,6 @@
 
 # Folders
 .vscode/
+.cproject 
+.project
+.settings/
