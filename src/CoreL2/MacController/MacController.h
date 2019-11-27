@@ -18,6 +18,7 @@
 #include "../Multiplexer/TransmissionQueue.h"
 #include "../Multiplexer/Multiplexer.h"
 #include "../ProtocolControl/MacCQueue.h"
+#include "../L1L2Interface/L1L2Interface.h"
 #include "MacCtHeader.h"
 
 using namespace std;
@@ -26,7 +27,7 @@ using namespace std;
 #define MAXLINE 2048    //Maximum buffer length in bytes
 #define SRC_OFFSET 12   //IP packet source address offset in bytes 
 #define DST_OFFSET 16   //IP packet destination address offset in bytes
-#define TIMEOUT 10      //Timeout to send PDU if there is information to transmit
+#define TIMEOUT 1      	//Timeout(nanoseconds) to send PDU if there is information to transmit
 
 /**
  * @brief Class responsible for managing all MAC 5G-RANGE operations
@@ -42,10 +43,10 @@ private:
     MacAddressTable* ipMacTable;    //Table to associate IP addresses to 5G-RANGE domain MAC addresses
     condition_variable* queueConditionVariables;  //Condition variables to manage access to Multiplexer Queues
     mutex queueMutex;               //Mutex to control access to Transmission Queue
-    Multiplexer* mux;               //Multiplexes various SDUs to multiple destinations
-    MacCQueue* macControlQueue;     //Queue to store Control PDUs
-    CoreL1* l1;                     //CoreL1 object that performs sending and receiving operations in PHY level
-    thread *threads;                //Threads array
+	Multiplexer* mux;               //Multiplexes various SDUs to multiple destinations
+	MacCQueue* macControlQueue;     //Queue to store Control PDUs
+	L1L2Interface* l1l2Interface;   //Deals with communication between MAC and PHY
+	thread *threads;                //Threads array
     bool flagBS;                    //BaseStation flag: 1 for BS; 0 for UE
     bool verbose;                   //Verbosity flag
 

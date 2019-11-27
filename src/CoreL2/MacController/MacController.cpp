@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : November 21st, 2019
+@Last alteration : November 27, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -44,8 +44,7 @@ MacController::MacController(
     ipMacTable = _ipMacTable;
     macAddress = _macAddress;
     queueConditionVariables = new condition_variable[numberEquipments];
-
-    l1 = _l1;
+    l1l2Interface = new L1L2Interface(_l1);
     if(!(tunInterface->allocTunInterface())){
         if(verbose) cout << "[MacController] Error allocating tun interface." << endl;
         exit(1);
@@ -165,7 +164,7 @@ MacController::startThreads(){
     int i, j;   //Auxiliary variables for loops
 
     //Gets all ports to declare decoding procedures
-    uint16_t* ports = l1->getPorts();
+    uint16_t* ports = l1l2Interface->getPorts();
 
     //For each port
     for(i=0;i<attachedEquipments;i++){
@@ -200,21 +199,23 @@ MacController::sendPdu(
 {
     //Declaration of PDU buffer
     char bufferPdu[MAXLINE];
+    char bufferControl[MAXLINE];
     bzero(bufferPdu, MAXLINE);
+    bzero(bufferControl, MAXLINE);
 
     //Gets PDU from multiplexer
-    ssize_t numberBytesRead = mux->getPdu(bufferPdu, macAddress);
+    ssize_t numberDataBytesRead = mux->getPdu(bufferPdu, macAddress);
 
     //Creates a Control Header to this PDU and inserts it
     MacCtHeader macControlHeader(flagBS, verbose);
-    numberBytesRead = macControlHeader.insertControlHeader(bufferPdu, numberBytesRead);
+    ssize_t numberControlBytesRead = macControlHeader.getControlData(bufferControl);
 
     //Perform CRC calculation
-    crcPackageCalculate(bufferPdu, numberBytesRead);
+    crcPackageCalculate(bufferPdu, numberDataBytesRead);
 
     //Send PDU to all attached equipments ("to air interface")
     for(int i=0;i<attachedEquipments;i++)
-        l1->sendPdu(bufferPdu, numberBytesRead+2, (l1->getPorts())[i]);
+        l1l2Interface->sendPdu((uint8_t*)bufferPdu, numberDataBytesRead+2,(uint8_t*)bufferControl, numberControlBytesRead,(l1l2Interface->getPorts())[i]);
 }
 
 void 
@@ -222,7 +223,7 @@ MacController::timeoutController(
     int index)      //Index that identifies the condition variable and destination MAC Address of a queue 
 {
     //Timeout declaration: static
-    chrono::milliseconds timeout = chrono::milliseconds(TIMEOUT);    //ms
+    chrono::nanoseconds timeout = chrono::nanoseconds(TIMEOUT);	//ns
 
     //Communication infinite loop
     while(1){
@@ -250,7 +251,7 @@ MacController::decoding(
         bzero(buffer,sizeof(buffer));
 
         //Read packet from  Socket
-        int numberDecodingBytes = l1->receivePdu(buffer, MAXLINE, port);
+        int numberDecodingBytes = l1l2Interface->receivePdu(buffer, MAXLINE, port);
 
         //Error checking
         if(numberDecodingBytes==-1 && verbose){ 
@@ -270,10 +271,6 @@ MacController::decoding(
 
         //Remove CRC bytes from size count
         numberDecodingBytes-=2;
-
-        //Create MacCtHeader object and remove CONTROL header
-        MacCtHeader macControlHeader(flagBS, buffer, numberDecodingBytes, verbose);
-        numberDecodingBytes = macControlHeader.removeControlHeader(buffer,numberDecodingBytes);
 
         //Create ProtocolPackage object to help removing Mac Header
         ProtocolPackage pdu(buffer, numberDecodingBytes , verbose);
