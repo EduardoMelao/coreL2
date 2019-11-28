@@ -21,7 +21,7 @@
 #include "../Multiplexer/Multiplexer.h"
 #include "../ProtocolControl/MacCQueue.h"
 #include "../L1L2Interface/L1L2Interface.h"
-#include "MacCtHeader.h"
+#include "../ProtocolControl/MacCtHeader.h"
 
 using namespace std;
 
