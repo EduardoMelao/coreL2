@@ -26,10 +26,10 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 #include "MacHighQueue.h"
 
 MacHighQueue::MacHighQueue(
-    TunInterface* tun,      //Tun Interface object
-    bool _verbose)          //Verbosity flag
+    ReceptionProtocol* _reception,  //Object to receive packets from L3
+    bool _verbose)                  //Verbosity flag
 {
-    tunInterface = tun;
+    reception = _reception;
     verbose = _verbose;
 }
 
@@ -52,7 +52,7 @@ MacHighQueue::reading(){
         bzero(buffer, MAXLINE);
 
         //Read from TUN Interface
-        numberBytesRead = tunInterface->readTunInterface(buffer, MAXLINE);
+        numberBytesRead = reception->receivePackageFromL3(buffer, MAXLINE);
         {
             //Lock to write in the queue
             lock_guard<mutex> lk(tunMutex);

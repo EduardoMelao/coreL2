@@ -36,7 +36,7 @@ ReceptionProtocol::ReceptionProtocol(
 
 ReceptionProtocol::~ReceptionProtocol() {}
 
-ssize_t ReceptionProtocol::receivePacketFromL1(
+ssize_t ReceptionProtocol::receivePackageFromL1(
     char* buffer,       //Buffer where packet will be stored
     int maximumSize,    //Maximum size of buffer in Bytes
     int port)           //Socket port to identify which socket to listen for information  
@@ -45,7 +45,7 @@ ssize_t ReceptionProtocol::receivePacketFromL1(
     return l1l2Interface->receivePdu(buffer, maximumSize, port);
 }
 
-ssize_t ReceptionProtocol::receivePacketFromL3(
+ssize_t ReceptionProtocol::receivePackageFromL3(
     char* buffer,       //Buffer where packet will be stored
     int maximumSize)    //Maximum size of buffer in Bytes
 {

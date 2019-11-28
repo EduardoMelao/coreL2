@@ -40,7 +40,7 @@ public:
      * @param port Socket port to identify which socket to send information
      * @returns True if transmission was successful, false otherwise
      */
-    bool sendPacketToL1(char* dataBuffer, size_t dataSize, char* controlBuffer, size_t controlSize, int port);
+    bool sendPackageToL1(char* dataBuffer, size_t dataSize, char* controlBuffer, size_t controlSize, int port);
 
     /**
      * @brief Receives packet from Linux IP Layer
@@ -48,7 +48,7 @@ public:
      * @param size Size of information in Bytes
      * @returns True if transmission was successful, false otherwise
      */
-    bool sendPacketToL3(char* buffer, size_t size);
+    bool sendPackageToL3(char* buffer, size_t size);
 
 };
 #endif  //INCLUDED_TRANSMISSION_PROTOCOL_H

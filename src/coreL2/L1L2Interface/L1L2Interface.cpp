@@ -66,6 +66,10 @@ L1L2Interface::sendPdu(
 	size_t controlSize,     //Control information size in bytes
 	uint16_t port)          //Socket port to identify which socket to send information
 {
+    //Perform CRC calculation
+    crcPackageCalculate((char*)buffer, size);
+    size+=2;    //Add CRC Bytes count
+    
 	//Fill MAC Data with information
 	macData.resize(size);
 	for(int i=0;i<size;i++)
@@ -86,11 +90,59 @@ L1L2Interface::receivePdu(
     size_t maximumSize,         //Maximum PDU size
     uint16_t port)              //Port to identify socket to listen to
 {
-    return l1->receivePdu(buffer, maximumSize, port);
+    ssize_t returnValue;    //Value that will be returned at the end of this procedure
+    returnValue = receivePdu(buffer, maximumSize, port);
+    if(returnValue>0){
+        if(!crcPackageChecking((char*)buffer, returnValue))
+            return -2;
+    }
+    return returnValue==0? 0:returnValue-2;     //Value returned considers size without CRC
 }
 
 uint16_t*
 L1L2Interface::getPorts()
 {
     return l1->getPorts();
+}
+
+void 
+L1L2Interface::crcPackageCalculate(
+    char* buffer,       //Buffer of Bytes of PDU
+    int size)           //PDU size in Bytes
+{
+    unsigned short crc = 0x0000;
+    for(int i=0;i<size;i++){
+        crc = auxiliaryCalculationCRC(buffer[i],crc);
+    }
+    buffer[size] = crc>>8;
+    buffer[size+1] = crc&255;
+}
+
+bool 
+L1L2Interface::crcPackageChecking(
+    char* buffer,       //Bytes of PDU
+    int size)           //Size of PDU in Bytes
+{
+    unsigned short crc1, crc2;
+    crc1 = ((buffer[size-2]&255)<<8)|((buffer[size-1])&255);
+    crc2 = 0x0000;
+    for(int i=0;i<size-2;i++){
+        crc2 = auxiliaryCalculationCRC(buffer[i],crc2);
+    }
+
+    return crc1==crc2;
+}
+
+unsigned short 
+L1L2Interface::auxiliaryCalculationCRC(
+    char data,              //Byte from PDU
+    unsigned short crc)     //CRC history
+{
+    char i, bit;
+    for(i=0x01;i;i<<=1){
+        bit = (((crc&0x0001)?1:0)^((data&i)?1:0));
+        crc>>=1;
+        if(bit) crc^=0x9299;
+    }
+    return crc;
 }

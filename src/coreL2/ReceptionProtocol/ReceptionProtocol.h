@@ -39,7 +39,7 @@ public:
      * @param port Socket port to identify which socket to listen for information  
      * @returns Size of information received in Bytes; 0 for EOF; -1 for errors
      */
-    ssize_t receivePacketFromL1(char* buffer, int maximumSize, int port);
+    ssize_t receivePackageFromL1(char* buffer, int maximumSize, int port);
 
     /**
      * @brief Receives packet from Linux IP Layer
@@ -47,7 +47,7 @@ public:
      * @param maximumSize Maximum size of buffer in Bytes
      * @returns Size of information received in Bytes; 0 for EOF; -1 for errors
      */
-    ssize_t receivePacketFromL3(char* buffer, int maximumSize);
+    ssize_t receivePackageFromL3(char* buffer, int maximumSize);
 
 };
 #endif  //INCLUDED_RECEPTION_PROTOCOL_H

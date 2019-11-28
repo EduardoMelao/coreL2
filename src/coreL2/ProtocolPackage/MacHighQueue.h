@@ -9,7 +9,7 @@
 
 #include <vector>
 #include <mutex>
-#include "../CoreTunInterface/TunInterface.h"
+#include "../ReceptionProtocol/ReceptionProtocol.h"
 
 #define MAXLINE 2048    //Maximum buffer size
 #define DST_OFFSET 16
@@ -21,7 +21,7 @@ using namespace std;
  */
 class MacHighQueue{
 private:
-    TunInterface* tunInterface;     //Tun Interface object
+    ReceptionProtocol* reception;   //Object to receive packets from L3
     vector<char*> queue;            //Vector of L3 packets
     vector<ssize_t> sizes;          //Vector containing size of each packet
     mutex tunMutex;                 //Mutex to control access to queue
@@ -30,10 +30,10 @@ public:
     
     /**
      * @brief Constructs an empty MacHighQueue with a TUN descriptor
-     * @param tun TUN Interface object
-     * @param v Verbosity flag 
+     * @param _reception Object to receive packets from L3
+     * @param _verbose Verbosity flag 
      */
-    MacHighQueue(TunInterface* tun, bool _verbose);
+    MacHighQueue(ReceptionProtocol* _reception, bool _verbose);
     
     /**
      * @brief Destroys MacHighQueue

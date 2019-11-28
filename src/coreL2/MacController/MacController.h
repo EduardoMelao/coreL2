@@ -20,7 +20,8 @@
 #include "../Multiplexer/TransmissionQueue.h"
 #include "../Multiplexer/Multiplexer.h"
 #include "../ProtocolControl/MacCQueue.h"
-#include "../L1L2Interface/L1L2Interface.h"
+#include "../ReceptionProtocol/ReceptionProtocol.h"
+#include "../TransmissionProtocol/TransmissionProtocol.h"
 #include "MacCtHeader.h"
 
 using namespace std;
@@ -41,24 +42,18 @@ private:
     uint16_t maxNumberBytes;        //Maximum number of Bytes of MAC 5G-RANGE PDU
     uint8_t macAddress;             //MAC Address of equipment
     TunInterface* tunInterface;     //TunInterface object to perform L3 packet capture
+    L1L2Interface* l1l2Interface;   //Object to manage interface with L1
     MacHighQueue* macHigh;          //Queue to receive and enqueue L3 packets
     MacAddressTable* ipMacTable;    //Table to associate IP addresses to 5G-RANGE domain MAC addresses
     condition_variable* queueConditionVariables;  //Condition variables to manage access to Multiplexer Queues
     mutex queueMutex;               //Mutex to control access to Transmission Queue
 	Multiplexer* mux;               //Multiplexes various SDUs to multiple destinations
 	MacCQueue* macControlQueue;     //Queue to store Control PDUs
-	L1L2Interface* l1l2Interface;   //Deals with communication between MAC and PHY
+	ReceptionProtocol* receptionProtocol;       //Object to receive packets from L1 and L3
+    TransmissionProtocol* transmissionProtocol; //Object to transmit packets to L1 and L3
 	thread *threads;                //Threads array
     bool flagBS;                    //BaseStation flag: 1 for BS; 0 for UE
     bool verbose;                   //Verbosity flag
-
-    /**
-     * @brief Auxiliary function for CRC calculation
-     * @param data Single byte from PDU
-     * @param crc CRC history
-     * @returns 2-byte CRC calculation
-     */
-    unsigned short auxiliaryCalculationCRC(char data, unsigned short crc);
 public:
     /**
      * @brief Initializes a MacController object to manage all 5G RANGE MAC Operations
@@ -111,20 +106,5 @@ public:
      * @param port Receiving socket port
      */
     void decoding(uint16_t port);
-
-    /**
-     * @brief Calculates CRC of current PDU passed as parameter
-     * @param buffer Bytes of current PDU
-     * @param size Size of PDU in bytes
-     */
-    void crcPackageCalculate(char* buffer, int size);
-
-    /**
-     * @brief Checks if CRC contained in received PDU matches calculated CRC
-     * @param buffer Bytes of current PDU
-     * @param size Size of PDU in bytes
-     * @returns True if CRC match; False otherwise
-     */
-    bool crcPackageChecking(char* buffer, int size);
 };
 #endif  //INCLUDED_MAC_CONTROLLER_H
