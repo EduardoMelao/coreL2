@@ -188,7 +188,7 @@ MacController::startThreads(){
 
     //Join all threads
     for(i=0;i<2*attachedEquipments+3;i++)
-        threads[i].detach();
+        threads[i].join();
     
     delete ports;
 }

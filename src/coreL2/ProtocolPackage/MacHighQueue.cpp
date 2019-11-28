@@ -34,11 +34,11 @@ MacHighQueue::MacHighQueue(
 }
 
 MacHighQueue::~MacHighQueue(){
-    while(queue.size>0){
-        char* buffer = queue.front;
+    while(queue.size()>0){
+        char* buffer = queue.front();
         delete [] buffer;
-        queue.erase(queue.front);
-        sizes.erase(sizes.front);
+        queue.erase(queue.begin());
+        sizes.erase(sizes.begin());
     }
  }
 
@@ -58,24 +58,30 @@ MacHighQueue::reading(){
             lock_guard<mutex> lk(tunMutex);
             
             //Check EOF
-            if(numberBytesRead==0)
-                break;
+            if(numberBytesRead==0){
+                if(verbose) cout<<"[MacHighQueue] End of Transmission."<<endl;
+                delete [] buffer;
+            	break;
+            }
 
             //Check ipv4
             if(((buffer[0]>>4)&15) != 4){
                 if(verbose) cout<<"[MacHighQueue] Dropped non-ipv4 packet."<<endl;
+                delete [] buffer;
                 continue;
             }
 
             //Check broadcast
             if((buffer[DST_OFFSET]==255)&&(buffer[DST_OFFSET+1]==255)&&(buffer[DST_OFFSET+2]==255)&&(buffer[DST_OFFSET+3]==255)){
                 if(verbose) cout<<"[MacHighQueue] Dropped broadcast packet."<<endl;
+                delete [] buffer;
                 continue;
             }
 
             //Check multicast
             if((buffer[DST_OFFSET]>=224)&&(buffer[DST_OFFSET]<=239)){
                 if(verbose) cout<<"[MacHighQueue] Dropped multicast packet."<<endl;
+                delete [] buffer;
                 continue;
             }
             
