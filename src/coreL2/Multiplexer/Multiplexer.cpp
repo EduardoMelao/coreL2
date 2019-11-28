@@ -55,6 +55,21 @@ Multiplexer::~Multiplexer()
     delete[] numberBytes; 
 }
 
+uint8_t
+Multiplexer::getMacAddress(
+    char* dataSdu)      //SDU containg IP bytes
+{
+    uint8_t mac;        //MAC address of destination of the SDU
+    uint8_t ipAddress[4];  //Destination IP address encapsulated into SDU
+
+    //Gets IP Address from packet
+    for(int i=0;i<4;i++)
+        ipAddress[i] = (uint8_t) dataSdu[DST_OFFSET+i]; //Copying IP address
+    
+    //Search IP Address in MacAddressTable
+    mac = ipMacTable->getMacAddress(ipAddress);
+}
+
 void 
 Multiplexer::setTransmissionQueue(
     uint8_t _destinationMac)    //Destination MAC Address
@@ -81,17 +96,7 @@ Multiplexer::addSdu(
     char* sdu,          //Data SDU received from TUN
     uint16_t size)      //Number of Bytes in SDU
 {
-    uint8_t mac;        //MAC address of destination of the SDU
-    uint8_t ipAddress[4];  //Destination IP address encapsulated into SDU
-
-    //Gets IP Address from packet
-    for(int i=0;i<4;i++)
-        ipAddress[i] = (uint8_t) sdu[DST_OFFSET+i]; //Copying IP address
-    
-    //Search IP Address in MacAddressTable
-    mac = ipMacTable->getMacAddress(ipAddress);
-
-    return addSdu(sdu, size, 1, mac);
+    return addSdu(sdu, size, 1, getMacAddress(sdu));
 }
 
 int 

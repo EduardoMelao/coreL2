@@ -14,7 +14,7 @@
 #include <condition_variable>   //std::condition_variable
 
 #include "../../coreL1/CoreL1.h"
-#include "../ProtocolPackage/MacHighQueue.h"
+#include "../ProtocolData/MacHighQueue.h"
 #include "../ProtocolPackage/ProtocolPackage.h"
 #include "../Multiplexer/MacAddressTable/MacAddressTable.h"
 #include "../Multiplexer/TransmissionQueue.h"
@@ -23,6 +23,7 @@
 #include "../ReceptionProtocol/ReceptionProtocol.h"
 #include "../TransmissionProtocol/TransmissionProtocol.h"
 #include "../ProtocolControl/MacCtHeader.h"
+#include "../ProtocolData/ProtocolData.h"
 
 using namespace std;
 
@@ -37,24 +38,26 @@ using namespace std;
  */
 class MacController{
 private:
-    int attachedEquipments;         //Number of equipments attached. It must be 1 for UEs.
-    uint8_t* macAddressEquipents;   //Attached equipments 5GR MAC Address
     uint16_t maxNumberBytes;        //Maximum number of Bytes of MAC 5G-RANGE PDU
     uint8_t macAddress;             //MAC Address of equipment
     TunInterface* tunInterface;     //TunInterface object to perform L3 packet capture
     L1L2Interface* l1l2Interface;   //Object to manage interface with L1
     MacHighQueue* macHigh;          //Queue to receive and enqueue L3 packets
     MacAddressTable* ipMacTable;    //Table to associate IP addresses to 5G-RANGE domain MAC addresses
-    condition_variable* queueConditionVariables;  //Condition variables to manage access to Multiplexer Queues
-    mutex queueMutex;               //Mutex to control access to Transmission Queue
-	Multiplexer* mux;               //Multiplexes various SDUs to multiple destinations
 	MacCQueue* macControlQueue;     //Queue to store Control PDUs
-	ReceptionProtocol* receptionProtocol;       //Object to receive packets from L1 and L3
+	ProtocolData* protocolData;     //Object to deal with enqueueing DATA SDUS
+    ReceptionProtocol* receptionProtocol;       //Object to receive packets from L1 and L3
     TransmissionProtocol* transmissionProtocol; //Object to transmit packets to L1 and L3
 	thread *threads;                //Threads array
     bool flagBS;                    //BaseStation flag: 1 for BS; 0 for UE
     bool verbose;                   //Verbosity flag
 public:
+    int attachedEquipments;         //Number of equipments attached. It must be 1 for UEs.
+    uint8_t* macAddressEquipments;   //Attached equipments 5GR MAC Address
+    condition_variable* queueConditionVariables;  //Condition variables to manage access to Multiplexer Queues
+    mutex queueMutex;               //Mutex to control access to Transmission Queue
+	Multiplexer* mux;               //Multiplexes various SDUs to multiple destinations
+
     /**
      * @brief Initializes a MacController object to manage all 5G RANGE MAC Operations
      * @param numberEquipments Number of attached equipments. Must be 1 for UEs
@@ -73,11 +76,6 @@ public:
      * @brief Destructs MacController object
      */
     ~MacController();
-
-    /**
-     * @brief Procedure that executes forever and controls TUN interface reading, adding SDUs from MAC High Queue to Multiplexer
-     */
-    void readTunControl();
 
     /**
      * @brief Procedure that executes forever and controls Control SDUs entrance in Multiplexing queue

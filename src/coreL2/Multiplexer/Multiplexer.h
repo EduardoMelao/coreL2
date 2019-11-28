@@ -49,6 +49,13 @@ public:
     ~Multiplexer();
 
     /**
+     * @brief Given the SDU, open it and look for its IP in Mac Address Table
+     * @param dataSDU SDU containing IP bytes
+     * @returns Destination MAC Address
+     */
+    uint8_t getMacAddress(char* dataSdu);
+    
+    /**
      * @brief Defines a new TransmissionQueue to specific destination and adds
      * it to array of TransmissionQueues in the Multiplexer.
      * 

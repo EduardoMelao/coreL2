@@ -36,7 +36,8 @@ TransmissionProtocol::TransmissionProtocol(
 
 TransmissionProtocol::~TransmissionProtocol() {}
 
-bool TransmissionProtocol::sendPackageToL1(
+bool 
+TransmissionProtocol::sendPackageToL1(
     char* dataBuffer,       //Information Buffer
     size_t dataSize,        //Size of information Buffer in Bytes
     char* controlBuffer,    //Control information Buffer
@@ -47,7 +48,8 @@ bool TransmissionProtocol::sendPackageToL1(
     return l1l2Interface->sendPdu((uint8_t*)dataBuffer, dataSize,(uint8_t*)controlBuffer, controlSize, port);
 }
 
-bool TransmissionProtocol::sendPackageToL3(
+bool 
+TransmissionProtocol::sendPackageToL3(
     char* buffer,   //Buffer where packet will be stored
     size_t size)       //Size of information in Bytes
 {

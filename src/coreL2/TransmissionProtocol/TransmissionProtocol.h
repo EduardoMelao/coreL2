@@ -13,6 +13,9 @@
 
 using namespace std;
 
+/**
+ * @brief Class responsible for sending data to PHY layer and to Linux IP layer
+ */
 class TransmissionProtocol{
 private:
     L1L2Interface* l1l2Interface;   //Object to send packets to L1

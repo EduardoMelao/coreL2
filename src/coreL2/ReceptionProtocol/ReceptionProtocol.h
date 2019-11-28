@@ -13,6 +13,9 @@
 
 using namespace std;
 
+/**
+ * @brief Class responsible for receiving data from PHY layer and from Linux IP layer
+ */
 class ReceptionProtocol{
 private:
     L1L2Interface* l1l2Interface;   //Object to receive packets from L1
