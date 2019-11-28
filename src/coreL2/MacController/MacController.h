@@ -22,7 +22,7 @@
 #include "../ProtocolControl/MacCQueue.h"
 #include "../ReceptionProtocol/ReceptionProtocol.h"
 #include "../TransmissionProtocol/TransmissionProtocol.h"
-#include "MacCtHeader.h"
+#include "../ProtocolControl/MacCtHeader.h"
 
 using namespace std;
 

@@ -43,6 +43,7 @@ bool TransmissionProtocol::sendPackageToL1(
     size_t controlSize,     //Size of control information in Bytes
     int port)               // Socket port to identify which socket to send information
 {
+    if(verbose) cout<<"[TransmissionProtocol] Sending packet to L1."<<endl;
     return l1l2Interface->sendPdu((uint8_t*)dataBuffer, dataSize,(uint8_t*)controlBuffer, controlSize, port);
 }
 
@@ -50,5 +51,6 @@ bool TransmissionProtocol::sendPackageToL3(
     char* buffer,   //Buffer where packet will be stored
     size_t size)       //Size of information in Bytes
 {
+    if(verbose) cout<<"[TransmissionProtocol] Sending packet to L3."<<endl;
     return tunInterface->writeTunInterface(buffer, size);
 }

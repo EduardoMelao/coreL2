@@ -91,7 +91,7 @@ L1L2Interface::receivePdu(
     uint16_t port)              //Port to identify socket to listen to
 {
     ssize_t returnValue;    //Value that will be returned at the end of this procedure
-    returnValue = receivePdu(buffer, maximumSize, port);
+    returnValue = l1->receivePdu(buffer, maximumSize, port);
     if(returnValue>0){
         if(!crcPackageChecking((char*)buffer, returnValue))
             return -2;

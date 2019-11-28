@@ -41,7 +41,7 @@ ssize_t ReceptionProtocol::receivePackageFromL1(
     int maximumSize,    //Maximum size of buffer in Bytes
     int port)           //Socket port to identify which socket to listen for information  
 {
-    if(verbose) cout<<"[ReceptionProtocol] Receiving packet from L1."<<endl;
+    if(verbose) cout<<"[ReceptionProtocol] Waiting for packet from L1."<<endl;
     return l1l2Interface->receivePdu(buffer, maximumSize, port);
 }
 
@@ -49,5 +49,6 @@ ssize_t ReceptionProtocol::receivePackageFromL3(
     char* buffer,       //Buffer where packet will be stored
     int maximumSize)    //Maximum size of buffer in Bytes
 {
+    if(verbose) cout<<"[ReceptionProtocol] Waiting for packet from L3."<<endl;
     return tunInterface->readTunInterface(buffer, maximumSize);
 }
