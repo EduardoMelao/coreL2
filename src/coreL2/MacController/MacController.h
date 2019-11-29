@@ -33,6 +33,8 @@ using namespace std;
 #define DST_OFFSET 16   //IP packet destination address offset in bytes
 #define TIMEOUT 1      	//Timeout(nanoseconds) to send PDU if there is information to transmit
 
+class ProtocolData;		//Initializing class that will be defined in other .h file
+
 /**
  * @brief Class responsible for managing all MAC 5G-RANGE operations
  */

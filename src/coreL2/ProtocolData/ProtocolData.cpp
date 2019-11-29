@@ -7,7 +7,7 @@
 @Arquive name : ProtocolData.cpp
 @Classification : Protocol Data
 @
-@Last alteration : November 28th, 2019
+@Last alteration : November 29th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -24,7 +24,10 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 #include "ProtocolData.h"
 
-ProtocolData::ProtocolData(MacController* _macController, MacHighQueue* _macHigh){
+ProtocolData::ProtocolData(
+		MacController* _macController, 		//Object that contains all information about mutexes, condition variables and the queue to transmission
+		MacHighQueue* _macHigh)				//Queue with MACD SDUs to be transmitted
+{
     macHigh = _macHigh;
     macController = _macController;
 }
