@@ -25,20 +25,22 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 #include "ProtocolData.h"
 
 ProtocolData::ProtocolData(
-		MacController* _macController, 		//Object that contains all information about mutexes, condition variables and the queue to transmission
-		MacHighQueue* _macHigh)				//Queue with MACD SDUs to be transmitted
+    MacController* _macController, 		//Object that contains all information about mutexes, condition variables and the queue to transmission
+    MacHighQueue* _macHigh,				//Queue with MACD SDUs to be transmitted
+    bool _verbose)                      //Verbosity flag
 {
     macHigh = _macHigh;
     macController = _macController;
+    verbose = _verbose;
 }
 
 ProtocolData::~ProtocolData() {}
 
 void 
 ProtocolData::enqueueDataSdus(){
-    int macSendingPDU;              //This auxiliar variable will store MAC Address if queue is full of SDUs
+    int macSendingPDU;              //This auxiliary variable will store MAC Address if queue is full of SDUs
     char bufferData[MAXLINE];       //Buffer to store Data Bytes
-    ssize_t numberBytesRead = 0;    //Size of MACD SDU read
+    ssize_t numberBytesRead = 0;    //Size of MACD SDU read in Bytes
     
     //Infinite loop
     while(1){
@@ -82,4 +84,13 @@ ProtocolData::enqueueDataSdus(){
             }
         }
     }
+}
+
+void
+ProtocolData::decodeDataSdus(
+    char* buffer,                   //Buffer containg Data SDU to decode
+    size_t numberDecodingBytes)     //Size of Data SDU in bytes
+{   
+    if(verbose) cout<<"[ProtocolData] Data SDU received. Forwarding to L3."<<endl; 
+    macController->transmissionProtocol->sendPackageToL3(buffer, numberDecodingBytes);
 }

@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : November 28th, 2019
+@Last alteration : November 29th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -75,10 +75,14 @@ MacController::MacController(
     else mux->setTransmissionQueue(macAddressEquipments[0]);
 
     //Create ProtocolData to deal with MACD SDUs
-    protocolData = new ProtocolData(this,macHigh);
+    protocolData = new ProtocolData(this,macHigh, verbose);
+
+    //Create ProtocolControl to deal with MACC SDUs
+    protocolControl = new ProtocolControl(this, verbose);
 }
 
 MacController::~MacController(){
+    delete protocolControl;
     delete protocolData;
     delete mux;
     delete macHigh;
@@ -88,50 +92,6 @@ MacController::~MacController(){
     delete l1l2Interface;
     delete [] threads;
     delete [] queueConditionVariables;
-}
-
-void 
-MacController::controlSduControl(){
-    int macSendingPDU;
-    char bufControl[MAXLINE];
-
-    //Creates a new MacCQueue object to generate Control SDUs
-    MacCQueue *macc = new MacCQueue();
-    ssize_t numberBytesRead = 0;
-    while (1){
-        //If multiplexing queue is empty, notify condition variable to trigger timeout timer
-        for(int i=0;i<attachedEquipments;i++)
-            if(mux->emptyPdu(macAddressEquipments[i])) 
-                queueConditionVariables[i].notify_all();
-
-        //Fulfill bufferControl with zeros        
-        bzero(bufControl, MAXLINE);
-
-        //Test if it is BS or UE and decides which Control SDU to get
-        numberBytesRead = flagBS? macc->getControlSduCSI(bufControl): macc->getControlSduULMCS(bufControl);
-        {   
-            //Locks mutex to write in multiplexer queue
-            lock_guard<mutex> lk(queueMutex);
-            
-            //Send control PDU to all attached equipments
-            for(int i=0;i<attachedEquipments;i++){
-                //Adds SDU to multiplexer
-                macSendingPDU = mux->addSdu(bufControl, numberBytesRead, 0, macAddressEquipments[i]);
-
-                //If the SDU was added successfully, continues the loop
-                if(macSendingPDU==-1)
-                    continue;
-
-                //Else, macSendingPDU contains the Transmission Queue MAC Address to perform PDU sending. 
-                //So, perform PDU sending
-                sendPdu(macSendingPDU);
-
-                //Now, it is possible to add SDU to queue
-                mux->addSdu(bufControl,numberBytesRead, 0,  macAddressEquipments[i]);
-            }
-        }
-    }
-    delete macc;
 }
 
 void 
@@ -156,7 +116,7 @@ MacController::startThreads(){
     threads[i+j] = thread(&ProtocolData::enqueueDataSdus, protocolData);
 
     //Control SDUs controller thread
-    threads[i+j+1] = thread(&MacController::controlSduControl, this);
+    threads[i+j+1] = thread(&ProtocolControl::enqueueControlSdus, protocolControl);
 
     //TUN reading and enqueueing thread
     threads[i+j+2] = thread(&MacHighQueue::reading, macHigh);
@@ -214,8 +174,7 @@ void
 MacController::decoding(
     uint16_t port)      //Port of Receiving socket
 {
-    int macSendingPDU;
-    char buffer[MAXLINE], ackBuffer[MAXLINE];
+    char buffer[MAXLINE];
 
     //Communication infinite loop
     while(1){
@@ -223,7 +182,7 @@ MacController::decoding(
         bzero(buffer,sizeof(buffer));
 
         //Read packet from  Socket
-        int numberDecodingBytes = receptionProtocol->receivePackageFromL1(buffer, MAXLINE, port);
+        ssize_t numberDecodingBytes = receptionProtocol->receivePackageFromL1(buffer, MAXLINE, port);
 
         //Error checking
         if(numberDecodingBytes==-1 && verbose){ 
@@ -243,7 +202,7 @@ MacController::decoding(
             break;
         }
 
-        if(verbose) cout<<"[MacController] Decoding "<<port<<": in progress..."<<endl;
+        if(verbose) cout<<"[MacController] Decoding port "<<port<<": in progress..."<<endl;
 
         //Create ProtocolPackage object to help removing Mac Header
         ProtocolPackage pdu(buffer, numberDecodingBytes , verbose);
@@ -259,34 +218,10 @@ MacController::decoding(
         TransmissionQueue *transmissionQueue = pdu.getMultiplexedSDUs();
         while((numberDecodingBytes = transmissionQueue->getSDU(buffer))>0){
             //Test if it is Control SDU
-            if(transmissionQueue->getCurrentDataControlFlag()==0){
-                buffer[numberDecodingBytes] = '\0';
-                if(verbose){
-                	cout<<"[MacController] Control SDU received: ";
-                	for(int i=0;i<numberDecodingBytes;i++)
-						cout<<buffer[i];
-					cout<<endl;
-                }
-
-                if(!flagBS){    //UE needs to return ACK to BS
-                    // ACK
-                    if(macAddressEquipments[0]) queueConditionVariables[0].notify_all();     //index 0: UE has only BS as equipment
-                    bzero(ackBuffer, MAXLINE);
-                    numberDecodingBytes = macControlQueue->getAck(ackBuffer);
-                    lock_guard<mutex> lk(queueMutex);
-                    macSendingPDU = mux->addSdu(ackBuffer, numberDecodingBytes, 0,0);
-
-                    if(macSendingPDU==-1) continue;
-
-                    sendPdu(macSendingPDU);
-
-                    mux->addSdu(ackBuffer, numberDecodingBytes, 0,0);
-                }
-                continue;
-            }
-            //In case this SDU is Data SDU
-            if(verbose) cout<<"[MacController] Received from socket. Forwarding to TUN."<<endl;
-            transmissionProtocol->sendPackageToL3(buffer, numberDecodingBytes);
+            if(transmissionQueue->getCurrentDataControlFlag()==0)
+                protocolControl->decodeControlSdus(buffer, numberDecodingBytes);
+            else    //Data SDU
+                protocolData->decodeDataSdus(buffer, numberDecodingBytes);
         }
         delete transmissionQueue;
     }

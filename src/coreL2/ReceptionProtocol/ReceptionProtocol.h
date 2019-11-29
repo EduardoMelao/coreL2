@@ -21,6 +21,7 @@ private:
     L1L2Interface* l1l2Interface;   //Object to receive packets from L1
     TunInterface* tunInterface;     //Object to receive packets from L3
     bool verbose;                   //Verbosity flag
+
 public:
     /**
      * @brief Creates a new ReceptionProtocol object with desired verbosity

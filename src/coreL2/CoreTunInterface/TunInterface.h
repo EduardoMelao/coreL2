@@ -24,6 +24,7 @@ private:
     int fileDescriptor;     //File descriptor of the interface
     char* deviceName;       //[optional] Name of the interface
     bool verbose;           //Verbosity flag
+
 public:
     /**
      * @brief Creates interface with name "tun0" and no verbosity

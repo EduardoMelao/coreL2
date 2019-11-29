@@ -26,8 +26,8 @@ private:
     vector<ssize_t> sizes;          //Vector containing size of each packet
     mutex tunMutex;                 //Mutex to control access to queue
     bool verbose;                   //Verbosity flag
+
 public:
-    
     /**
      * @brief Constructs an empty MacHighQueue with a TUN descriptor
      * @param _reception Object to receive packets from L3

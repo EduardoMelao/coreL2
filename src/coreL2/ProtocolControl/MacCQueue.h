@@ -22,6 +22,7 @@ using namespace std;
  */
 class MacCQueue{
 private:
+
 public:
     /**
      * @brief Constructs an empty Control Queue

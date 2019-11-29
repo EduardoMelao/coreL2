@@ -20,6 +20,7 @@ private:
     uint8_t* macAddresses;      //Array of MAC Addresses
     bool* flagsBS;              //Array of flags indicating if the equipment is BS
     bool verbose;               //Verbosity flag
+
 public:
     /**
      * @brief Constructs empty table with no verbosity

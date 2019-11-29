@@ -30,6 +30,7 @@ private:
     size_t PDUsize;                 //PDU length
     unsigned short crc;             //Cyclic Redundancy Check (16 bits)
     bool verbose;                   //Verbosity flag
+
 public:
     char* buffer;   //PDU buffer
 

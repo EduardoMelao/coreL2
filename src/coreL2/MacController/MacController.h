@@ -24,6 +24,7 @@
 #include "../TransmissionProtocol/TransmissionProtocol.h"
 #include "../ProtocolControl/MacCtHeader.h"
 #include "../ProtocolData/ProtocolData.h"
+#include "../ProtocolControl/ProtocolControl.h"
 
 using namespace std;
 
@@ -33,33 +34,36 @@ using namespace std;
 #define DST_OFFSET 16   //IP packet destination address offset in bytes
 #define TIMEOUT 1      	//Timeout(nanoseconds) to send PDU if there is information to transmit
 
-class ProtocolData;		//Initializing class that will be defined in other .h file
+//Initializing classes that will be defined in other .h files
+class ProtocolData;		
+class ProtocolControl;
 
 /**
  * @brief Class responsible for managing all MAC 5G-RANGE operations
  */
 class MacController{
 private:
-    uint16_t maxNumberBytes;        //Maximum number of Bytes of MAC 5G-RANGE PDU
-    uint8_t macAddress;             //MAC Address of equipment
-    TunInterface* tunInterface;     //TunInterface object to perform L3 packet capture
-    L1L2Interface* l1l2Interface;   //Object to manage interface with L1
-    MacHighQueue* macHigh;          //Queue to receive and enqueue L3 packets
-    MacAddressTable* ipMacTable;    //Table to associate IP addresses to 5G-RANGE domain MAC addresses
-	MacCQueue* macControlQueue;     //Queue to store Control PDUs
-	ProtocolData* protocolData;     //Object to deal with enqueueing DATA SDUS
-    ReceptionProtocol* receptionProtocol;       //Object to receive packets from L1 and L3
-    TransmissionProtocol* transmissionProtocol; //Object to transmit packets to L1 and L3
-	thread *threads;                //Threads array
-    bool flagBS;                    //BaseStation flag: 1 for BS; 0 for UE
-    bool verbose;                   //Verbosity flag
+    uint16_t maxNumberBytes;            //Maximum number of Bytes of MAC 5G-RANGE PDU
+    uint8_t macAddress;                 //MAC Address of equipment
+    TunInterface* tunInterface;         //TunInterface object to perform L3 packet capture
+    L1L2Interface* l1l2Interface;       //Object to manage interface with L1
+    MacHighQueue* macHigh;              //Queue to receive and enqueue L3 packets
+    MacAddressTable* ipMacTable;        //Table to associate IP addresses to 5G-RANGE domain MAC addresses
+	ProtocolData* protocolData;         //Object to deal with enqueueing DATA SDUS
+    ProtocolControl* protocolControl;   //Object to deal with enqueueing CONTROL SDUS
+	thread *threads;                    //Threads array
+    bool verbose;                       //Verbosity flag
+
 public:
     int attachedEquipments;         //Number of equipments attached. It must be 1 for UEs.
     uint8_t* macAddressEquipments;   //Attached equipments 5GR MAC Address
-    condition_variable* queueConditionVariables;  //Condition variables to manage access to Multiplexer Queues
+    condition_variable* queueConditionVariables;    //Condition variables to manage access to Multiplexer Queues
     mutex queueMutex;               //Mutex to control access to Transmission Queue
 	Multiplexer* mux;               //Multiplexes various SDUs to multiple destinations
-
+    bool flagBS;                    //BaseStation flag: 1 for BS; 0 for UE
+    ReceptionProtocol* receptionProtocol;           //Object to receive packets from L1 and L3
+    TransmissionProtocol* transmissionProtocol;     //Object to transmit packets to L1 and L3
+    
     /**
      * @brief Initializes a MacController object to manage all 5G RANGE MAC Operations
      * @param numberEquipments Number of attached equipments. Must be 1 for UEs

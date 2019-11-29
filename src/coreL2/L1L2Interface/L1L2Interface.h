@@ -36,6 +36,7 @@ private:
     * @returns 2-byte CRC calculation
     */
     unsigned short auxiliaryCalculationCRC(char data, unsigned short crc);                               //[Stub] CoreL1 object that performs sending and receiving operations in PHY level
+
 public:
     /**
      * @brief Constroys a L1L2Interface object and initializes class variables with static information

@@ -21,6 +21,7 @@ private:
     L1L2Interface* l1l2Interface;   //Object to send packets to L1
     TunInterface* tunInterface;     //Object to send packets to L3
     bool verbose;                   //Verbosity flag
+
 public:
     /**
      * @brief Creates a new TransmissionProtocol object with desired verbosity
