@@ -96,14 +96,15 @@ ProtocolControl::decodeControlSdus(
     if(!(macController->flagBS)){    //UE needs to return ACK to BS
         if(verbose) cout<<"[ProtocolControl] Returns ACK to BS..."<<endl;
         // ACK
-        if(macController->macAddressEquipments[0]) macController->queueConditionVariables[0].notify_all();     //index 0: UE has only BS as equipment
+        if(macController->mux->emptyPdu(macController->macAddressEquipments[0]))
+        	macController->queueConditionVariables[0].notify_all();     //index 0: UE has only BS as equipment
 
         char ackBuffer[MAXLINE];
         bzero(ackBuffer, MAXLINE);
 
         size_t numberAckBytes = macControlqueue->getAck(ackBuffer);
         lock_guard<mutex> lk(macController->queueMutex);
-        uint8_t macSendingPDU = macController->mux->addSdu(ackBuffer, numberDecodingBytes, 0,0);
+        int macSendingPDU = macController->mux->addSdu(ackBuffer, numberDecodingBytes, 0,0);
 
         //If addSdu returns -1, SDU was added successfully
         if(macSendingPDU==-1) return;
