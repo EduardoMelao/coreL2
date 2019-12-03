@@ -52,11 +52,10 @@ namespace lib5grange{
 		size_t info_bits)        // number of information bits
 	{
 		float required_bit_capacity = round((float)info_bits/target_coderate);
-		allocation_cfg_t aloc = {
-			.target_ue_id =0,
-			.first_rb=0,
-			.number_of_rb=1
-			};
+		allocation_cfg_t aloc;
+		aloc.target_ue_id =0;
+		aloc.first_rb=0;
+		aloc.number_of_rb=1;
 		size_t gross_rb_bit_capacity = get_bit_capacity(numID,aloc,mimo,mod) + (DCI_SIZE*mod);
 		size_t gross_qam_capacity = gross_rb_bit_capacity/mod;
 		size_t num_qam_required = (size_t) round(required_bit_capacity / mod); //round odr ceil
