@@ -47,23 +47,6 @@ public:
     CoreL1(bool _verbose);
 
     /**
-     * @brief Initializes a new instance of CoreL1 with 1 socket which informations were passed as parameters and no verbose
-     * @param ip Destination IP address: L1 will send packets to this IP
-     * @param port Socket port
-     * @param macAddress Destination MAC Address 
-     */
-    CoreL1(const char* ip, uint16_t port, uint8_t macAddress);
-
-    /**
-     * @brief Initializes a new instance of CoreL1 with 1 socket which informations were passed as parameters
-     * @param ip Destination IP address: L1 will send packets to this IP
-     * @param port Socket port
-     * @param macAddress Destination MAC Address 
-     * @param _verbose Verbosity flag
-     */
-    CoreL1(const char* ip, uint16_t port, uint8_t macAddress, bool _verbose);
-
-    /**
      * @brief Destructor of CoreL1 object
      */
     ~CoreL1();

@@ -30,26 +30,7 @@ CoreL1::CoreL1(
 {
     verbose = _verbose;
     numberSockets = 0;
-}
-
-CoreL1::CoreL1(
-    const char *ip,     //Destination socket IP
-    uint16_t port,      //Destination socket port
-    uint8_t macAddress) //Destination MAC address
-{
-    CoreL1(ip, port, macAddress, false);
-}
-
-CoreL1::CoreL1(
-    const char *ip,     //Destination socket IP
-    uint16_t port,      //Destination socket port
-    uint8_t macAddress, //Destination MAC address
-    bool _verbose)      //Verbosity flag
-{
-    verbose = _verbose;
-    numberSockets = 0;
-    addSocket(ip, port, macAddress);
-
+    
     //Client socket creation
     socketToL2 = socket(AF_INET, SOCK_DGRAM, 0);
     if(socketToL2==-1) perror("[StubPHYLayer] Socket to send information to MAC creation failed.");
@@ -76,8 +57,7 @@ CoreL1::CoreL1(
     if(bindSuccess==-1)
         perror("[StubPHYLayer] Bind error.\n");
     else
-        cout<<"[StubPHYLayer] Bind successfully to listen to messages from MAX."<<endl;
-    
+        cout<<"[StubPHYLayer] Bind successfully to listen to messages from MAC."<<endl;
 }
 
 CoreL1::~CoreL1()
@@ -293,6 +273,7 @@ void
 CoreL1::decoding(
     uint8_t macAddress)
 { 
+    cout<<"decoding mac"<<(int)macAddress<<endl;
     char buffer[MAXIMUMSIZE];   //Buffer to store packet incoming
     ssize_t size;               //Size of packet received
 
