@@ -71,7 +71,7 @@ int main(int argc, char** argv){
 
     macAddresses = new uint8_t[numberEquipments];
     for(int i=0;i<numberEquipments;i++)
-        macAddresses[i] = (uint8_t) strtol(argv[argumentsOffset+i+2], NULL, 10);
+        macAddresses[i] = (uint8_t) strtol(argv[argumentsOffset+i], NULL, 10);
 
     //Creates and initializes a MacAddressTable with static informations
     MacAddressTable* ipMacTable = new MacAddressTable(verbose);
@@ -86,7 +86,7 @@ int main(int argc, char** argv){
     maxNumberBytes = (uint16_t) strtol(argv[argumentsOffset+numberEquipments], NULL, 10);
 
     //Create a new MacController object
-    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, (int) argv[argumentsOffset+numberEquipments*3+1][0] - 48, verbose);
+    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, (int) argv[argumentsOffset+numberEquipments+1][0] - 48, verbose);
     
     //Finnally, start threads
     equipment.startThreads();
