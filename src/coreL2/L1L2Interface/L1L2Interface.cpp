@@ -94,6 +94,8 @@ L1L2Interface::sendPdu(
 	size_t controlSize,     //Control information size in bytes
 	uint8_t macAddress)     //Destination MAC Address
 {
+    size_t numberSent;      //Number of Bytes sent to L1
+
     //Perform CRC calculation
     crcPackageCalculate((char*)buffer, size);
     size+=2;    //Add CRC Bytes count
@@ -111,13 +113,24 @@ L1L2Interface::sendPdu(
 	/////////////////PROVISIONAL: IGNORE ALL THIS INFORMATION///////////////////////////
 	
     //PROVISIONAL: Insert macAddress to warn PHY about destination 
-    char* buffer2 = new char[size+1];
-    buffer2[0] = macAddress;
-    strncpy(buffer2+1, (char*)buffer, size);
-    strncpy((char*)buffer, buffer2, size+1);
-    delete buffer2;
+	uint8_t *buffer2 = new uint8_t[size+1];
+	buffer2[0] = macAddress;
+    for(int i=0;i<size;i++)
+    	buffer2[i+1] = buffer[i];
+
+    cout<<(char) buffer2[4]<<(char)buffer2[5]<<endl;
+
+    numberSent = sendto(socketToL1,buffer2, size+1, MSG_CONFIRM, (const struct sockaddr*)(&serverSocketAddress), sizeof(serverSocketAddress));
     
-    return sendto(socketToL1,buffer, size+1, MSG_CONFIRM, (const struct sockaddr*)(&serverSocketAddress), sizeof(serverSocketAddress));
+    delete[] buffer2;
+
+    //Verify if transmission was successful
+	if(numberSent!=-1){
+		if(verbose) cout<<"[L1L2Interface] Pdu sent:"<<size<<" bytes."<<endl;
+		return true;
+	}
+	if(verbose) cout<<"[L1L2Interface] Could not send Pdu."<<endl;
+	return false;
 }
 
 ssize_t
