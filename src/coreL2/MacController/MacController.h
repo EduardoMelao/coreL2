@@ -13,7 +13,6 @@
 #include <mutex>    //std::mutex
 #include <condition_variable>   //std::condition_variable
 
-#include "../../coreL1/CoreL1.h"
 #include "../ProtocolData/MacHighQueue.h"
 #include "../ProtocolPackage/ProtocolPackage.h"
 #include "../Multiplexer/MacAddressTable/MacAddressTable.h"
@@ -72,11 +71,10 @@ public:
      * @param _deviceNameTun Customized name for TUN Interface
      * @param _ipMacTable Static table to link IP addresses to 5G-RANGE MAC addresses
      * @param _macAddress Current MAC address
-     * @param _l1 Configured CoreL1 object
      * @param _verbose Verbosity flag
      */
     MacController(int numberEquipments, uint8_t* _macAddressessEquipments, uint16_t _maxNumberBytes, 
-        const char* _deviceNameTun, MacAddressTable* _ipMacTable, uint8_t _macAddress, CoreL1* _l1, bool _verbose);
+        const char* _deviceNameTun, MacAddressTable* _ipMacTable, uint8_t _macAddress, bool _verbose);
     
     /**
      * @brief Destructs MacController object
@@ -107,8 +105,8 @@ public:
 
     /**
      * @brief Procedure that performs decoding of PDUs received from L1
-     * @param port Receiving socket port
+     * @param macAddress Source MAC Address from which packet will be received
      */
-    void decoding(uint16_t port);
+    void decoding(uint8_t macAddress);
 };
 #endif  //INCLUDED_MAC_CONTROLLER_H

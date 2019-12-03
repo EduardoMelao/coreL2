@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : November 29th, 2019
+@Last alteration : December 3rd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -33,7 +33,6 @@ MacController::MacController(
         const char* _deviceNameTun,     //TUN device name
         MacAddressTable* _ipMacTable,   //MAC address - IP address table
         uint8_t _macAddress,            //5GR MAC address
-        CoreL1* _l1,                    //L1 object
         bool _verbose)                  //Verbosity flag
 {
     attachedEquipments = numberEquipments;
@@ -55,7 +54,7 @@ MacController::MacController(
     }
     
     //Create L1L2Interface
-    l1l2Interface = new L1L2Interface(_l1);
+    l1l2Interface = new L1L2Interface(verbose);
 
     //Create reception and transmission protocols
     receptionProtocol = new ReceptionProtocol(l1l2Interface, tunInterface, verbose);
@@ -98,13 +97,10 @@ void
 MacController::startThreads(){
     int i, j;   //Auxiliary variables for loops
 
-    //Gets all ports to declare decoding procedures
-    uint16_t* ports = l1l2Interface->getPorts();
-
-    //For each port
+    //For each equipment
     for(i=0;i<attachedEquipments;i++){
         //Decoding threads - threads[0 .. attachedEquipments]
-        threads[i] = thread(&MacController::decoding, this, ports[i]);
+        threads[i] = thread(&MacController::decoding, this, macAddressEquipments[i]);
     }
 
     for(j=0;j<attachedEquipments;j++){
@@ -124,8 +120,6 @@ MacController::startThreads(){
     //Join all threads
     for(i=0;i<2*attachedEquipments+3;i++)
         threads[i].join();
-    
-    delete ports;
 }
 
 void 
@@ -145,9 +139,7 @@ MacController::sendPdu(
     MacCtHeader macControlHeader(flagBS, verbose);
     ssize_t numberControlBytesRead = macControlHeader.getControlData(bufferControl);
 
-    //Send PDU to all attached equipments ("to air interface")
-    for(int i=0;i<attachedEquipments;i++)
-        transmissionProtocol->sendPackageToL1(bufferPdu, numberDataBytesRead,bufferControl, numberControlBytesRead,(l1l2Interface->getPorts())[i]);
+    transmissionProtocol->sendPackageToL1(bufferPdu, numberDataBytesRead,bufferControl, numberControlBytesRead, macAddress);
 }
 
 void 
@@ -172,7 +164,7 @@ MacController::timeoutController(
 
 void 
 MacController::decoding(
-    uint16_t port)      //Port of Receiving socket
+    uint8_t macAddress) //Source MAC Address
 {
     char buffer[MAXLINE];
 
@@ -182,7 +174,7 @@ MacController::decoding(
         bzero(buffer,sizeof(buffer));
 
         //Read packet from  Socket
-        ssize_t numberDecodingBytes = receptionProtocol->receivePackageFromL1(buffer, MAXLINE, port);
+        ssize_t numberDecodingBytes = receptionProtocol->receivePackageFromL1(buffer, MAXLINE, macAddress);
 
         //Error checking
         if(numberDecodingBytes==-1 && verbose){ 
@@ -202,17 +194,11 @@ MacController::decoding(
             break;
         }
 
-        if(verbose) cout<<"[MacController] Decoding port "<<port<<": in progress..."<<endl;
+        if(verbose) cout<<"[MacController] Decoding MAC Address "<<macAddress<<": in progress..."<<endl;
 
         //Create ProtocolPackage object to help removing Mac Header
         ProtocolPackage pdu(buffer, numberDecodingBytes , verbose);
         pdu.removeMacHeader();
-
-        //Verify Destination
-        if(pdu.getDstMac()!=macAddress){
-            if(verbose) cout<<"[MacController] Drop package: Wrong destination."<<endl;
-            continue;       //Drop packet
-        }
 
         //Create TransmissionQueue object to help unstacking SDUs contained in the PDU
         TransmissionQueue *transmissionQueue = pdu.getMultiplexedSDUs();

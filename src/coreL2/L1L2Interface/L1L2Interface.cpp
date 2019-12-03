@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : November 28th, 2019
+@Last alteration : December 3rd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -26,8 +26,9 @@ using namespace std;
 using namespace lib5grange;
 
 L1L2Interface::L1L2Interface(
-    CoreL1* _l1)                 //CoreL1 object initialized with static parameters
+    bool _verbose)              //Verbosity flag
 {
+    verbose = _verbose;
     //Static information:
     ueID = 0xCAFE;
     numerologyID = 2;
@@ -53,7 +54,34 @@ L1L2Interface::L1L2Interface(
     macPDU.mimo_ = mimoConfiguration;
     macPDU.mcs_ = mcsConfiguration;
 
-    l1 = _l1;
+    //Client socket creation
+    socketToL1 = socket(AF_INET, SOCK_DGRAM, 0);
+    if(socketToL1==-1) perror("[L1L2Interface] Socket to send information to PHY creation failed.");
+    else if(verbose) cout<<"[L1L2Interface] Client socket to send info to PHY created successfully."<<endl;
+    bzero(&serverSocketAddress, sizeof(serverSocketAddress));
+
+    serverSocketAddress.sin_family = AF_INET;
+    serverSocketAddress.sin_port = htons(PORT_TO_L1);
+    serverSocketAddress.sin_addr.s_addr = inet_addr("127.0.0.1");  //Localhost
+
+    //Server socket creation
+    struct sockaddr_in sockname;        //Struct to configure which address server will bind to
+    socketFromL1 = socket(AF_INET, SOCK_DGRAM, 0);
+    if(socketFromL1==-1) perror("[L1L2Interface] Socket to receive information from PHY creation failed.");
+
+    bzero(&sockname, sizeof(sockname));
+
+    sockname.sin_family = AF_INET;
+    sockname.sin_port = htons(PORT_FROM_L1);
+    sockname.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    //Serve bind to socket to listen to local messages in port PORT_FROM_L1
+    int bindSuccess = bind(socketFromL1, (const sockaddr*)(&sockname), sizeof(sockname));
+    if(bindSuccess==-1)
+        perror("[L1L2Interface] Bind error.\n");
+    else
+        cout<<"[L1L2Interface] Bind successfully to listen to messages from PHY."<<endl;
+    
 }
 
 L1L2Interface::~L1L2Interface() {}
@@ -64,7 +92,7 @@ L1L2Interface::sendPdu(
 	size_t size,            //PDU size in Bytes
 	uint8_t* controlBuffer, //Buffer with control information
 	size_t controlSize,     //Control information size in bytes
-	uint16_t port)          //Socket port to identify which socket to send information
+	uint8_t macAddress)     //Destination MAC Address
 {
     //Perform CRC calculation
     crcPackageCalculate((char*)buffer, size);
@@ -81,28 +109,30 @@ L1L2Interface::sendPdu(
 		macControl[i]=controlBuffer[i];
 
 	/////////////////PROVISIONAL: IGNORE ALL THIS INFORMATION///////////////////////////
-	return l1->sendPdu((const char*) buffer, size, port);
+	
+    //PROVISIONAL: Insert macAddress to warn PHY about destination 
+    char* buffer2 = new char[size+1];
+    buffer2[0] = macAddress;
+    strncpy(buffer2+1, (char*)buffer, size);
+    strncpy((char*)buffer, buffer2, size+1);
+    delete buffer2;
+    
+    return sendto(socketToL1,buffer, size+1, MSG_CONFIRM, (const struct sockaddr*)(&serverSocketAddress), sizeof(serverSocketAddress));
 }
 
 ssize_t
 L1L2Interface::receivePdu(
     const char* buffer,         //Buffer where PDU is going to be store
     size_t maximumSize,         //Maximum PDU size
-    uint16_t port)              //Port to identify socket to listen to
+    uint8_t macAddress)              //Port to identify socket to listen to
 {
     ssize_t returnValue;    //Value that will be returned at the end of this procedure
-    returnValue = l1->receivePdu(buffer, maximumSize, port);
+    returnValue = recv(socketFromL1, (void*)buffer, maximumSize, MSG_WAITALL);
     if(returnValue>0){
         if(!crcPackageChecking((char*)buffer, returnValue))
             return -2;
     }
     return returnValue==0? 0:returnValue-2;     //Value returned considers size without CRC
-}
-
-uint16_t*
-L1L2Interface::getPorts()
-{
-    return l1->getPorts();
 }
 
 void 

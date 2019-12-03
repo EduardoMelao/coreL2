@@ -7,12 +7,18 @@
 #ifndef INCLUDED_CORE_L1_H
 #define INCLUDED_CORE_L1_H
 
+#define PORT_TO_L2 8091
+#define PORT_FROM_L2 8090
+
+#define MAXIMUMSIZE 2048
+
 #include <iostream>     //cout
 #include <stdint.h>     //uint16_t
 #include <sys/socket.h> //socket(), AF_INET, SOCK_DGRAM
 #include <arpa/inet.h>  //struct sockaddr_in
 #include <string.h>     //bzero()
 #include <unistd.h>     //close()
+#include <thread>       //thread
 using namespace std;
 
 /**
@@ -20,13 +26,17 @@ using namespace std;
  */
 class CoreL1{
 private:
-    int *socketsIn;                     //Array of socket descriptors used to RECEIVE messages
-    int *socketsOut;                    //Array of sockets descriptors used to SEND messages
-    struct sockaddr_in *socketNames;    //Array of socket address structs
-    const char **ipServers;             //Array of IP addresses to which messages will be sent
-    uint16_t *ports;                    //Array of ports used to define IN and OUT sockets 
-    int numberSockets;                  //Number of actual sockets stored
-    bool verbose;                       //Verbosity flag
+    int *socketsIn;                         //Array of socket descriptors used to RECEIVE messages
+    int *socketsOut;                        //Array of sockets descriptors used to SEND messages
+    struct sockaddr_in *socketNames;        //Array of socket address structs
+    const char **ipServers;                 //Array of IP addresses to which messages will be sent
+    uint16_t *ports;                        //Array of ports used to define IN and OUT sockets 
+    uint8_t *macAddresses;                  //Array of MAC addresses of each destination
+    int numberSockets;                      //Number of actual sockets stored
+    int socketFromL2;                       //File descriptor of socket used to RECEIVE from L2
+    int socketToL2;                         //File descriptor of socket used to SEND to L2
+    struct sockaddr_in serverSocketAddress; //Address of server to which client will send messages
+    bool verbose;                           //Verbosity flag
 
 public:
 
@@ -40,16 +50,18 @@ public:
      * @brief Initializes a new instance of CoreL1 with 1 socket which informations were passed as parameters and no verbose
      * @param ip Destination IP address: L1 will send packets to this IP
      * @param port Socket port
+     * @param macAddress Destination MAC Address 
      */
-    CoreL1(const char* ip, uint16_t port);
+    CoreL1(const char* ip, uint16_t port, uint8_t macAddress);
 
     /**
      * @brief Initializes a new instance of CoreL1 with 1 socket which informations were passed as parameters
      * @param ip Destination IP address: L1 will send packets to this IP
      * @param port Socket port
+     * @param macAddress Destination MAC Address 
      * @param _verbose Verbosity flag
      */
-    CoreL1(const char* ip, uint16_t port, bool _verbose);
+    CoreL1(const char* ip, uint16_t port, uint8_t macAddress, bool _verbose);
 
     /**
      * @brief Destructor of CoreL1 object
@@ -61,8 +73,9 @@ public:
      * Declarates a client socket to send information to destination and a server socket to receive information from destination.
      * @param ip Destination IP address
      * @param port Socket port
+     * @param macAddress Destination MAC Address 
      */
-    void addSocket(const char* ip, uint16_t port);    
+    void addSocket(const char* ip, uint16_t port, uint8_t macAddress);    
     
     /**
      * @brief Send PDU to socket considering there's just one socket added
@@ -99,23 +112,33 @@ public:
     ssize_t receivePdu(const char* buffer, size_t maxSiz, uint16_t port);
 
     /**
-     * @brief Get index of socket to receive information
+     * @brief Get index of socket to send/receive information
      * @param port Socket port
      * @returns Socket index or -1 if socket was not found
      */
-    int getSocketIn(uint16_t port);
+    int getSocketIndex(uint16_t port);
 
     /**
-     * @brief Get index of socket to send information
-     * @param port Socket port
+     * @brief Get index of socket to send/receive information
+     * @param macAddress Socket refering destination MAC address
      * @returns Socket index or -1 if socket was not found
      */
-    int getSocketOut(uint16_t port);
+    int getSocketIndex(uint8_t macAddress);
 
     /**
-     * @brief Get ports currently added to CoreL1 object
-     * @returns Array of ports
+     * @brief Encoding function: executes forever and receives Data packets from L2 and send them to destination socket
      */
-    uint16_t* getPorts();  
+    void encoding();
+
+    /**
+     * @brief Decoding function: executes forever and forward received data packets to L2
+     * @param macAddress Address of equipment which the procedure will listen to
+     */
+    void decoding(uint8_t macAddress);
+
+    /**
+     * @brief Declares and starts all threads necessary for CoreL1
+     */
+    void startThreads();
 };
 #endif //INCLUDED_CORE_L1_H

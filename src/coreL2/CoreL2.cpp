@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : November 28th, 2019
+@Last alteration : December 3rd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -31,11 +31,9 @@ using namespace std;
 //Custom headers implemented
 #include "ProtocolPackage/ProtocolPackage.h"
 #include "Multiplexer/MacAddressTable/MacAddressTable.h"
-#include "../coreL1/CoreL1.h"
 #include "MacController/MacController.h"
 
 int main(int argc, char** argv){
-    int* ports;                     //Array of ports that will be used on sockets
     uint8_t* macAddresses;          //Array of 5GR MAC Addresses of attached equipments
     int numberEquipments;           //Number of attached equipments
     int argumentsOffset;			//Arguments interpretation offset
@@ -46,8 +44,8 @@ int main(int argc, char** argv){
 
     //Print message if wrong usage of command line
     if(argc<2){
-        cout<<"Usage BS: sudo ./a.out 0(BS) numberEquipments ip1 port1 UE_macAddr1 ... ipN portN UE_macAddrN MaxNBytes BS_macAddr [--v] [devname]"<<endl;
-        cout<<"Usage UE: sudo ./a.out 1(UE) BS_ip BS_port BS_macAddr MaxNBytes UE_macAddr [--v] [devname]"<<endl;
+        cout<<"Usage BS: sudo ./a.out 0(BS) numberEquipments UE_macAddr1 ... UE_macAddrN MaxNBytes BS_macAddr [--v] [devname]"<<endl;
+        cout<<"Usage UE: sudo ./a.out 1(UE) BS_macAddr MaxNBytes UE_macAddr [--v] [devname]"<<endl;
         exit(1);
     }
 
@@ -61,27 +59,19 @@ int main(int argc, char** argv){
     argumentsOffset = flagBS? 3:2;
 
     //Verbosity and devName arguments 
-    if(argc==(argumentsOffset+numberEquipments*3+3)){
-        if(argv[argumentsOffset+numberEquipments*3+2][0]=='-')
+    if(argc==(argumentsOffset+numberEquipments+3)){
+        if(argv[argumentsOffset+numberEquipments+2][0]=='-')
             verbose = true;
-        else devname = argv[argumentsOffset+numberEquipments*3+2];
+        else devname = argv[argumentsOffset+numberEquipments+2];
     }
-    else if(argc==(argumentsOffset+numberEquipments*3+4)){
+    else if(argc==(argumentsOffset+numberEquipments+4)){
         verbose = true;
-        devname = argv[argumentsOffset+numberEquipments*3+3];
+        devname = argv[argumentsOffset+numberEquipments+3];
     }
 
-    //Creates a new L1 empty object
-    CoreL1* l1 = new CoreL1(verbose);
-
-    //Allocates ports array, get ports, MAC addresses and IP addresses from command line and adds one socket for each port
-    ports = new int[numberEquipments];
     macAddresses = new uint8_t[numberEquipments];
-    for(int i=0;i<numberEquipments;i++){
-        ports[i] = (int) strtol(argv[argumentsOffset+i*3+1], NULL, 10);
-        macAddresses[i] = (uint8_t) strtol(argv[argumentsOffset+i*3+2], NULL, 10);
-        l1->addSocket(argv[argumentsOffset+i*3], ports[i]);
-    }
+    for(int i=0;i<numberEquipments;i++)
+        macAddresses[i] = (uint8_t) strtol(argv[argumentsOffset+i+2], NULL, 10);
 
     //Creates and initializes a MacAddressTable with static informations
     MacAddressTable* ipMacTable = new MacAddressTable(verbose);
@@ -93,16 +83,14 @@ int main(int argc, char** argv){
     ipMacTable->addEntry(addressEntry2, 2, false);
     
     //Get maxNumberBytes from command line
-    maxNumberBytes = (uint16_t) strtol(argv[argumentsOffset+numberEquipments*3], NULL, 10);
+    maxNumberBytes = (uint16_t) strtol(argv[argumentsOffset+numberEquipments], NULL, 10);
 
     //Create a new MacController object
-    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, (int) argv[argumentsOffset+numberEquipments*3+1][0] - 48, l1, verbose);
+    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, (int) argv[argumentsOffset+numberEquipments*3+1][0] - 48, verbose);
     
-    //Finnally start threads
+    //Finnally, start threads
     equipment.startThreads();
 
-    delete [] ports;
     delete ipMacTable;
-    delete l1;
     delete [] macAddresses;
 }
