@@ -86,6 +86,8 @@ CoreL1::~CoreL1()
         close(socketsIn[i]);
         close(socketsOut[i]);
     }
+    close(socketFromL2);
+    close(socketToL2);
     if(numberSockets){
         delete[] socketsIn;
         delete[] socketsOut;

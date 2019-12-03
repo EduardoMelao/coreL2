@@ -84,7 +84,10 @@ L1L2Interface::L1L2Interface(
     
 }
 
-L1L2Interface::~L1L2Interface() {}
+L1L2Interface::~L1L2Interface() {
+    close(socketFromL1);
+    close(socketToL1);
+}
 
 bool
 L1L2Interface::sendPdu(
