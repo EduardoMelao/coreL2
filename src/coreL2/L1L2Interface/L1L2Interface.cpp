@@ -121,8 +121,6 @@ L1L2Interface::sendPdu(
     for(int i=0;i<size;i++)
     	buffer2[i+1] = buffer[i];
 
-    cout<<(char) buffer2[4]<<(char)buffer2[5]<<endl;
-
     numberSent = sendto(socketToL1,buffer2, size+1, MSG_CONFIRM, (const struct sockaddr*)(&serverSocketAddress), sizeof(serverSocketAddress));
     
     delete[] buffer2;

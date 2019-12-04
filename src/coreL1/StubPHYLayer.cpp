@@ -30,7 +30,7 @@ CoreL1::CoreL1(
 {
     verbose = _verbose;
     numberSockets = 0;
-    
+
     //Client socket creation
     socketToL2 = socket(AF_INET, SOCK_DGRAM, 0);
     if(socketToL2==-1) perror("[StubPHYLayer] Socket to send information to MAC creation failed.");
@@ -262,8 +262,9 @@ CoreL1::encoding(){
     //Communication stream
     while(size>0){
         macAddress = (uint8_t)buffer[0];
-        strncpy(buffer, buffer+1, size-1);
-        sendPdu(buffer, size, ports[getSocketIndex(macAddress)]);
+        for(int i=0;i<size-1;i++)
+            buffer[i]=buffer[i+1];
+        sendPdu(buffer, size-1, ports[getSocketIndex(macAddress)]);
         bzero(buffer, MAXIMUMSIZE);
         size = recv(socketFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
     }
@@ -273,7 +274,6 @@ void
 CoreL1::decoding(
     uint8_t macAddress)
 { 
-    cout<<"decoding mac"<<(int)macAddress<<endl;
     char buffer[MAXIMUMSIZE];   //Buffer to store packet incoming
     ssize_t size;               //Size of packet received
 
@@ -284,6 +284,7 @@ CoreL1::decoding(
 
     //Communication Stream
     while(size>0){
+        if(verbose) cout<<"PDU with size "<<(int)size<<" received."<<endl;
         sendto(socketToL2, buffer, size-1, MSG_CONFIRM, (const struct sockaddr*)(&serverSocketAddress), sizeof(serverSocketAddress));
         bzero(buffer, MAXIMUMSIZE);
         size = receivePdu(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
