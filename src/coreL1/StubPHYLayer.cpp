@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : December 3rd, 2019
+@Last alteration : December 4th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -285,7 +285,7 @@ CoreL1::decoding(
     //Communication Stream
     while(size>0){
         if(verbose) cout<<"PDU with size "<<(int)size<<" received."<<endl;
-        sendto(socketToL2, buffer, size-1, MSG_CONFIRM, (const struct sockaddr*)(&serverSocketAddress), sizeof(serverSocketAddress));
+        sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverSocketAddress), sizeof(serverSocketAddress));
         bzero(buffer, MAXIMUMSIZE);
         size = receivePdu(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
     }

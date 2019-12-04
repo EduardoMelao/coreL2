@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : November 29th, 2019
+@Last alteration : December 4th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -104,7 +104,7 @@ ProtocolControl::decodeControlSdus(
 
         size_t numberAckBytes = macControlqueue->getAck(ackBuffer);
         lock_guard<mutex> lk(macController->queueMutex);
-        int macSendingPDU = macController->mux->addSdu(ackBuffer, numberDecodingBytes, 0,0);
+        int macSendingPDU = macController->mux->addSdu(ackBuffer, numberAckBytes, 0,0);
 
         //If addSdu returns -1, SDU was added successfully
         if(macSendingPDU==-1) return;
@@ -112,6 +112,6 @@ ProtocolControl::decodeControlSdus(
         //Else, queue is full. Need to send PDU
         macController->sendPdu(macSendingPDU);
 
-        macController->mux->addSdu(ackBuffer, numberDecodingBytes, 0,0);
+        macController->mux->addSdu(ackBuffer, numberAckBytes, 0,0);
     }    
 }
