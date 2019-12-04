@@ -7,7 +7,7 @@
 @Arquive name : ReceptionProtocol.cpp
 @Classification : Reception Protocol
 @
-@Last alteration : November 28th, 2019
+@Last alteration : December 3rd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -40,10 +40,10 @@ ssize_t
 ReceptionProtocol::receivePackageFromL1(
     char* buffer,       //Buffer where packet will be stored
     int maximumSize,    //Maximum size of buffer in Bytes
-    int port)           //Socket port to identify which socket to listen for information  
+    uint8_t macAddress) //Source MAC Address
 {
     if(verbose) cout<<"[ReceptionProtocol] Waiting for packet from L1."<<endl;
-    return l1l2Interface->receivePdu(buffer, maximumSize, port);
+    return l1l2Interface->receivePdu(buffer, maximumSize, macAddress);
 }
 
 ssize_t 

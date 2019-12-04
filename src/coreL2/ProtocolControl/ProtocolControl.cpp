@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : November 29th, 2019
+@Last alteration : December 4th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -40,7 +40,7 @@ ProtocolControl::~ProtocolControl() {
 void
 ProtocolControl::enqueueControlSdus(){
     int macSendingPDU;              //Auxiliary variable to store MAC Address if queue is full of SDUs to transmit
-    char bufControl[MAXLINE];       //Buffer to store Control Bytes
+    char bufControl[MAXIMUM_BUFFER_LENGTH];       //Buffer to store Control Bytes
 
     ssize_t numberBytesRead = 0;    //Size of MACC SDU read in Bytes
 
@@ -52,7 +52,7 @@ ProtocolControl::enqueueControlSdus(){
                 macController->queueConditionVariables[i].notify_all();
 
         //Fulfill bufferControl with zeros        
-        bzero(bufControl, MAXLINE);
+        bzero(bufControl, MAXIMUM_BUFFER_LENGTH);
 
         //Test if it is BS or UE and decides which Control SDU to get
         numberBytesRead = macController->flagBS? macControlqueue->getControlSduCSI(bufControl): macControlqueue->getControlSduULMCS(bufControl);
@@ -99,12 +99,12 @@ ProtocolControl::decodeControlSdus(
         if(macController->mux->emptyPdu(macController->macAddressEquipments[0]))
         	macController->queueConditionVariables[0].notify_all();     //index 0: UE has only BS as equipment
 
-        char ackBuffer[MAXLINE];
-        bzero(ackBuffer, MAXLINE);
+        char ackBuffer[MAXIMUM_BUFFER_LENGTH];
+        bzero(ackBuffer, MAXIMUM_BUFFER_LENGTH);
 
         size_t numberAckBytes = macControlqueue->getAck(ackBuffer);
         lock_guard<mutex> lk(macController->queueMutex);
-        int macSendingPDU = macController->mux->addSdu(ackBuffer, numberDecodingBytes, 0,0);
+        int macSendingPDU = macController->mux->addSdu(ackBuffer, numberAckBytes, 0,0);
 
         //If addSdu returns -1, SDU was added successfully
         if(macSendingPDU==-1) return;
@@ -112,6 +112,21 @@ ProtocolControl::decodeControlSdus(
         //Else, queue is full. Need to send PDU
         macController->sendPdu(macSendingPDU);
 
-        macController->mux->addSdu(ackBuffer, numberDecodingBytes, 0,0);
+        macController->mux->addSdu(ackBuffer, numberAckBytes, 0,0);
     }    
+}
+
+void
+ProtocolControl::sendInterlayerMessages(
+    char* buffer,           //Buffer containing message
+    size_t numberBytes)     //Size of message in Bytes
+{
+    macController->l1l2Interface->sendControlMessage(buffer, numberBytes);
+}
+
+void
+ProtocolControl::receiveInterlayerMessages(){
+    char buffer[MAXIMUM_BUFFER_LENGTH];     //Buffer to store the message
+    ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
+    //DO SOME TESTING AND CONTROL ACTIONS HERE...
 }

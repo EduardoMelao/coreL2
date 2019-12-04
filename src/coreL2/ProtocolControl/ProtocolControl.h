@@ -51,6 +51,18 @@ public:
      * @param numberDecodingBytes Size of Control SDU in Bytes
      */
     void decodeControlSdus(char* buffer, size_t numberDecodingBytes);
+
+    /**
+     * @brief Perform transmission of Interlayer Control Messages to PHY
+     * @param buffer Buffer containing the message bytes
+     * @param numberBytes Size of message in Bytes
+     */
+    void sendInterlayerMessages(char* buffer, size_t numberBytes);
+
+    /**
+     * @brief Perform reception of Interlayer Control Messages from PHY and decides what to do
+     */
+    void receiveInterlayerMessages();
 };
 
 
