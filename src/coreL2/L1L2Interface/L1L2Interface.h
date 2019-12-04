@@ -9,6 +9,8 @@
 
 #define PORT_TO_L1 8090
 #define PORT_FROM_L1 8091
+#define CONTROL_MESSAGES_PORT_TO_L1 8092
+#define CONTROL_MESSAGES_PORT_FROM_L1 8093
 
 #include <iostream>
 #include <vector>
@@ -44,7 +46,23 @@ private:
     * @param crc CRC history
     * @returns 2-byte CRC calculation
     */
-    unsigned short auxiliaryCalculationCRC(char data, unsigned short crc);                               //[Stub] CoreL1 object that performs sending and receiving operations in PHY level
+    unsigned short auxiliaryCalculationCRC(char data, unsigned short crc);
+
+    /**
+     * @brief Creates a new socket to serve as sender of messages
+     * @param port Socket port
+     * @param serverReceiverOfMessage Struct used to send message later
+     * @param serverIp Ip address of server
+     * @returns Socket file descriptor used to send message later
+     */
+    int createClientSocketToSendMessages(short port, struct sockaddr_in *serverReceiverOfMessage, const char* serverIp);
+
+    /**
+     * @brief Creates a new socket to serve as receiver of messages
+     * @param port Socket port
+     * @returns Socket file descriptor
+     */
+    int createServerSocketToReceiveMessages(short port);
 
 public:
     /**

@@ -55,38 +55,61 @@ L1L2Interface::L1L2Interface(
     macPDU.mcs_ = mcsConfiguration;
 
     //Client socket creation
-    socketToL1 = socket(AF_INET, SOCK_DGRAM, 0);
-    if(socketToL1==-1) perror("[L1L2Interface] Socket to send information to PHY creation failed.");
-    else if(verbose) cout<<"[L1L2Interface] Client socket to send info to PHY created successfully."<<endl;
-    bzero(&serverSocketAddress, sizeof(serverSocketAddress));
-
-    serverSocketAddress.sin_family = AF_INET;
-    serverSocketAddress.sin_port = htons(PORT_TO_L1);
-    serverSocketAddress.sin_addr.s_addr = inet_addr("127.0.0.1");  //Localhost
+    socketToL1 = createClientSocketToSendMessages(PORT_TO_L1, &serverSocketAddress, "127.0.0.1");
 
     //Server socket creation
-    struct sockaddr_in sockname;        //Struct to configure which address server will bind to
-    socketFromL1 = socket(AF_INET, SOCK_DGRAM, 0);
-    if(socketFromL1==-1) perror("[L1L2Interface] Socket to receive information from PHY creation failed.");
-
-    bzero(&sockname, sizeof(sockname));
-
-    sockname.sin_family = AF_INET;
-    sockname.sin_port = htons(PORT_FROM_L1);
-    sockname.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    //Serve bind to socket to listen to local messages in port PORT_FROM_L1
-    int bindSuccess = bind(socketFromL1, (const sockaddr*)(&sockname), sizeof(sockname));
-    if(bindSuccess==-1)
-        perror("[L1L2Interface] Bind error.\n");
-    else
-        cout<<"[L1L2Interface] Bind successfully to listen to messages from PHY."<<endl;
+    socketFromL1 = createServerSocketToReceiveMessages(PORT_FROM_L1);
     
 }
 
 L1L2Interface::~L1L2Interface() {
     close(socketFromL1);
     close(socketToL1);
+}
+
+int
+L1L2Interface::createClientSocketToSendMessages(
+    short port,                                     //Socket Port
+    struct sockaddr_in* serverReceiverOfMessage,    //Struct to store server address to which client will send messages
+    const char* serverIp)                           //Ip address of server
+{
+    int socketDescriptor;
+
+    //Client socket creation
+    socketDescriptor = socket(AF_INET, SOCK_DGRAM, 0);
+    if(socketDescriptor==-1) perror("[L1L2Interface] Socket to send information creation failed.");
+    else if(verbose) cout<<"[L1L2Interface] Client socket to send info created successfully."<<endl;
+    bzero(serverReceiverOfMessage, sizeof(*serverReceiverOfMessage));
+
+    serverReceiverOfMessage->sin_family = AF_INET;
+    serverReceiverOfMessage->sin_port = htons(port);
+    serverReceiverOfMessage->sin_addr.s_addr = inet_addr(serverIp);  //Localhost
+    return socketDescriptor;
+}
+
+int
+L1L2Interface::createServerSocketToReceiveMessages(
+    short port)         //Socket Port
+{
+    struct sockaddr_in sockname;        //Struct to configure which address server will bind to
+    int socketDescriptor;
+
+    socketDescriptor = socket(AF_INET, SOCK_DGRAM, 0);
+    if(socketDescriptor==-1) perror("[L1L2Interface] Socket to receive information creation failed.");
+
+    bzero(&sockname, sizeof(sockname));
+
+    sockname.sin_family = AF_INET;
+    sockname.sin_port = htons(port);
+    sockname.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    //Serve bind to socket to listen to local messages in port PORT_FROM_L1
+    int bindSuccess = bind(socketDescriptor, (const sockaddr*)(&sockname), sizeof(sockname));
+    if(bindSuccess==-1)
+        perror("[L1L2Interface] Bind error.\n");
+    else
+        if(verbose) cout<<"[L1L2Interface] Bind successfully to listen to messages."<<endl;
+    return socketDescriptor;
 }
 
 bool
