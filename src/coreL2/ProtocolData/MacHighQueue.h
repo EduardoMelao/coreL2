@@ -11,7 +11,7 @@
 #include <mutex>
 #include "../ReceptionProtocol/ReceptionProtocol.h"
 
-#define MAXLINE 2048    //Maximum buffer size
+#define MAXIMUM_BUFFER_LENGTH 2048    //Maximum buffer size
 #define DST_OFFSET 16
 
 using namespace std;

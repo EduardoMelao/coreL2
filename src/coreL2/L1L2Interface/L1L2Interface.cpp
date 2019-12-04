@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : November 28th, 2019
+@Last alteration : December 4th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -26,8 +26,9 @@ using namespace std;
 using namespace lib5grange;
 
 L1L2Interface::L1L2Interface(
-    CoreL1* _l1)                 //CoreL1 object initialized with static parameters
+    bool _verbose)              //Verbosity flag
 {
+    verbose = _verbose;
     //Static information:
     ueID = 0xCAFE;
     numerologyID = 2;
@@ -53,10 +54,71 @@ L1L2Interface::L1L2Interface(
     macPDU.mimo_ = mimoConfiguration;
     macPDU.mcs_ = mcsConfiguration;
 
-    l1 = _l1;
+    //Client PDUs socket creation
+    socketPduToL1 = createClientSocketToSendMessages(PORT_TO_L1, &serverPdusSocketAddress, "127.0.0.1");
+
+    //ServerPDUs socket creation
+    socketPduFromL1 = createServerSocketToReceiveMessages(PORT_FROM_L1);
+    
+    //Client Control Messages socket creation
+    socketControlMessagesToL1 = createClientSocketToSendMessages(CONTROL_MESSAGES_PORT_TO_L1, &serverControlMessagesSocketAddress, "127.0.0.1");
+
+    //Server Control Messages socket creation
+    socketControlMessagesFromL1 = createServerSocketToReceiveMessages(CONTROL_MESSAGES_PORT_FROM_L1);
+    
 }
 
-L1L2Interface::~L1L2Interface() {}
+L1L2Interface::~L1L2Interface() {
+    close(socketPduFromL1);
+    close(socketPduToL1);
+    close(socketControlMessagesToL1);
+    close(socketControlMessagesFromL1);
+}
+
+int
+L1L2Interface::createClientSocketToSendMessages(
+    short port,                                     //Socket Port
+    struct sockaddr_in* serverReceiverOfMessage,    //Struct to store server address to which client will send messages
+    const char* serverIp)                           //Ip address of server
+{
+    int socketDescriptor;
+
+    //Client socket creation
+    socketDescriptor = socket(AF_INET, SOCK_DGRAM, 0);
+    if(socketDescriptor==-1) perror("[L1L2Interface] Socket to send information creation failed.");
+    else if(verbose) cout<<"[L1L2Interface] Client socket to send info created successfully."<<endl;
+    bzero(serverReceiverOfMessage, sizeof(*serverReceiverOfMessage));
+
+    serverReceiverOfMessage->sin_family = AF_INET;
+    serverReceiverOfMessage->sin_port = htons(port);
+    serverReceiverOfMessage->sin_addr.s_addr = inet_addr(serverIp);  //Localhost
+    return socketDescriptor;
+}
+
+int
+L1L2Interface::createServerSocketToReceiveMessages(
+    short port)         //Socket Port
+{
+    struct sockaddr_in sockname;        //Struct to configure which address server will bind to
+    int socketDescriptor;
+
+    socketDescriptor = socket(AF_INET, SOCK_DGRAM, 0);
+    if(socketDescriptor==-1) perror("[L1L2Interface] Socket to receive information creation failed.");
+
+    bzero(&sockname, sizeof(sockname));
+
+    sockname.sin_family = AF_INET;
+    sockname.sin_port = htons(port);
+    sockname.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    //Serve bind to socket to listen to local messages in port PORT_FROM_L1
+    int bindSuccess = bind(socketDescriptor, (const sockaddr*)(&sockname), sizeof(sockname));
+    if(bindSuccess==-1)
+        perror("[L1L2Interface] Bind error.\n");
+    else
+        if(verbose) cout<<"[L1L2Interface] Bind successfully to listen to messages."<<endl;
+    return socketDescriptor;
+}
 
 bool
 L1L2Interface::sendPdu(
@@ -64,8 +126,10 @@ L1L2Interface::sendPdu(
 	size_t size,            //PDU size in Bytes
 	uint8_t* controlBuffer, //Buffer with control information
 	size_t controlSize,     //Control information size in bytes
-	uint16_t port)          //Socket port to identify which socket to send information
+	uint8_t macAddress)     //Destination MAC Address
 {
+    size_t numberSent;      //Number of Bytes sent to L1
+
     //Perform CRC calculation
     crcPackageCalculate((char*)buffer, size);
     size+=2;    //Add CRC Bytes count
@@ -81,17 +145,34 @@ L1L2Interface::sendPdu(
 		macControl[i]=controlBuffer[i];
 
 	/////////////////PROVISIONAL: IGNORE ALL THIS INFORMATION///////////////////////////
-	return l1->sendPdu((const char*) buffer, size, port);
+	
+    //PROVISIONAL: Insert macAddress to warn PHY about destination 
+	uint8_t *buffer2 = new uint8_t[size+1];
+	buffer2[0] = macAddress;
+    for(int i=0;i<size;i++)
+    	buffer2[i+1] = buffer[i];
+
+    numberSent = sendto(socketPduToL1,buffer2, size+1, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
+    
+    delete[] buffer2;
+
+    //Verify if transmission was successful
+	if(numberSent!=-1){
+		if(verbose) cout<<"[L1L2Interface] Pdu sent:"<<size<<" bytes."<<endl;
+		return true;
+	}
+	if(verbose) cout<<"[L1L2Interface] Could not send Pdu."<<endl;
+	return false;
 }
 
 ssize_t
 L1L2Interface::receivePdu(
     const char* buffer,         //Buffer where PDU is going to be store
     size_t maximumSize,         //Maximum PDU size
-    uint16_t port)              //Port to identify socket to listen to
+    uint8_t macAddress)              //Port to identify socket to listen to
 {
     ssize_t returnValue;    //Value that will be returned at the end of this procedure
-    returnValue = l1->receivePdu(buffer, maximumSize, port);
+    returnValue = recv(socketPduFromL1, (void*)buffer, maximumSize, MSG_WAITALL);
     if(returnValue>0){
         if(!crcPackageChecking((char*)buffer, returnValue))
             return -2;
@@ -99,10 +180,22 @@ L1L2Interface::receivePdu(
     return returnValue==0? 0:returnValue-2;     //Value returned considers size without CRC
 }
 
-uint16_t*
-L1L2Interface::getPorts()
+void
+L1L2Interface::sendControlMessage(
+    char* buffer,           //Buffer containing the message
+    size_t numberBytes)     //Message size in Bytes
 {
-    return l1->getPorts();
+    if(sendto(socketControlMessagesToL1, buffer, numberBytes, MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress))==-1){
+        if(verbose) cout<<"[L1L2Interface] Error sending control message."<<endl;
+    }
+}
+
+ssize_t
+L1L2Interface::receiveControlMessage(
+    char* buffer,               //Buffer where message will be stored
+    size_t maximumLength)       //Maximum message length in Bytes
+{
+    return recv(socketControlMessagesFromL1, buffer, maximumLength, MSG_WAITALL);
 }
 
 void 

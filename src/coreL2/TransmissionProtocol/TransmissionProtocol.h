@@ -41,10 +41,10 @@ public:
      * @param dataSize Size of information in bytes
      * @param controlBuffer Buffer with Control information
      * @param controlSize Control information size in bytes
-     * @param port Socket port to identify which socket to send information
+     * @param macAddress Destination MAC Address
      * @returns True if transmission was successful, false otherwise
      */
-    bool sendPackageToL1(char* dataBuffer, size_t dataSize, char* controlBuffer, size_t controlSize, int port);
+    bool sendPackageToL1(char* dataBuffer, size_t dataSize, char* controlBuffer, size_t controlSize, uint8_t macAddress);
 
     /**
      * @brief Receives packet from Linux IP Layer

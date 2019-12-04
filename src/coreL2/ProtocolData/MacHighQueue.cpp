@@ -8,7 +8,7 @@
 @Arquive name : MacHighQueue.cpp
 @Classification : Protocol Package
 @
-@Last alteration : November 28th, 2019
+@Last alteration : December 4th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -48,11 +48,11 @@ MacHighQueue::reading(){
     ssize_t numberBytesRead = 0;
     while(1){
         //Allocate buffer
-        buffer = new char[MAXLINE];
-        bzero(buffer, MAXLINE);
+        buffer = new char[MAXIMUM_BUFFER_LENGTH];
+        bzero(buffer, MAXIMUM_BUFFER_LENGTH);
 
         //Read from TUN Interface
-        numberBytesRead = reception->receivePackageFromL3(buffer, MAXLINE);
+        numberBytesRead = reception->receivePackageFromL3(buffer, MAXIMUM_BUFFER_LENGTH);
         {
             //Lock to write in the queue
             lock_guard<mutex> lk(tunMutex);
