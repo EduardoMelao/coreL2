@@ -35,9 +35,12 @@ private:
     mcs_cfg_t mcsConfiguration;                 //Struct regarding modulation and coding information
     vector<uint8_t> macData;                    //Uncoded bytes from MAC
     vector<uint8_t> macControl;                 //Uncoded control bits to be sent to PHY
-    int socketFromL1;                           //File descriptor of socket used to RECEIVE from L1
-    int socketToL1;                             //File descriptor of socket used to SEND to L1
-    struct sockaddr_in serverSocketAddress;     //Address of server to which client will send messages
+    int socketPduFromL1;                        //File descriptor of socket used to RECEIVE PDUs from L1
+    int socketPduToL1;                          //File descriptor of socket used to SEND PDUs to L1
+    int socketControlMessagesFromL1;            //File descriptor of socket used to RECEIVE Control Messages from L1
+    int socketControlMessagesToL1;              //File descriptor of socket used to SEND Control Messages to L1
+    struct sockaddr_in serverPdusSocketAddress; //Address of server to which client will send PDUs
+    struct sockaddr_in serverControlMessagesSocketAddress;  //Address of server to which client will send control messages
     bool verbose;                               //Verbosity flag
 
     /**

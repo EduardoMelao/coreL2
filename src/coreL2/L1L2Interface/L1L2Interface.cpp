@@ -54,17 +54,25 @@ L1L2Interface::L1L2Interface(
     macPDU.mimo_ = mimoConfiguration;
     macPDU.mcs_ = mcsConfiguration;
 
-    //Client socket creation
-    socketToL1 = createClientSocketToSendMessages(PORT_TO_L1, &serverSocketAddress, "127.0.0.1");
+    //Client PDUs socket creation
+    socketPduToL1 = createClientSocketToSendMessages(PORT_TO_L1, &serverPdusSocketAddress, "127.0.0.1");
 
-    //Server socket creation
-    socketFromL1 = createServerSocketToReceiveMessages(PORT_FROM_L1);
+    //ServerPDUs socket creation
+    socketPduFromL1 = createServerSocketToReceiveMessages(PORT_FROM_L1);
+    
+    //Client Control Messages socket creation
+    socketControlMessagesToL1 = createClientSocketToSendMessages(CONTROL_MESSAGES_PORT_TO_L1, &serverControlMessagesSocketAddress, "127.0.0.1");
+
+    //Server Control Messages socket creation
+    socketControlMessagesFromL1 = createServerSocketToReceiveMessages(CONTROL_MESSAGES_PORT_FROM_L1);
     
 }
 
 L1L2Interface::~L1L2Interface() {
-    close(socketFromL1);
-    close(socketToL1);
+    close(socketPduFromL1);
+    close(socketPduToL1);
+    close(socketControlMessagesToL1);
+    close(socketControlMessagesFromL1);
 }
 
 int
@@ -144,7 +152,7 @@ L1L2Interface::sendPdu(
     for(int i=0;i<size;i++)
     	buffer2[i+1] = buffer[i];
 
-    numberSent = sendto(socketToL1,buffer2, size+1, MSG_CONFIRM, (const struct sockaddr*)(&serverSocketAddress), sizeof(serverSocketAddress));
+    numberSent = sendto(socketPduToL1,buffer2, size+1, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
     
     delete[] buffer2;
 
@@ -164,7 +172,7 @@ L1L2Interface::receivePdu(
     uint8_t macAddress)              //Port to identify socket to listen to
 {
     ssize_t returnValue;    //Value that will be returned at the end of this procedure
-    returnValue = recv(socketFromL1, (void*)buffer, maximumSize, MSG_WAITALL);
+    returnValue = recv(socketPduFromL1, (void*)buffer, maximumSize, MSG_WAITALL);
     if(returnValue>0){
         if(!crcPackageChecking((char*)buffer, returnValue))
             return -2;
