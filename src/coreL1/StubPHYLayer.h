@@ -9,6 +9,8 @@
 
 #define PORT_TO_L2 8091
 #define PORT_FROM_L2 8090
+#define CONTROL_MESSAGES_PORT_TO_L2 8093
+#define CONTROL_MESSAGES_PORT_FROM_L2 8092
 
 #define MAXIMUMSIZE 2048
 
@@ -35,8 +37,27 @@ private:
     int numberSockets;                      //Number of actual sockets stored
     int socketFromL2;                       //File descriptor of socket used to RECEIVE from L2
     int socketToL2;                         //File descriptor of socket used to SEND to L2
-    struct sockaddr_in serverSocketAddress; //Address of server to which client will send messages
+    int socketControlMessagesFromL2;            //File descriptor of socket used to RECEIVE Control Messages from L2
+    int socketControlMessagesToL2;              //File descriptor of socket used to SEND Control Messages to L2
+    struct sockaddr_in serverPdusSocketAddress; //Address of server to which client will send PDUs
+    struct sockaddr_in serverControlMessagesSocketAddress;  //Address of server to which client will send control messages
     bool verbose;                           //Verbosity flag
+
+    /**
+     * @brief Creates a new socket to serve as sender of messages
+     * @param port Socket port
+     * @param serverReceiverOfMessage Struct used to send message later
+     * @param serverIp Ip address of server
+     * @returns Socket file descriptor used to send message later
+     */
+    int createClientSocketToSendMessages(short port, struct sockaddr_in *serverReceiverOfMessage, const char* serverIp);
+
+    /**
+     * @brief Creates a new socket to serve as receiver of messages
+     * @param port Socket port
+     * @returns Socket file descriptor
+     */
+    int createServerSocketToReceiveMessages(short port);
 
 public:
 
@@ -118,6 +139,19 @@ public:
      * @param macAddress Address of equipment which the procedure will listen to
      */
     void decoding(uint8_t macAddress);
+
+    /**
+     * @brief Sends Control Message to L2
+     * @param buffer Buffer containing message
+     * @param numberBytes Size of message in bytes
+     */
+    void sendInterlayerMessage(char* buffer, size_t numberBytes);
+
+    /**
+     * @brief Received Control Message from L2
+     * @returns Size of message received in Bytes
+     */
+    void receiveInterlayerMessage();
 
     /**
      * @brief Declares and starts all threads necessary for CoreL1

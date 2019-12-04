@@ -31,33 +31,17 @@ CoreL1::CoreL1(
     verbose = _verbose;
     numberSockets = 0;
 
-    //Client socket creation
-    socketToL2 = socket(AF_INET, SOCK_DGRAM, 0);
-    if(socketToL2==-1) perror("[StubPHYLayer] Socket to send information to MAC creation failed.");
-    else if(verbose) cout<<"[StubPHYLayer] Client socket to send info to MAC created successfully."<<endl;
-    bzero(&serverSocketAddress, sizeof(serverSocketAddress));
+    //PDUs Client socket creation
+    socketToL2 = createClientSocketToSendMessages(PORT_TO_L2, &serverPdusSocketAddress, "127.0.0.1");
 
-    serverSocketAddress.sin_family = AF_INET;
-    serverSocketAddress.sin_port = htons(PORT_TO_L2);
-    serverSocketAddress.sin_addr.s_addr = inet_addr("127.0.0.1");  //Localhost
+    //PDUs Server socket creation
+    socketFromL2 = createServerSocketToReceiveMessages(PORT_FROM_L2);
+    
+    //Control Client socket creation
+    socketControlMessagesToL2 = createClientSocketToSendMessages(CONTROL_MESSAGES_PORT_TO_L2, &serverControlMessagesSocketAddress, "127.0.0.1");
 
-    //Server socket creation
-    struct sockaddr_in sockname;        //Struct to configure which address server will bind to
-    socketFromL2 = socket(AF_INET, SOCK_DGRAM, 0);
-    if(socketFromL2==-1) perror("[StubPHYLayer] Socket to receive information from MAC creation failed.");
-
-    bzero(&sockname, sizeof(sockname));
-
-    sockname.sin_family = AF_INET;
-    sockname.sin_port = htons(PORT_FROM_L2);
-    sockname.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    //Serve bind to socket to listen to local messages in port PORT_FROM_L2
-    int bindSuccess = bind(socketFromL2, (const sockaddr*)(&sockname), sizeof(sockname));
-    if(bindSuccess==-1)
-        perror("[StubPHYLayer] Bind error.\n");
-    else
-        if(verbose) cout<<"[StubPHYLayer] Bind successfully to listen to messages from MAC."<<endl;
+    //ControlServer socket creation
+    socketControlMessagesFromL2 = createServerSocketToReceiveMessages(CONTROL_MESSAGES_PORT_FROM_L2);
 }
 
 CoreL1::~CoreL1()
@@ -76,6 +60,51 @@ CoreL1::~CoreL1()
         delete[] macAddresses;
         delete[] socketNames;
     }
+}
+
+int
+CoreL1::createClientSocketToSendMessages(
+    short port,                                     //Socket Port
+    struct sockaddr_in* serverReceiverOfMessage,    //Struct to store server address to which client will send messages
+    const char* serverIp)                           //Ip address of server
+{
+    int socketDescriptor;
+
+    //Client socket creation
+    socketDescriptor = socket(AF_INET, SOCK_DGRAM, 0);
+    if(socketDescriptor==-1) perror("[CoreL1] Socket to send information creation failed.");
+    else if(verbose) cout<<"[CoreL1] Client socket to send info created successfully."<<endl;
+    bzero(serverReceiverOfMessage, sizeof(*serverReceiverOfMessage));
+
+    serverReceiverOfMessage->sin_family = AF_INET;
+    serverReceiverOfMessage->sin_port = htons(port);
+    serverReceiverOfMessage->sin_addr.s_addr = inet_addr(serverIp);  //Localhost
+    return socketDescriptor;
+}
+
+int
+CoreL1::createServerSocketToReceiveMessages(
+    short port)         //Socket Port
+{
+    struct sockaddr_in sockname;        //Struct to configure which address server will bind to
+    int socketDescriptor;
+
+    socketDescriptor = socket(AF_INET, SOCK_DGRAM, 0);
+    if(socketDescriptor==-1) perror("[CoreL1] Socket to receive information creation failed.");
+
+    bzero(&sockname, sizeof(sockname));
+
+    sockname.sin_family = AF_INET;
+    sockname.sin_port = htons(port);
+    sockname.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    //Serve bind to socket to listen to local messages in port PORT_FROM_L1
+    int bindSuccess = bind(socketDescriptor, (const sockaddr*)(&sockname), sizeof(sockname));
+    if(bindSuccess==-1)
+        perror("[CoreL1] Bind error.\n");
+    else
+        if(verbose) cout<<"[CoreL1] Bind successfully to listen to messages."<<endl;
+    return socketDescriptor;
 }
 
 void 
@@ -132,34 +161,10 @@ CoreL1::addSocket(
     macAddresses[numberSockets] = macAddress;
 
     //Client allocation
-    socketsOut[numberSockets] = socket(AF_INET, SOCK_DGRAM, 0);
-    if(socketsOut[numberSockets]==-1) perror("[CoreL1] Client socket creation failed.");
-    else if(verbose) cout<<"[CoreL1] Client created successfully."<<endl;
-    bzero(&(socketNames[numberSockets]), sizeof(socketNames[numberSockets]));
-
-    socketNames[numberSockets].sin_family = AF_INET;
-    socketNames[numberSockets].sin_port = htons(port);
-    socketNames[numberSockets].sin_addr.s_addr = inet_addr(ipServers[numberSockets]);
-
+    socketsOut[numberSockets] = createClientSocketToSendMessages(port, &(socketNames[numberSockets]), ip);
+    
     //Server allocation
-    struct sockaddr_in sockname;
-    socketsIn[numberSockets] = socket(AF_INET, SOCK_DGRAM, 0);
-    if(socketsIn[numberSockets]==-1) perror("[CoreL1] Server socket creation failed.");
-    else if(verbose) cout<<"[CoreL1] Server created successfully."<<endl;
-
-    bzero(&sockname, sizeof(sockname));
-
-    sockname.sin_family = AF_INET;
-    sockname.sin_port = htons(port);
-    sockname.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    //Server bind to socket
-    int b = bind(socketsIn[numberSockets], (const sockaddr*)(&sockname), sizeof(sockname));
-    if(b==-1){
-        perror("[CoreL1] Bind Error.\n");
-        return;
-    }
-    if(verbose) cout<<"[CoreL1] Bind successful."<<endl;
+    socketsIn[numberSockets] = createServerSocketToReceiveMessages(port);
 
     numberSockets++;
 }
@@ -285,23 +290,46 @@ CoreL1::decoding(
     //Communication Stream
     while(size>0){
         if(verbose) cout<<"PDU with size "<<(int)size<<" received."<<endl;
-        sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverSocketAddress), sizeof(serverSocketAddress));
+        sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
         bzero(buffer, MAXIMUMSIZE);
         size = receivePdu(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
     }
 }
 
 void
+CoreL1::sendInterlayerMessage(
+    char* buffer,           //Buffer containing message
+    size_t numberBytes)     //Size of message in Bytes
+{
+    if(sendto(socketControlMessagesToL2, buffer, numberBytes, MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress))==-1){
+        if(verbose) cout<<"[CoreL1] Error sending control message."<<endl;
+    }
+}
+
+void
+CoreL1::receiveInterlayerMessage(){
+    char buffer[MAXIMUMSIZE];       //Buffer where message will be stored
+    ssize_t messageSize = recv(socketControlMessagesFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
+    //DO SOME TESTING AND CONTROL ACTIONS HERE...
+}
+
+void
 CoreL1::startThreads(){
     int i;
-    thread threads[1+numberSockets];
+    /** Thread list:
+     *  0 .. numberSockets-1    --> decoding
+     *  numberSockets           --> encoding
+     *  numberSockets+1         --> receiving Interlayer messages
+     */
+    thread threads[2+numberSockets];
 
     for(i=0;i<numberSockets;i++)
         threads[i] = thread(&CoreL1::decoding, this, macAddresses[i]);
     threads[i] = thread(&CoreL1::encoding, this);
+    threads[i+1] = thread(&CoreL1::receiveInterlayerMessage, this);
 
     //Join all threads
-    for(i=0;i<numberSockets+1;i++)
+    for(i=0;i<numberSockets+2;i++)
         threads[i].join();
 }
 
