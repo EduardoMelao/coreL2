@@ -57,7 +57,7 @@ CoreL1::CoreL1(
     if(bindSuccess==-1)
         perror("[StubPHYLayer] Bind error.\n");
     else
-        cout<<"[StubPHYLayer] Bind successfully to listen to messages from MAC."<<endl;
+        if(verbose) cout<<"[StubPHYLayer] Bind successfully to listen to messages from MAC."<<endl;
 }
 
 CoreL1::~CoreL1()
