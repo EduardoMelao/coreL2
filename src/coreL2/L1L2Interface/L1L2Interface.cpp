@@ -180,6 +180,24 @@ L1L2Interface::receivePdu(
     return returnValue==0? 0:returnValue-2;     //Value returned considers size without CRC
 }
 
+void
+L1L2Interface::sendControlMessage(
+    char* buffer,           //Buffer containing the message
+    size_t numberBytes)     //Message size in Bytes
+{
+    if(sendto(socketControlMessagesToL1, buffer, numberBytes, MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress))==-1){
+        if(verbose) cout<<"[L1L2Interface] Error sending control message."<<endl;
+    }
+}
+
+ssize_t
+L1L2Interface::receiveControlMessage(
+    char* buffer,               //Buffer where message will be stored
+    size_t maximumLength)       //Maximum message length in Bytes
+{
+    return recv(socketControlMessagesFromL1, buffer, maximumLength, MSG_WAITALL);
+}
+
 void 
 L1L2Interface::crcPackageCalculate(
     char* buffer,       //Buffer of Bytes of PDU

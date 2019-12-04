@@ -62,8 +62,15 @@ MacController::MacController(
 
     macHigh = new MacHighQueue(receptionProtocol, _verbose);
 
-    //Create threads
-    threads = new thread[3+2*attachedEquipments]; //4 threads : Tun reading, L3 SDU multiplexing, Control PDU generation, Timeout controls, decondings
+    /** Threads order:
+     * 0 .. attachedEquipments-1                    ---> Decoding threads
+     * attachedEquipments .. 2*attachedEquipments-1 ---> Timeout control threads
+     * 2*attachedEquipments                         ---> ProtocolData MACD SDU enqueueing
+     * 2*attachedEquipments+1                       ---> ProtocolControl MACC SDU heneration and enqueueing
+     * 2*attachedEquipments+2                       ---> Data SDU enqueueing from TUN interface in MacHighQueue
+     * 2*attachedEquipments+3                       ---> Reading control messages from PHY   
+     */
+    threads = new thread[4+2*attachedEquipments];
 
     //Create Multiplexer and set its TransmissionQueues
     mux = new Multiplexer(maxNumberBytes, macAddress, ipMacTable, MAXSDUS, flagBS, verbose);
@@ -117,8 +124,11 @@ MacController::startThreads(){
     //TUN reading and enqueueing thread
     threads[i+j+2] = thread(&MacHighQueue::reading, macHigh);
 
+    //Control messages from PHY reading
+    threads[i+j+3] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl);
+
     //Join all threads
-    for(i=0;i<2*attachedEquipments+3;i++)
+    for(i=0;i<2*attachedEquipments+4;i++)
         threads[i].join();
 }
 
@@ -127,10 +137,10 @@ MacController::sendPdu(
     uint8_t macAddress)     //Destination MAC Address of TransmissionQueue
 {
     //Declaration of PDU buffer
-    char bufferPdu[MAXLINE];
-    char bufferControl[MAXLINE];
-    bzero(bufferPdu, MAXLINE);
-    bzero(bufferControl, MAXLINE);
+    char bufferPdu[MAXIMUM_BUFFER_LENGTH];
+    char bufferControl[MAXIMUM_BUFFER_LENGTH];
+    bzero(bufferPdu, MAXIMUM_BUFFER_LENGTH);
+    bzero(bufferControl, MAXIMUM_BUFFER_LENGTH);
 
     //Gets PDU from multiplexer
     ssize_t numberDataBytesRead = mux->getPdu(bufferPdu, macAddress);
@@ -166,7 +176,7 @@ void
 MacController::decoding(
     uint8_t macAddress) //Source MAC Address
 {
-    char buffer[MAXLINE];
+    char buffer[MAXIMUM_BUFFER_LENGTH];
 
     //Communication infinite loop
     while(1){
@@ -174,7 +184,7 @@ MacController::decoding(
         bzero(buffer,sizeof(buffer));
 
         //Read packet from  Socket
-        ssize_t numberDecodingBytes = receptionProtocol->receivePackageFromL1(buffer, MAXLINE, macAddress);
+        ssize_t numberDecodingBytes = receptionProtocol->receivePackageFromL1(buffer, MAXIMUM_BUFFER_LENGTH, macAddress);
 
         //Error checking
         if(numberDecodingBytes==-1 && verbose){ 

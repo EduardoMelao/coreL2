@@ -99,6 +99,21 @@ public:
     ssize_t receivePdu(const char* buffer, size_t maximumSize, uint8_t macAddress);
 
     /**
+     * @brief Sends Control Message to PHY
+     * @param buffer Buffer containing message
+     * @param numberBytes Size of message in bytes
+     */
+    void sendControlMessage(char* buffer, size_t numberBytes);
+
+    /**
+     * @brief Received Control Message from PHY
+     * @param buffer Buffer where message will be stored
+     * @param maximumLength Maximum message length in Bytes
+     * @returns Size of message received in Bytes
+     */
+    ssize_t receiveControlMessage(char* buffer, size_t maximumLength);
+
+    /**
      * @brief Calculates CRC of current PDU passed as parameter
      * @param buffer Bytes of current PDU
      * @param size Size of PDU in bytes
