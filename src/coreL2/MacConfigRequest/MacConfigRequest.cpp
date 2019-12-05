@@ -101,14 +101,12 @@ MacConfigRequest::setPhyParameters(
     configurationFile<<numberUEs<<endl;   //Write number of UEs in the beggining
     configurationFile.seekg(auxiliary); //Go back to end
     configurationFile<<tpc<<endl;
-    for(auto i=allocationBytes.begin();i!=allocationBytes.end();i++){
+    for(auto i=allocationBytes.begin();i!=allocationBytes.end();i++)
         configurationFile<<*i;
-        cout<<"Writing"<<endl;
-	}
+
     configurationFile<<endl;
     configurationFile.close();
 
     //Update flag
     flagModified = true;
-
 }
