@@ -32,6 +32,7 @@ using namespace std;
 #include "ProtocolPackage/ProtocolPackage.h"
 #include "Multiplexer/MacAddressTable/MacAddressTable.h"
 #include "MacController/MacController.h"
+#include "MacConfigRequest/MacConfigRequest.h"
 
 int main(int argc, char** argv){
     uint8_t* macAddresses;          //Array of 5GR MAC Addresses of attached equipments
@@ -88,6 +89,11 @@ int main(int argc, char** argv){
     //Create a new MacController object
     MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, (int) argv[argumentsOffset+numberEquipments+1][0] - 48, verbose);
     
+    //Create new MacConfigRequest to deal with CLI
+    MacConfigRequest macRequest(verbose);
+
+
+
     //Finnally, start threads
     equipment.startThreads();
 
