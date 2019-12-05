@@ -11,6 +11,7 @@
 #include <fstream>      //File stream
 #include <string.h>
 #include <vector>
+#include <cstdlib> 		//atoi
 using namespace std;
 
 #include "../../common/lib5grange/lib5grange.h"

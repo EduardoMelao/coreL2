@@ -39,7 +39,7 @@ MacConfigRequest::MacConfigRequest(
     if(verbose) cout<<"[MacController] Parsing file to detect previous configuration"<<endl;
     configurationFile = fstream("ULReservation.txt");
     getline(configurationFile, numberUEsString);
-    numberUEs = stoi(numberUEsString);
+    numberUEs = atoi(numberUEsString.c_str());
 
     if(verbose&&numberUEs) cout<<"[MacCofigRequest] Parsing "<<numberUEs<<" UE configurations from file..."<<endl;
 
@@ -48,7 +48,7 @@ MacConfigRequest::MacConfigRequest(
 
     for(int i=0;i<numberUEs;i++){
         getline(configurationFile, tpcString);
-        tpcs.push_back(stoi(tpcString));
+        tpcs.push_back(atoi(tpcString.c_str()));
         getline(configurationFile, allocationString);
         allocationVector = vector<uint8_t>(allocationString.begin(), allocationString.end());
         uplinkReservations[i].deserialize(allocationVector);
@@ -95,14 +95,18 @@ MacConfigRequest::setPhyParameters(
     allocationConfig.serialize(allocationBytes);
 
     //Persist new values
+    configurationFile.open("ULReservation.txt",fstream::out|fstream::app);
     streampos auxiliary = configurationFile.tellp();    //Old output position
     configurationFile.seekp(0);     //Go to beggining
-    configurationFile<<numberUEs;   //Write number of UEs in the beggining
+    configurationFile<<numberUEs<<endl;   //Write number of UEs in the beggining
     configurationFile.seekg(auxiliary); //Go back to end
     configurationFile<<tpc<<endl;
-    for(auto i=allocationBytes.begin();i!=allocationBytes.end;i++)
+    for(auto i=allocationBytes.begin();i!=allocationBytes.end();i++){
         configurationFile<<*i;
+        cout<<"Writing"<<endl;
+	}
     configurationFile<<endl;
+    configurationFile.close();
 
     //Update flag
     flagModified = true;
