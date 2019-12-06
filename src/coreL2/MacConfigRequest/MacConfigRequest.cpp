@@ -112,7 +112,7 @@ MacConfigRequest::decodeULReservation(
     vector<uint8_t> allocationDeserialization;
 
     //Calculate size of packets
-    numberUEs = buffer[0];
+    numberUEs = buffer[0]-48;
     
     if(numberUEs){
         if(verbose) cout<<"[MacConfigRequest] Decoding UL Reservation..."<<endl;
