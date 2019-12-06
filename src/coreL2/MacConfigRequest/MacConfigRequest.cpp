@@ -108,23 +108,42 @@ MacConfigRequest::setPhyParameters(
 }
 
 void
+MacConfigRequest::getULReservation(
+    vector<uint8_t> & buffer)   //Buffer where Bytes will be stored
+{
+    string readFromFile;    //Information read from file
+    configurationFile.open("ULReservation.txt",fstream::in);
+    getline(configurationFile, readFromFile);
+    configurationFile.close;
+    buffer.resize(readFromFile.size());
+
+    //Copy information from file
+    for(int i=0;i<readFromFile.size();i++){
+        buffer[i] = readFromFile[i];
+    }
+    if(verbose) cout<<"[MacConfigRequest] Got ULReservation from file."<<endl;
+    flagModified = false;
+}
+
+void
 MacConfigRequest::decodeULReservation(
     vector<uint8_t> buffer)     //Buffer containing bytes to decode
 {
     int sizeOfInformation;
     vector<uint8_t> allocationDeserialization;
 
-    //Calculate size of packets
-    numberUEs = buffer[0]-48;
-    
-    if(numberUEs){
-        if(verbose) cout<<"[MacConfigRequest] Decoding UL Reservation..."<<endl;
-        sizeOfInformation = (buffer.size()-1)/numberUEs;
-    }
-    else{
+    if(buffer.size()<4){
+        numberUEs=0;
         if(verbose)
             cout<<"[MacConfigRequest] There was no information to decode."<<endl;
         return;
+    }
+    
+    //Calculate size of packets
+    numberUEs = buffer[0];
+    if(numberUEs){
+        if(verbose) cout<<"[MacConfigRequest] Decoding UL Reservation..."<<endl;
+        sizeOfInformation = (buffer.size()-1)/numberUEs;
     }
 
     tpcs.resize(numberUEs);
@@ -137,6 +156,5 @@ MacConfigRequest::decodeULReservation(
         }
         uplinkReservations[i].deserialize(allocationDeserialization);
         allocationDeserialization.clear();
-    }
-    if(verbose) cout<<"[MacConfigRequest] Parsing successful!"<<endl;    
+    }   
 }

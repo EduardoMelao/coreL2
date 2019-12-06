@@ -23,7 +23,7 @@ using namespace lib5grange;
 class MacConfigRequest{
 private:
     fstream configurationFile;                      //File where configurations are persisted
-    int numberUEs;                                  //Number of UEs configured
+    uint8_t numberUEs;                                  //Number of UEs configured
     vector<uint8_t> tpcs;                           //Transmission Power Control
     vector<allocation_cfg_t> uplinkReservations;    //Array of Uplink reservation configuration structures
     bool verbose;                                   //Verbosity flag
