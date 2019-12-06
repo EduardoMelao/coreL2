@@ -55,7 +55,7 @@ MacConfigRequest::MacConfigRequest(
     else{
     ////////////PROVISIONAL: STATIC PARAMETERS///////////
         if(verbose) cout<<"[MacConfigRequest] Setting static information."<<endl;
-        setPhyParameters(2, 125, 33, 66);
+        setPhyParameters(1, 125, 33, 66);
     }
 }
 
@@ -89,9 +89,9 @@ MacConfigRequest::setPhyParameters(
     allocationConfig.serialize(allocationBytes);
 
     //Persist new values
-    configurationFile.open("ULReservation.txt",fstream::out|fstream::app);
+    configurationFile.open("ULReservation.txt",fstream::out);
     streampos auxiliary = configurationFile.tellp();    //Old output position
-    configurationFile.seekp(0);     //Go to beggining
+    configurationFile.seekg(0);     //Go to beggining
     configurationFile<<numberUEs;   //Write number of UEs in the beggining
     configurationFile.seekg(auxiliary); //Go back to end
     configurationFile<<tpc;
@@ -128,12 +128,12 @@ MacConfigRequest::decodeULReservation(
     uplinkReservations.resize(numberUEs);
     
     for(int i=0;i<numberUEs;i++){    //For each UE
-        tpcs[i] = buffer[i*sizeOfInformation];
+        tpcs[i] = buffer[i*sizeOfInformation+1];
         for(int j=1;j<sizeOfInformation;j++){   //Fill allocation deserialization vector
-            allocationDeserialization.push_back(buffer[i*sizeOfInformation+j]);
+            allocationDeserialization.push_back(buffer[i*sizeOfInformation+1+j]);
         }
         uplinkReservations[i].deserialize(allocationDeserialization);
         allocationDeserialization.clear();
     }
-    if(verbose) cout<<"[MacConfigRequest] Parsing successfull!"<<endl;    
+    if(verbose) cout<<"[MacConfigRequest] Parsing successful!"<<endl;    
 }
