@@ -40,6 +40,9 @@ MacConfigRequest::MacConfigRequest(
     //Get information persisted earlier
     getline(configurationFile, readingBuffer);
 
+    //Close configuration file for now
+    configurationFile.close();
+
     //Transfer it to vector
     for(int i=0;i<readingBuffer.size();i++)
         bufferToDecode.push_back(readingBuffer[i]);
@@ -73,7 +76,7 @@ MacConfigRequest::setPhyParameters(
 {
     //Define allocation reservation struct
     allocation_cfg_t allocationConfig;
-    allocationConfig.target_ue_id = (0x00|ueId);    //Complete with zeros
+    allocationConfig.target_ue_id = ueId;    //Complete with zeros
     allocationConfig.first_rb = rbStart;
     allocationConfig.number_of_rb = rbEnd-rbStart;
 
@@ -90,10 +93,10 @@ MacConfigRequest::setPhyParameters(
 
     //Persist new values
     configurationFile.open("ULReservation.txt",fstream::out);
-    streampos auxiliary = configurationFile.tellp();    //Old output position
-    configurationFile.seekg(0);     //Go to beggining
+    
+    configurationFile.seekg(0, ios::beg);     //Go to beggining
     configurationFile<<numberUEs;   //Write number of UEs in the beggining
-    configurationFile.seekg(auxiliary); //Go back to end
+    configurationFile.seekg(0, ios::end); //Go back to end
     configurationFile<<tpc;
     for(int i=0;i<allocationBytes.size();i++)
         configurationFile<<allocationBytes[i];
