@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : December 4th, 2019
+@Last alteration : December 6th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -17,7 +17,8 @@ Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
 Direction : Diretoria de Operações (DO)
 UA : 1230 - Centro de Competencia - Sistemas Embarcados
 @Description : This module controls de communication between MAC and PHY,
-    using common data structures shared by the two Layers to exchange data.
+    using UPD sockets in the two Layers to exchange data Bytes and control Bytes. 
+    CRC Calculation and checking is made here too.
 */
 
 #include "L1L2Interface.h"

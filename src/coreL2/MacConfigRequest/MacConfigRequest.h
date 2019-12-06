@@ -46,10 +46,22 @@ public:
      * @brief Adds a new UE configuration and persists it to file 
      * @param ueId User equipment ID (1 Byte)
      * @param tpc Transmission Power Control for this UE
-     * @param RBStart Resource block start information
-     * @param RBEnd Resource block end information
+     * @param rbStart Resource block start information
+     * @param rbEnd Resource block end information
      */
-    void setPhyParameters(uint8_t ueId, uint8_t tpc, uint8_t RBStart, uint8_t RBEnd);
+    void setPhyParameters(uint8_t ueId, uint8_t tpc, uint8_t rbStart, uint8_t rbEnd);
+
+    /**
+     * @brief Gets all Dynamic Configurations of UL Reservation  
+     * @param buffer Buffer where Configuration Bytes will be read
+     */
+    void getULReservation(vector<uint8_t> & buffer);
+
+    /**
+     * @brief Decodes ULReservation to class variables
+     * @param buffer Buffer containing coded Bytes
+     */
+    void decodeULReservation(vector<uint8_t> buffer);
 };
 
 #endif  //INCLUDED_MAC_CONFIG_REQUEST_H

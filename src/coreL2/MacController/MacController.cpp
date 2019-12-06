@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : December 3rd, 2019
+@Last alteration : December 6th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -21,7 +21,7 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 @Description : This module creates and starts TUN Interface reading, Control 
     SDUs creation, Sending timeout control, and decoding threads. Also, management of
-    SDUs concatenation into PDU is made by this module, as well as CRC calculation and checking.
+    SDUs concatenation into PDU is made by this module.
 */
 
 #include "MacController.h"
@@ -165,7 +165,8 @@ MacController::timeoutController(
         unique_lock<mutex> lk(queueMutex);
         
         //If there's no timeout OR the PDU is empty, no transmission is necessary
-        if(queueConditionVariables[index].wait_for(lk, timeout)==cv_status::no_timeout || mux->emptyPdu(macAddressEquipments[index])) continue; 
+        if(queueConditionVariables[index].wait_for(lk, timeout)==cv_status::no_timeout || mux->emptyPdu(macAddressEquipments[index])) 
+            continue; 
         //Else, perform PDU transmission
         if(verbose) cout<<"[MacController] Timeout!"<<endl;
         sendPdu(macAddressEquipments[index]);
