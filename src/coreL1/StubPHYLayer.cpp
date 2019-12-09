@@ -289,7 +289,7 @@ CoreL1::decoding(
 
     //Communication Stream
     while(size>0){
-        if(verbose) cout<<"PDU with size "<<(int)size<<" received."<<endl;
+        if(verbose) cout<<"[CoreL1] PDU with size "<<(int)size<<" received."<<endl;
 
         //Send control messages and PDU to L2
         sendto(socketControlMessagesToL2, &(subframeRxStart[0]), subframeRxStart.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));

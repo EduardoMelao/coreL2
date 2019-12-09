@@ -152,6 +152,7 @@ L1L2Interface::sendPdu(
     //Verify if transmission was successful
 	if(numberSent!=-1){
 		if(verbose) cout<<"[L1L2Interface] Pdu sent:"<<size<<" bytes."<<endl;
+		return;
 	}
 	if(verbose) cout<<"[L1L2Interface] Could not send Pdu."<<endl;
 }
