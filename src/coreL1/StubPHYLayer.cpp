@@ -320,7 +320,7 @@ CoreL1::receiveInterlayerMessage(){
             message+=buffer[i];
 
         if(message=="BSSubframeTx.Start"){
-            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.Start message from BS. Receiving PDU..."<<endl;
+            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.Start message from BS. Receiving PDU from L2..."<<endl;
             encoding();
         }
         else if(message=="BSSubframeTx.End"){

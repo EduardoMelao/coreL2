@@ -53,7 +53,7 @@ TransmissionProtocol::sendControlMessageToL1(
     char* controlBuffer,    //Control information Buffer
     size_t controlSize)     //Size of control information in Bytes
 {
-    if(verbose) cout<<"[TransmissionProtocol] Sending packet to L1."<<endl;
+    if(verbose) cout<<"[TransmissionProtocol] Sending control message to L1."<<endl;
     return l1l2Interface->sendControlMessage(controlBuffer, controlSize);
 }
 
