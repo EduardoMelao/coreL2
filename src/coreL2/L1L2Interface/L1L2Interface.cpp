@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : December 6th, 2019
+@Last alteration : December 9th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -121,7 +121,7 @@ L1L2Interface::createServerSocketToReceiveMessages(
     return socketDescriptor;
 }
 
-bool
+void
 L1L2Interface::sendPdu(
 	uint8_t* buffer,        //Buffer with the PDU
 	size_t size,            //PDU size in Bytes
@@ -160,10 +160,8 @@ L1L2Interface::sendPdu(
     //Verify if transmission was successful
 	if(numberSent!=-1){
 		if(verbose) cout<<"[L1L2Interface] Pdu sent:"<<size<<" bytes."<<endl;
-		return true;
 	}
 	if(verbose) cout<<"[L1L2Interface] Could not send Pdu."<<endl;
-	return false;
 }
 
 ssize_t

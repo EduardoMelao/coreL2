@@ -37,8 +37,8 @@ private:
     int numberSockets;                      //Number of actual sockets stored
     int socketFromL2;                       //File descriptor of socket used to RECEIVE from L2
     int socketToL2;                         //File descriptor of socket used to SEND to L2
-    int socketControlMessagesFromL2;            //File descriptor of socket used to RECEIVE Control Messages from L2
-    int socketControlMessagesToL2;              //File descriptor of socket used to SEND Control Messages to L2
+    int socketControlMessagesFromL2;        //File descriptor of socket used to RECEIVE Control Messages from L2
+    int socketControlMessagesToL2;          //File descriptor of socket used to SEND Control Messages to L2
     struct sockaddr_in serverPdusSocketAddress; //Address of server to which client will send PDUs
     struct sockaddr_in serverControlMessagesSocketAddress;  //Address of server to which client will send control messages
     bool verbose;                           //Verbosity flag
@@ -148,7 +148,7 @@ public:
     void sendInterlayerMessage(char* buffer, size_t numberBytes);
 
     /**
-     * @brief Received Control Message from L2
+     * @brief Receives Control Messages from L2
      * @returns Size of message received in Bytes
      */
     void receiveInterlayerMessage();

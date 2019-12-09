@@ -7,7 +7,7 @@
 @Arquive name : TransmissionProtocol.cpp
 @Classification : Transmission Protocol
 @
-@Last alteration : December 3rd, 2019
+@Last alteration : December 9th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -19,7 +19,7 @@ Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
 Direction : Diretoria de Operações (DO)
 UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
-@Description : This module acts as broker between L2 Core and upper and upper layers.
+@Description : This module acts as broker between L2 Core and lower/upper layers.
 */
 
 #include "TransmissionProtocol.h"
@@ -36,7 +36,7 @@ TransmissionProtocol::TransmissionProtocol(
 
 TransmissionProtocol::~TransmissionProtocol() {}
 
-bool 
+void 
 TransmissionProtocol::sendPackageToL1(
     char* dataBuffer,       //Information Buffer
     size_t dataSize,        //Size of information Buffer in Bytes
@@ -45,7 +45,16 @@ TransmissionProtocol::sendPackageToL1(
     uint8_t macAddress)     //Destination MAC Address
 {
     if(verbose) cout<<"[TransmissionProtocol] Sending packet to L1."<<endl;
-    return l1l2Interface->sendPdu((uint8_t*)dataBuffer, dataSize,(uint8_t*)controlBuffer, controlSize, macAddress);
+    l1l2Interface->sendPdu((uint8_t*)dataBuffer, dataSize,(uint8_t*)controlBuffer, controlSize, macAddress);
+}
+
+void 
+TransmissionProtocol::sendControlMessageToL1(
+    char* controlBuffer,    //Control information Buffer
+    size_t controlSize)     //Size of control information in Bytes
+{
+    if(verbose) cout<<"[TransmissionProtocol] Sending packet to L1."<<endl;
+    return l1l2Interface->sendControlMessage(controlBuffer, controlSize);
 }
 
 bool 

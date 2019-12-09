@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : December 6th, 2019
+@Last alteration : December 9th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -85,9 +85,13 @@ MacController::MacController(
 
     //Create ProtocolControl to deal with MACC SDUs
     protocolControl = new ProtocolControl(this, verbose);
+
+    //Create new MacConfigRequest to deal with CLI
+    macConfigRequest = new MacConfigRequest(verbose);
 }
 
 MacController::~MacController(){
+    delete macConfigRequest;
     delete protocolControl;
     delete protocolData;
     delete mux;
@@ -149,7 +153,16 @@ MacController::sendPdu(
     MacCtHeader macControlHeader(flagBS, verbose);
     ssize_t numberControlBytesRead = macControlHeader.getControlData(bufferControl);
 
+    //Downlink routine:
+    string subFrameStartMessage("BSSubframeTx.Start");
+    string subFrameEndMessage("BSSubframeTx.End");
+    //vector<uint8_t> ulReservation;
+    //if(macConfigRequest->flagModified)
+    //    macConfigRequest->getULReservation(ulReservation);
+    //subFrameStartMessage.resize(subFrameStartMessage.size()+ulReservation.size());
+    transmissionProtocol->sendControlMessageToL1(&subFrameStartMessage[0], subFrameStartMessage.size());
     transmissionProtocol->sendPackageToL1(bufferPdu, numberDataBytesRead,bufferControl, numberControlBytesRead, macAddress);
+    transmissionProtocol->sendControlMessageToL1(&subFrameEndMessage[0], subFrameEndMessage.size());
 }
 
 void 

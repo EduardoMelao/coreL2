@@ -114,7 +114,7 @@ MacConfigRequest::getULReservation(
     string readFromFile;    //Information read from file
     configurationFile.open("ULReservation.txt",fstream::in);
     getline(configurationFile, readFromFile);
-    configurationFile.close;
+    configurationFile.close();
     buffer.resize(readFromFile.size());
 
     //Copy information from file

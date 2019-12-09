@@ -42,9 +42,14 @@ public:
      * @param controlBuffer Buffer with Control information
      * @param controlSize Control information size in bytes
      * @param macAddress Destination MAC Address
-     * @returns True if transmission was successful, false otherwise
      */
-    bool sendPackageToL1(char* dataBuffer, size_t dataSize, char* controlBuffer, size_t controlSize, uint8_t macAddress);
+    void sendPackageToL1(char* dataBuffer, size_t dataSize, char* controlBuffer, size_t controlSize, uint8_t macAddress);
+    
+    /**
+     * @param controlBuffer Buffer with Control message
+     * @param controlSize Control information size in bytes
+     */
+    void sendControlMessageToL1(char* controlBuffer, size_t controlSize);
 
     /**
      * @brief Receives packet from Linux IP Layer

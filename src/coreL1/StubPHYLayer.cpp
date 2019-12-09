@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : December 4th, 2019
+@Last alteration : December 9th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -264,15 +264,15 @@ CoreL1::encoding(){
     //Receive from L2
     size = recv(socketFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
 
-    //Communication stream
-    while(size>0){
-        macAddress = (uint8_t)buffer[0];
-        for(int i=0;i<size-1;i++)
-            buffer[i]=buffer[i+1];
-        sendPdu(buffer, size-1, ports[getSocketIndex(macAddress)]);
-        bzero(buffer, MAXIMUMSIZE);
-        size = recv(socketFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
-    }
+    //Obtain MAC address to identify port soon
+    macAddress = (uint8_t)buffer[0];
+
+    //Shift back buffer
+    for(int i=0;i<size-1;i++)
+        buffer[i]=buffer[i+1];
+
+    //Send PDU through correct port  
+    sendPdu(buffer, size-1, ports[getSocketIndex(macAddress)]);
 }
 
 void 
@@ -309,27 +309,46 @@ CoreL1::sendInterlayerMessage(
 void
 CoreL1::receiveInterlayerMessage(){
     char buffer[MAXIMUMSIZE];       //Buffer where message will be stored
+    string message;                 //String containing message converted from char*
     ssize_t messageSize = recv(socketControlMessagesFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
-    //DO SOME TESTING AND CONTROL ACTIONS HERE...
+
+    //Control message stream
+    while(messageSize>0){
+
+        //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING message is transmitted alone (no data with it)
+        for(int i=0;i<messageSize;i++)
+            message+=buffer[i];
+
+        if(message=="BSSubframeTx.Start"){
+            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.Start message from BS. Receiving PDU..."<<endl;
+            encoding();
+        }
+        else if(message=="BSSubframeTx.End"){
+            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.End message from BS."<<endl;
+        }
+
+        //Clear buffer and message and receive next control message
+        bzero(buffer, MAXIMUMSIZE);
+        message.clear();
+        messageSize = recv(socketControlMessagesFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
+    }
 }
 
 void
 CoreL1::startThreads(){
-    int i;
+    int numberThreads = 1+numberSockets;    //Number of threads
     /** Thread list:
      *  0 .. numberSockets-1    --> decoding
-     *  numberSockets           --> encoding
-     *  numberSockets+1         --> receiving Interlayer messages
+     *  numberSockets           --> receiving Interlayer messages
      */
-    thread threads[2+numberSockets];
+    thread threads[numberThreads];
 
-    for(i=0;i<numberSockets;i++)
+    for(int i=0;i<numberSockets;i++)
         threads[i] = thread(&CoreL1::decoding, this, macAddresses[i]);
-    threads[i] = thread(&CoreL1::encoding, this);
-    threads[i+1] = thread(&CoreL1::receiveInterlayerMessage, this);
+    threads[numberThreads-1] = thread(&CoreL1::receiveInterlayerMessage, this);
 
     //Join all threads
-    for(i=0;i<numberSockets+2;i++)
+    for(int i=0;i<numberThreads;i++)
         threads[i].join();
 }
 
