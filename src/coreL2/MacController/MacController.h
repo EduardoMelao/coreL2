@@ -24,6 +24,7 @@
 #include "../ProtocolControl/MacCtHeader.h"
 #include "../ProtocolData/ProtocolData.h"
 #include "../ProtocolControl/ProtocolControl.h"
+#include "../MacConfigRequest/MacConfigRequest.h"
 
 using namespace std;
 
@@ -49,6 +50,7 @@ private:
     MacAddressTable* ipMacTable;        //Table to associate IP addresses to 5G-RANGE domain MAC addresses
 	ProtocolData* protocolData;         //Object to deal with enqueueing DATA SDUS
     ProtocolControl* protocolControl;   //Object to deal with enqueueing CONTROL SDUS
+    MacConfigRequest* macConfigRequest; //Object to interface with CLI and store Dynamic Information
 	thread *threads;                    //Threads array
     bool verbose;                       //Verbosity flag
 
@@ -107,6 +109,6 @@ public:
      * @brief Procedure that performs decoding of PDUs received from L1
      * @param macAddress Source MAC Address from which packet will be received
      */
-    void decoding(uint8_t macAddress);
+    void decoding();
 };
 #endif  //INCLUDED_MAC_CONTROLLER_H

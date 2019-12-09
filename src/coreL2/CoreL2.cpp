@@ -87,7 +87,9 @@ int main(int argc, char** argv){
 
     //Create a new MacController object
     MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, (int) argv[argumentsOffset+numberEquipments+1][0] - 48, verbose);
-    
+
+
+
     //Finnally, start threads
     equipment.startThreads();
 
