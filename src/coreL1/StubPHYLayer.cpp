@@ -319,12 +319,12 @@ CoreL1::receiveInterlayerMessage(){
         for(int i=0;i<messageSize;i++)
             message+=buffer[i];
 
-        if(message=="BSSubframeTx.Start"){
-            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.Start message from BS. Receiving PDU from L2..."<<endl;
+        if(message=="BSSubframeTx.Start"||message=="UESubframeTx.Start"){
+            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.Start message from "<<message[0]<<message[1]<<". Receiving PDU from L2..."<<endl;
             encoding();
         }
-        else if(message=="BSSubframeTx.End"){
-            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.End message from BS."<<endl;
+        else if(message=="BSSubframeTx.End"||message=="UESubframeTx.End"){
+            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.End message from "<<message[0]<<message[1]<<"."<<endl;
         }
 
         //Clear buffer and message and receive next control message

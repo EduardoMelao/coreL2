@@ -154,12 +154,11 @@ MacController::sendPdu(
     ssize_t numberControlBytesRead = macControlHeader.getControlData(bufferControl);
 
     //Downlink routine:
-    string subFrameStartMessage("BSSubframeTx.Start");
-    string subFrameEndMessage("BSSubframeTx.End");
-    //vector<uint8_t> ulReservation;
-    //if(macConfigRequest->flagModified)
-    //    macConfigRequest->getULReservation(ulReservation);
-    //subFrameStartMessage.resize(subFrameStartMessage.size()+ulReservation.size());
+    string subFrameStartMessage = flagBS? "BS":"UE";
+    subFrameStartMessage+="SubframeTx.Start";
+    string subFrameEndMessage = flagBS? "BS":"UE";
+    subFrameEndMessage += "BSSubframeTx.End";
+    
     transmissionProtocol->sendControlMessageToL1(&subFrameStartMessage[0], subFrameStartMessage.size());
     transmissionProtocol->sendPackageToL1(bufferPdu, numberDataBytesRead,bufferControl, numberControlBytesRead, macAddress);
     transmissionProtocol->sendControlMessageToL1(&subFrameEndMessage[0], subFrameEndMessage.size());
