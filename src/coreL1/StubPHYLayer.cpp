@@ -264,15 +264,11 @@ CoreL1::encoding(){
     //Receive from L2
     size = recv(socketFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
 
-    //Obtain MAC address to identify port soon
-    macAddress = (uint8_t)buffer[0];
-
-    //Shift back buffer
-    for(int i=0;i<size-1;i++)
-        buffer[i]=buffer[i+1];
+    //PROVISIONAL: Obtain MAC address form MAC header to identify port soon
+    macAddress = (((uint8_t)buffer[0])&15);
 
     //Send PDU through correct port  
-    sendPdu(buffer, size-1, ports[getSocketIndex(macAddress)]);
+    sendPdu(buffer, size, ports[getSocketIndex(macAddress)]);
 }
 
 void 
@@ -282,6 +278,10 @@ CoreL1::decoding(
     char buffer[MAXIMUMSIZE];   //Buffer to store packet incoming
     ssize_t size;               //Size of packet received
 
+    //Control messages
+    string subframeRxStart = "SubframeRx.Start";    //SubframeRx.Start control message
+    string subframeRxEnd = "SubframeRx.End";        //SubframeRx.End control message
+
     //Clear buffer
     bzero(buffer, MAXIMUMSIZE);
 
@@ -290,7 +290,13 @@ CoreL1::decoding(
     //Communication Stream
     while(size>0){
         if(verbose) cout<<"PDU with size "<<(int)size<<" received."<<endl;
+
+        //Send control messages and PDU to L2
+        sendto(socketControlMessagesToL2, &(subframeRxStart[0]), subframeRxStart.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
         sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
+        sendto(socketControlMessagesToL2, &(subframeRxEnd[0]), subframeRxEnd.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
+
+        //Receive next PDU
         bzero(buffer, MAXIMUMSIZE);
         size = receivePdu(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
     }

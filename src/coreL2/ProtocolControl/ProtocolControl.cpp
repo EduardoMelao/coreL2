@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : December 4th, 2019
+@Last alteration : December 9th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -126,7 +126,28 @@ ProtocolControl::sendInterlayerMessages(
 
 void
 ProtocolControl::receiveInterlayerMessages(){
-    char buffer[MAXIMUM_BUFFER_LENGTH];     //Buffer to store the message
+    char buffer[MAXIMUM_BUFFER_LENGTH]; //Buffer where message will be stored
+    string message;                     //String containing message converted from char*
     ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
-    //DO SOME TESTING AND CONTROL ACTIONS HERE...
+
+    //Control message stream
+    while(messageSize>0){
+
+        //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING message is transmitted alone (no parameters with it)
+        for(int i=0;i<messageSize;i++)
+            message+=buffer[i];
+
+        if(message=="SubframeRx.Start"){
+            if(verbose) cout<<"[StubPHYLayer] Received SubframeRx.Start message."<<endl;
+            macController->decoding();
+        }
+        else if(message=="SubframeRx.End"){
+            if(verbose) cout<<"[StubPHYLayer] Received SubframeRx.End message."<<endl;
+        }
+
+        //Clear buffer and message and receive next control message
+        bzero(buffer, MAXIMUM_BUFFER_LENGTH);
+        message.clear();
+        messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
+    }
 }

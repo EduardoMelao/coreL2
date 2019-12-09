@@ -109,6 +109,6 @@ public:
      * @brief Procedure that performs decoding of PDUs received from L1
      * @param macAddress Source MAC Address from which packet will be received
      */
-    void decoding(uint8_t macAddress);
+    void decoding();
 };
 #endif  //INCLUDED_MAC_CONTROLLER_H

@@ -146,16 +146,8 @@ L1L2Interface::sendPdu(
 		macControl[i]=controlBuffer[i];
 
 	/////////////////PROVISIONAL: IGNORE ALL THIS INFORMATION///////////////////////////
-	
-    //PROVISIONAL: Insert macAddress to warn PHY about destination 
-	uint8_t *buffer2 = new uint8_t[size+1];
-	buffer2[0] = macAddress;
-    for(int i=0;i<size;i++)
-    	buffer2[i+1] = buffer[i];
 
-    numberSent = sendto(socketPduToL1,buffer2, size+1, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
-    
-    delete[] buffer2;
+    numberSent = sendto(socketPduToL1,buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
 
     //Verify if transmission was successful
 	if(numberSent!=-1){
