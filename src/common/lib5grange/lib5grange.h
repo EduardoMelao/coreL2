@@ -254,9 +254,9 @@ namespace lib5grange {
 
      /** Resource allocation configuration struct **/
     typedef struct{
-        uint16_t target_ue_id = ALL_TERMINAL; /**< 16 bit ID of the target terminal **/
-        size_t first_rb = 0;                  /**< First alocated resource block  **/
-        size_t number_of_rb = 132;            /**< Number of allocatced resource blocks  **/
+        uint8_t target_ue_id = ALL_TERMINAL; /**< 16 bit ID of the target terminal **/
+        uint8_t first_rb = 0;                  /**< First alocated resource block  **/
+        uint8_t number_of_rb = 132;            /**< Number of allocatced resource blocks  **/
 
         /** Serializatyion method for the struct**/
         void serialize(vector<uint8_t> & bytes)

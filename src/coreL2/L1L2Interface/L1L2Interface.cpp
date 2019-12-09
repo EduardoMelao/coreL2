@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : December 4th, 2019
+@Last alteration : December 9th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -17,7 +17,8 @@ Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
 Direction : Diretoria de Operações (DO)
 UA : 1230 - Centro de Competencia - Sistemas Embarcados
 @Description : This module controls de communication between MAC and PHY,
-    using common data structures shared by the two Layers to exchange data.
+    using UPD sockets in the two Layers to exchange data Bytes and control Bytes. 
+    CRC Calculation and checking is made here too.
 */
 
 #include "L1L2Interface.h"
@@ -120,7 +121,7 @@ L1L2Interface::createServerSocketToReceiveMessages(
     return socketDescriptor;
 }
 
-bool
+void
 L1L2Interface::sendPdu(
 	uint8_t* buffer,        //Buffer with the PDU
 	size_t size,            //PDU size in Bytes
@@ -145,24 +146,15 @@ L1L2Interface::sendPdu(
 		macControl[i]=controlBuffer[i];
 
 	/////////////////PROVISIONAL: IGNORE ALL THIS INFORMATION///////////////////////////
-	
-    //PROVISIONAL: Insert macAddress to warn PHY about destination 
-	uint8_t *buffer2 = new uint8_t[size+1];
-	buffer2[0] = macAddress;
-    for(int i=0;i<size;i++)
-    	buffer2[i+1] = buffer[i];
 
-    numberSent = sendto(socketPduToL1,buffer2, size+1, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
-    
-    delete[] buffer2;
+    numberSent = sendto(socketPduToL1,buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
 
     //Verify if transmission was successful
 	if(numberSent!=-1){
 		if(verbose) cout<<"[L1L2Interface] Pdu sent:"<<size<<" bytes."<<endl;
-		return true;
+		return;
 	}
 	if(verbose) cout<<"[L1L2Interface] Could not send Pdu."<<endl;
-	return false;
 }
 
 ssize_t

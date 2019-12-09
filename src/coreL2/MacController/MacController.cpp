@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : December 3rd, 2019
+@Last alteration : December 9th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -21,7 +21,7 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 @Description : This module creates and starts TUN Interface reading, Control 
     SDUs creation, Sending timeout control, and decoding threads. Also, management of
-    SDUs concatenation into PDU is made by this module, as well as CRC calculation and checking.
+    SDUs concatenation into PDU is made by this module.
 */
 
 #include "MacController.h"
@@ -63,14 +63,13 @@ MacController::MacController(
     macHigh = new MacHighQueue(receptionProtocol, _verbose);
 
     /** Threads order:
-     * 0 .. attachedEquipments-1                    ---> Decoding threads
-     * attachedEquipments .. 2*attachedEquipments-1 ---> Timeout control threads
-     * 2*attachedEquipments                         ---> ProtocolData MACD SDU enqueueing
-     * 2*attachedEquipments+1                       ---> ProtocolControl MACC SDU heneration and enqueueing
-     * 2*attachedEquipments+2                       ---> Data SDU enqueueing from TUN interface in MacHighQueue
-     * 2*attachedEquipments+3                       ---> Reading control messages from PHY   
+     * 0 .. attachedEquipments-1    ---> Timeout control threads
+     * attachedEquipments           ---> ProtocolData MACD SDU enqueueing
+     * attachedEquipments+1         ---> ProtocolControl MACC SDU heneration and enqueueing
+     * attachedEquipments+2         ---> Data SDU enqueueing from TUN interface in MacHighQueue
+     * attachedEquipments+3         ---> Reading control messages from PHY
      */
-    threads = new thread[4+2*attachedEquipments];
+    threads = new thread[4+attachedEquipments];
 
     //Create Multiplexer and set its TransmissionQueues
     mux = new Multiplexer(maxNumberBytes, macAddress, ipMacTable, MAXSDUS, flagBS, verbose);
@@ -85,9 +84,13 @@ MacController::MacController(
 
     //Create ProtocolControl to deal with MACC SDUs
     protocolControl = new ProtocolControl(this, verbose);
+
+    //Create new MacConfigRequest to deal with CLI
+    macConfigRequest = new MacConfigRequest(verbose);
 }
 
 MacController::~MacController(){
+    delete macConfigRequest;
     delete protocolControl;
     delete protocolData;
     delete mux;
@@ -106,29 +109,24 @@ MacController::startThreads(){
 
     //For each equipment
     for(i=0;i<attachedEquipments;i++){
-        //Decoding threads - threads[0 .. attachedEquipments]
-        threads[i] = thread(&MacController::decoding, this, macAddressEquipments[i]);
-    }
-
-    for(j=0;j<attachedEquipments;j++){
-        //timeoutController threads - threads[attachedEquipments .. 2*attachedEquipments-1]
-        threads[i+j] = thread(&MacController::timeoutController, this, j);
+        //timeoutController threads - threads[0 .. attachedEquipments-1]
+        threads[i] = thread(&MacController::timeoutController, this, i);
     }
 
     //TUN queue control thread
-    threads[i+j] = thread(&ProtocolData::enqueueDataSdus, protocolData);
+    threads[i] = thread(&ProtocolData::enqueueDataSdus, protocolData);
 
     //Control SDUs controller thread
-    threads[i+j+1] = thread(&ProtocolControl::enqueueControlSdus, protocolControl);
+    threads[i+1] = thread(&ProtocolControl::enqueueControlSdus, protocolControl);
 
     //TUN reading and enqueueing thread
-    threads[i+j+2] = thread(&MacHighQueue::reading, macHigh);
+    threads[i+2] = thread(&MacHighQueue::reading, macHigh);
 
     //Control messages from PHY reading
-    threads[i+j+3] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl);
+    threads[i+3] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl);
 
     //Join all threads
-    for(i=0;i<2*attachedEquipments+4;i++)
+    for(i=0;i<attachedEquipments+4;i++)
         threads[i].join();
 }
 
@@ -149,7 +147,15 @@ MacController::sendPdu(
     MacCtHeader macControlHeader(flagBS, verbose);
     ssize_t numberControlBytesRead = macControlHeader.getControlData(bufferControl);
 
+    //Downlink routine:
+    string subFrameStartMessage = flagBS? "BS":"UE";
+    subFrameStartMessage+="SubframeTx.Start";
+    string subFrameEndMessage = flagBS? "BS":"UE";
+    subFrameEndMessage += "BSSubframeTx.End";
+    
+    protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
     transmissionProtocol->sendPackageToL1(bufferPdu, numberDataBytesRead,bufferControl, numberControlBytesRead, macAddress);
+    protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
 }
 
 void 
@@ -165,7 +171,8 @@ MacController::timeoutController(
         unique_lock<mutex> lk(queueMutex);
         
         //If there's no timeout OR the PDU is empty, no transmission is necessary
-        if(queueConditionVariables[index].wait_for(lk, timeout)==cv_status::no_timeout || mux->emptyPdu(macAddressEquipments[index])) continue; 
+        if(queueConditionVariables[index].wait_for(lk, timeout)==cv_status::no_timeout || mux->emptyPdu(macAddressEquipments[index])) 
+            continue; 
         //Else, perform PDU transmission
         if(verbose) cout<<"[MacController] Timeout!"<<endl;
         sendPdu(macAddressEquipments[index]);
@@ -173,52 +180,51 @@ MacController::timeoutController(
 }
 
 void 
-MacController::decoding(
-    uint8_t macAddress) //Source MAC Address
+MacController::decoding()
 {
-    char buffer[MAXIMUM_BUFFER_LENGTH];
+    uint8_t macAddress;                     //Source MAC address
+    char buffer[MAXIMUM_BUFFER_LENGTH];     //Buffer to store message incoming
 
-    //Communication infinite loop
-    while(1){
-        //Clear buffer
-        bzero(buffer,sizeof(buffer));
+    //Clear buffer
+    bzero(buffer,sizeof(buffer));
 
-        //Read packet from  Socket
-        ssize_t numberDecodingBytes = receptionProtocol->receivePackageFromL1(buffer, MAXIMUM_BUFFER_LENGTH, macAddress);
+    //Read packet from Socket
+    ssize_t numberDecodingBytes = receptionProtocol->receivePackageFromL1(buffer, MAXIMUM_BUFFER_LENGTH, macAddress);
 
-        //Error checking
-        if(numberDecodingBytes==-1 && verbose){ 
-            cout<<"[MacController] Error reading from socket."<<endl;
-            break;
-        }
-
-        //CRC checking
-        if(numberDecodingBytes==-2 && verbose){ 
-            cout<<"[MacController] Drop packet due to CRC Error."<<endl;
-            continue;
-        }
-
-        //EOF checking
-        if(numberDecodingBytes==0 && verbose){ 
-            cout<<"[MacController] End of Transmission."<<endl;
-            break;
-        }
-
-        if(verbose) cout<<"[MacController] Decoding MAC Address "<<macAddress<<": in progress..."<<endl;
-
-        //Create ProtocolPackage object to help removing Mac Header
-        ProtocolPackage pdu(buffer, numberDecodingBytes , verbose);
-        pdu.removeMacHeader();
-
-        //Create TransmissionQueue object to help unstacking SDUs contained in the PDU
-        TransmissionQueue *transmissionQueue = pdu.getMultiplexedSDUs();
-        while((numberDecodingBytes = transmissionQueue->getSDU(buffer))>0){
-            //Test if it is Control SDU
-            if(transmissionQueue->getCurrentDataControlFlag()==0)
-                protocolControl->decodeControlSdus(buffer, numberDecodingBytes);
-            else    //Data SDU
-                protocolData->decodeDataSdus(buffer, numberDecodingBytes);
-        }
-        delete transmissionQueue;
+    //Error checking
+    if(numberDecodingBytes==-1 && verbose){ 
+        cout<<"[MacController] Error reading from socket."<<endl;
+        return;
     }
+
+    //CRC checking
+    if(numberDecodingBytes==-2 && verbose){ 
+        cout<<"[MacController] Drop packet due to CRC Error."<<endl;
+        return;
+    }
+
+    //EOF checking
+    if(numberDecodingBytes==0 && verbose){ 
+        cout<<"[MacController] End of Transmission."<<endl;
+        return;
+    }
+
+    macAddress = (buffer[0]>>4)&15;
+    
+    if(verbose) cout<<"[MacController] Decoding MAC Address "<<macAddress<<": in progress..."<<endl;
+
+    //Create ProtocolPackage object to help removing Mac Header
+    ProtocolPackage pdu(buffer, numberDecodingBytes , verbose);
+    pdu.removeMacHeader();
+
+    //Create TransmissionQueue object to help unstacking SDUs contained in the PDU
+    TransmissionQueue *transmissionQueue = pdu.getMultiplexedSDUs();
+    while((numberDecodingBytes = transmissionQueue->getSDU(buffer))>0){
+        //Test if it is Control SDU
+        if(transmissionQueue->getCurrentDataControlFlag()==0)
+            protocolControl->decodeControlSdus(buffer, numberDecodingBytes);
+        else    //Data SDU
+            protocolData->decodeDataSdus(buffer, numberDecodingBytes);
+    }
+    delete transmissionQueue;
 }

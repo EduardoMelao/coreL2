@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : December 4th, 2019
+@Last alteration : December 9th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -264,15 +264,11 @@ CoreL1::encoding(){
     //Receive from L2
     size = recv(socketFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
 
-    //Communication stream
-    while(size>0){
-        macAddress = (uint8_t)buffer[0];
-        for(int i=0;i<size-1;i++)
-            buffer[i]=buffer[i+1];
-        sendPdu(buffer, size-1, ports[getSocketIndex(macAddress)]);
-        bzero(buffer, MAXIMUMSIZE);
-        size = recv(socketFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
-    }
+    //PROVISIONAL: Obtain MAC address form MAC header to identify port soon
+    macAddress = (((uint8_t)buffer[0])&15);
+
+    //Send PDU through correct port  
+    sendPdu(buffer, size, ports[getSocketIndex(macAddress)]);
 }
 
 void 
@@ -282,6 +278,10 @@ CoreL1::decoding(
     char buffer[MAXIMUMSIZE];   //Buffer to store packet incoming
     ssize_t size;               //Size of packet received
 
+    //Control messages
+    string subframeRxStart = "SubframeRx.Start";    //SubframeRx.Start control message
+    string subframeRxEnd = "SubframeRx.End";        //SubframeRx.End control message
+
     //Clear buffer
     bzero(buffer, MAXIMUMSIZE);
 
@@ -289,8 +289,14 @@ CoreL1::decoding(
 
     //Communication Stream
     while(size>0){
-        if(verbose) cout<<"PDU with size "<<(int)size<<" received."<<endl;
+        if(verbose) cout<<"[CoreL1] PDU with size "<<(int)size<<" received."<<endl;
+
+        //Send control messages and PDU to L2
+        sendto(socketControlMessagesToL2, &(subframeRxStart[0]), subframeRxStart.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
         sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
+        sendto(socketControlMessagesToL2, &(subframeRxEnd[0]), subframeRxEnd.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
+
+        //Receive next PDU
         bzero(buffer, MAXIMUMSIZE);
         size = receivePdu(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
     }
@@ -309,27 +315,46 @@ CoreL1::sendInterlayerMessage(
 void
 CoreL1::receiveInterlayerMessage(){
     char buffer[MAXIMUMSIZE];       //Buffer where message will be stored
+    string message;                 //String containing message converted from char*
     ssize_t messageSize = recv(socketControlMessagesFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
-    //DO SOME TESTING AND CONTROL ACTIONS HERE...
+
+    //Control message stream
+    while(messageSize>0){
+
+        //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING message is transmitted alone (no data with it)
+        for(int i=0;i<messageSize;i++)
+            message+=buffer[i];
+
+        if(message=="BSSubframeTx.Start"||message=="UESubframeTx.Start"){
+            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.Start message from "<<message[0]<<message[1]<<". Receiving PDU from L2..."<<endl;
+            encoding();
+        }
+        else if(message=="BSSubframeTx.End"||message=="UESubframeTx.End"){
+            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.End message from "<<message[0]<<message[1]<<"."<<endl;
+        }
+
+        //Clear buffer and message and receive next control message
+        bzero(buffer, MAXIMUMSIZE);
+        message.clear();
+        messageSize = recv(socketControlMessagesFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
+    }
 }
 
 void
 CoreL1::startThreads(){
-    int i;
+    int numberThreads = 1+numberSockets;    //Number of threads
     /** Thread list:
      *  0 .. numberSockets-1    --> decoding
-     *  numberSockets           --> encoding
-     *  numberSockets+1         --> receiving Interlayer messages
+     *  numberSockets           --> receiving Interlayer messages
      */
-    thread threads[2+numberSockets];
+    thread threads[numberThreads];
 
-    for(i=0;i<numberSockets;i++)
+    for(int i=0;i<numberSockets;i++)
         threads[i] = thread(&CoreL1::decoding, this, macAddresses[i]);
-    threads[i] = thread(&CoreL1::encoding, this);
-    threads[i+1] = thread(&CoreL1::receiveInterlayerMessage, this);
+    threads[numberThreads-1] = thread(&CoreL1::receiveInterlayerMessage, this);
 
     //Join all threads
-    for(i=0;i<numberSockets+2;i++)
+    for(int i=0;i<numberThreads;i++)
         threads[i].join();
 }
 

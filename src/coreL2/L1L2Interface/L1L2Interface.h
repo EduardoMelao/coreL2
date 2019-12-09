@@ -87,7 +87,7 @@ public:
      * @param macAddress Destination MAC Address
      * @returns True if transmission was successful, false otherwise
      */
-    bool sendPdu(uint8_t* buffer, size_t size, uint8_t* controlBuffer, size_t controlSize, uint8_t macAddress);
+    void sendPdu(uint8_t* buffer, size_t size, uint8_t* controlBuffer, size_t controlSize, uint8_t macAddress);
 
     /**
      * @brief Received a PDU from PHY Layer
