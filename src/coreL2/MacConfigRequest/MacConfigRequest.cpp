@@ -7,7 +7,7 @@
 @Arquive name : MacConfigRequest.cpp
 @Classification : MAC Configutarion Request
 @
-@Last alteration : December 6th, 2019
+@Last alteration : December 10th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -157,4 +157,9 @@ MacConfigRequest::decodeULReservation(
         uplinkReservations[i].deserialize(allocationDeserialization);
         allocationDeserialization.clear();
     }   
+}
+
+bool
+MacConfigRequest::getFlagModified(){
+    return flagModified;
 }

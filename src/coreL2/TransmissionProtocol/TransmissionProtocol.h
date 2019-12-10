@@ -10,6 +10,7 @@
 #include <iostream>
 #include "../L1L2Interface/L1L2Interface.h"
 #include "../CoreTunInterface/TunInterface.h"
+#include "../../common/lib5grange/lib5grange.h"
 
 using namespace std;
 
@@ -37,13 +38,10 @@ public:
     ~TransmissionProtocol();
 
     /**
-     * @param dataBuffer Information buffer
-     * @param dataSize Size of information in bytes
-     * @param controlBuffer Buffer with Control information
-     * @param controlSize Control information size in bytes
+     * @param macPdu MAC PDU structure containing all information PHY needs
      * @param macAddress Destination MAC Address
      */
-    void sendPackageToL1(char* dataBuffer, size_t dataSize, char* controlBuffer, size_t controlSize, uint8_t macAddress);
+    void sendPackageToL1(MacPDU macPdu, uint8_t macAddress);
     
     /**
      * @param controlBuffer Buffer with Control message

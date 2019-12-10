@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : December 9th, 2019
+@Last alteration : December 10th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -172,19 +172,17 @@ CoreL1::addSocket(
 bool 
 CoreL1::sendPdu(
     const char* buffer,     //Information buffer
-    size_t size)            //Size of information in bytes
-{
-    return sendPdu(buffer, size, ports[0]);
-}
-
-bool 
-CoreL1::sendPdu(
-    const char* buffer,     //Information buffer
     size_t size,            //Size of information in bytes
     uint16_t port)          //Port of destination socket
 {
-    int socketOut;        //Descriptor of the socket to which data will be sent
-    ssize_t numberSent; //Number of bytes sent
+    int socketOut;          //Descriptor of the socket to which data will be sent
+    ssize_t numberSent;     //Number of bytes sent
+    
+    //Deserialize MAC PDU received
+    vector<uint8_t> serializedMacPdu;
+    serializedMacPdu.resize(size);
+    serializedMacPdu.assign(buffer, buffer+size);
+    MacPDU macPdu(serializedMacPdu);
 
     //Gets socket index
     socketOut = getSocketIndex((uint16_t)port);
@@ -193,7 +191,7 @@ CoreL1::sendPdu(
     if(socketOut!=-1){
 
         //Send information in buffer to socket
-        numberSent = sendto(socketsOut[socketOut], buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&(socketNames[socketOut])), sizeof(socketNames[socketOut]));
+        numberSent = sendto(socketsOut[socketOut], &(macPdu.mac_data_[0]), size, MSG_CONFIRM, (const struct sockaddr*)(&(socketNames[socketOut])), sizeof(socketNames[socketOut]));
 
         //Verify if transmission was successful
         if(numberSent!=-1){
@@ -254,9 +252,9 @@ CoreL1::getSocketIndex(
 
 void
 CoreL1::encoding(){
-    char buffer[MAXIMUMSIZE];       //Buffer to store packet from L2
-    ssize_t size;                   //Size of packet received
-    uint8_t macAddress;             //Destination MAC address
+    char buffer[MAXIMUMSIZE];   //Buffer to store packet from L2
+    ssize_t size;               //Size of packet received
+    uint8_t macAddress;         //Destination MAC address
     
     //Clear buffer
     bzero(buffer, MAXIMUMSIZE);

@@ -25,16 +25,6 @@ using namespace lib5grange;
 
 class L1L2Interface{
 private:
-    MacPDU macPDU;                              //MAC PDU object that will encapsulate all information and will be sent to PHY
-    unsigned ueID;                              //User Equipment Identification
-    unsigned numerologyID;                      //Numerology identification (0 - 5)
-    float codeRate;                             //Code Rate
-    macphyctl_t macPhyControl;                  //MAC to PHY control struct
-    allocation_cfg_t allocationConfiguration;   //Struct with configuration of the resource allocation
-    mimo_cfg_t mimoConfiguration;               //Struct with MIMO configuration
-    mcs_cfg_t mcsConfiguration;                 //Struct regarding modulation and coding information
-    vector<uint8_t> macData;                    //Uncoded bytes from MAC
-    vector<uint8_t> macControl;                 //Uncoded control bits to be sent to PHY
     int socketPduFromL1;                        //File descriptor of socket used to RECEIVE PDUs from L1
     int socketPduToL1;                          //File descriptor of socket used to SEND PDUs to L1
     int socketControlMessagesFromL1;            //File descriptor of socket used to RECEIVE Control Messages from L1
@@ -80,14 +70,11 @@ public:
     ~L1L2Interface();
 
     /**
-     * @param buffer Information buffer
-     * @param size Size of information in bytes
-     * @param controlBuffer Buffer with Control information
-     * @param controlSize Control information size in bytes
+     * @param macPdu MAC PDU structure containing all information PHY needs
      * @param macAddress Destination MAC Address
      * @returns True if transmission was successful, false otherwise
      */
-    void sendPdu(uint8_t* buffer, size_t size, uint8_t* controlBuffer, size_t controlSize, uint8_t macAddress);
+    void sendPdu(MacPDU _macPdu, uint8_t macAddress);
 
     /**
      * @brief Received a PDU from PHY Layer
