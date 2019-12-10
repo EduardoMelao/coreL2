@@ -22,7 +22,9 @@
 #include <unistd.h>     //close()
 #include <thread>       //thread
 #include "../common/lib5grange/lib5grange.h"
+
 using namespace std;
+using namespace lib5grange;
 
 /**
  * @brief This class simulates the physical layer with UDP sockets. 
