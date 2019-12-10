@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : December 9th, 2019
+@Last alteration : December 10th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -147,6 +147,14 @@ MacController::sendPdu(
     MacCtHeader macControlHeader(flagBS, verbose);
     ssize_t numberControlBytesRead = macControlHeader.getControlData(bufferControl);
 
+    //Fill MAC PDU with information
+    setMacPduStaticInformation();
+    macPDU.control_data_.assign(bufferPdu, bufferPdu+numberDataBytesRead);
+    macPDU.control_data_.assign(bufferControl, bufferControl+numberControlBytesRead);
+    macPDU.allocation_.target_ue_id = macAddress;
+    macPDU.mcs_.num_info_bytes = numberDataBytesRead;
+    macPDU.allocation_.number_of_rb = get_num_required_rb(macPDU.numID_, macPDU.mimo_, macPDU.mcs_.modulation, 3/4 , numberDataBytesRead*8);
+
     //Downlink routine:
     string subFrameStartMessage = flagBS? "BS":"UE";
     subFrameStartMessage+="SubframeTx.Start";
@@ -154,7 +162,7 @@ MacController::sendPdu(
     subFrameEndMessage += "BSSubframeTx.End";
     
     protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
-    transmissionProtocol->sendPackageToL1(bufferPdu, numberDataBytesRead,bufferControl, numberControlBytesRead, macAddress);
+    transmissionProtocol->sendPackageToL1(macPDU, macAddress);
     protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
 }
 
@@ -227,4 +235,44 @@ MacController::decoding()
             protocolData->decodeDataSdus(buffer, numberDecodingBytes);
     }
     delete transmissionQueue;
+}
+
+void
+MacController::setMacPduStaticInformation(){
+    //Static information:
+    uint8_t ueID = 0xFF;                        //Equipment identification (0xFF indicates all terminals)
+    unsigned numerologyID = 2;                  //Numerology identification
+    float codeRate = 3/4;                       //Core rate used in codification
+    mimo_cfg_t mimoConfiguration;               //MIMO configuration structure
+    mcs_cfg_t mcsConfiguration;                 //Modulation Coding Scheme configuration
+    allocation_cfg_t allocationConfiguration;   //Resource allocation configuration
+    macphyctl_t macPhyControl;                  //MAC-PHY control structure
+    size_t numberBytes = 1500;                     
+
+    //MIMO Configuration
+    mimoConfiguration.scheme = NONE;
+    mimoConfiguration.num_tx_antenas = 1;
+    mimoConfiguration.precoding_mtx = 0;
+
+    //MCS Configuration
+    mcsConfiguration.num_info_bytes = numberBytes;
+    mcsConfiguration.modulation = QAM64;
+    mcsConfiguration.num_info_bytes = 1500;
+
+    //Resource allocation configuration
+    allocationConfiguration.first_rb = 0;
+    allocationConfiguration.number_of_rb = get_num_required_rb(numerologyID, mimoConfiguration, mcsConfiguration.modulation, codeRate, numberBytes*8);
+    allocationConfiguration.target_ue_id = ueID;
+
+    //MAC-PHY Control
+    macPhyControl.first_tb_in_subframe = true;
+    macPhyControl.last_tb_in_subframe = false;
+    macPhyControl.sequence_number = 1;
+    macPhyControl.subframe_number = 3;
+
+    //MAC PDU object definition
+    macPDU.allocation_ = allocationConfiguration;
+    macPDU.mimo_ = mimoConfiguration;
+    macPDU.mcs_ = mcsConfiguration;
+    macPDU.macphy_ctl_ = macPhyControl;
 }

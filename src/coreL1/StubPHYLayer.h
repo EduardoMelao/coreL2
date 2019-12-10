@@ -21,6 +21,7 @@
 #include <string.h>     //bzero()
 #include <unistd.h>     //close()
 #include <thread>       //thread
+#include "../common/lib5grange/lib5grange.h"
 using namespace std;
 
 /**
@@ -80,14 +81,6 @@ public:
      * @param macAddress Destination MAC Address 
      */
     void addSocket(const char* ip, uint16_t port, uint8_t macAddress);    
-    
-    /**
-     * @brief Send PDU to socket considering there's just one socket added
-     * @param buffer Information buffer
-     * @param size Size of information in bytes
-     * @returns If transmission was successful
-     */ 
-    bool sendPdu(const char* buffer, size_t size);  
 
     /**
      * @brief Send PDU to socket identified by port

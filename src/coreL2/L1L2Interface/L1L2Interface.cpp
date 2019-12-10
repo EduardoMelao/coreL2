@@ -30,30 +30,6 @@ L1L2Interface::L1L2Interface(
     bool _verbose)              //Verbosity flag
 {
     verbose = _verbose;
-    //Static information:
-    ueID = 0xCAFE;
-    numerologyID = 2;
-    codeRate = 0.75;
-    int numberBytes = 1024;            /////////////PROVISIONAL///////////////////
-
-    //MIMO Configuration
-    mimoConfiguration.scheme = NONE;
-    mimoConfiguration.num_tx_antenas = 1;
-    mimoConfiguration.precoding_mtx = 0;
-
-    //MCS Configuration
-    mcsConfiguration.num_info_bytes = numberBytes;
-    mcsConfiguration.modulation = QAM64;
-
-    //Resource allocation configuration
-    allocationConfiguration.first_rb = 0;
-    allocationConfiguration.number_of_rb = get_num_required_rb(numerologyID, mimoConfiguration, mcsConfiguration.modulation, codeRate, numberBytes*8);
-    allocationConfiguration.target_ue_id = ueID;
-
-    //MAC PDU object definition
-    macPDU.allocation_ = allocationConfiguration;
-    macPDU.mimo_ = mimoConfiguration;
-    macPDU.mcs_ = mcsConfiguration;
 
     //Client PDUs socket creation
     socketPduToL1 = createClientSocketToSendMessages(PORT_TO_L1, &serverPdusSocketAddress, "127.0.0.1");
@@ -123,35 +99,26 @@ L1L2Interface::createServerSocketToReceiveMessages(
 
 void
 L1L2Interface::sendPdu(
-	uint8_t* buffer,        //Buffer with the PDU
-	size_t size,            //PDU size in Bytes
-	uint8_t* controlBuffer, //Buffer with control information
-	size_t controlSize,     //Control information size in bytes
+	MacPDU macPdu,          //MAC PDU structure
 	uint8_t macAddress)     //Destination MAC Address
 {
     size_t numberSent;      //Number of Bytes sent to L1
 
     //Perform CRC calculation
-    crcPackageCalculate((char*)buffer, size);
-    size+=2;    //Add CRC Bytes count
-    
-	//Fill MAC Data with information
-	macData.resize(size);
-	for(int i=0;i<size;i++)
-		macData[i]=buffer[i];
+    size_t numberDataBytes = macPdu.mac_data_.size();   //Number of Data Bytes before inserting CRC
+    macPdu.mac_data_.resize(numberDataBytes+2);
+    crcPackageCalculate((char*)&(macPdu.mac_data_[0]), numberDataBytes);
 
-	//Fill Mac Control with control information
-	macControl.resize(controlSize);
-	for(int i=0;i<controlSize;i++)
-		macControl[i]=controlBuffer[i];
+    //Serialize MAC PDU
+    vector<uint8_t> serializedMacPdu;
+    macPdu.serialize(serializedMacPdu);
 
-	/////////////////PROVISIONAL: IGNORE ALL THIS INFORMATION///////////////////////////
-
-    numberSent = sendto(socketPduToL1,buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
+    //Send PDU to L1
+    numberSent = sendto(socketPduToL1,&(serializedMacPdu[0]), serializedMacPdu.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
 
     //Verify if transmission was successful
 	if(numberSent!=-1){
-		if(verbose) cout<<"[L1L2Interface] Pdu sent:"<<size<<" bytes."<<endl;
+		if(verbose) cout<<"[L1L2Interface] Pdu sent:"<<serializedMacPdu.size()<<" bytes."<<endl;
 		return;
 	}
 	if(verbose) cout<<"[L1L2Interface] Could not send Pdu."<<endl;

@@ -7,7 +7,7 @@
 @Arquive name : TransmissionProtocol.cpp
 @Classification : Transmission Protocol
 @
-@Last alteration : December 9th, 2019
+@Last alteration : December 10th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -38,14 +38,11 @@ TransmissionProtocol::~TransmissionProtocol() {}
 
 void 
 TransmissionProtocol::sendPackageToL1(
-    char* dataBuffer,       //Information Buffer
-    size_t dataSize,        //Size of information Buffer in Bytes
-    char* controlBuffer,    //Control information Buffer
-    size_t controlSize,     //Size of control information in Bytes
+    MacPDU macPdu,          //MAC PDU structure
     uint8_t macAddress)     //Destination MAC Address
 {
     if(verbose) cout<<"[TransmissionProtocol] Sending packet to L1."<<endl;
-    l1l2Interface->sendPdu((uint8_t*)dataBuffer, dataSize,(uint8_t*)controlBuffer, controlSize, macAddress);
+    l1l2Interface->sendPdu(macPdu, macAddress);
 }
 
 void 

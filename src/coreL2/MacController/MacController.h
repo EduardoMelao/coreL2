@@ -25,6 +25,7 @@
 #include "../ProtocolData/ProtocolData.h"
 #include "../ProtocolControl/ProtocolControl.h"
 #include "../MacConfigRequest/MacConfigRequest.h"
+#include "../../common/lib5grange/lib5grange.h"
 
 using namespace std;
 
@@ -52,6 +53,7 @@ private:
     ProtocolControl* protocolControl;   //Object to deal with enqueueing CONTROL SDUS
     MacConfigRequest* macConfigRequest; //Object to interface with CLI and store Dynamic Information
 	thread *threads;                    //Threads array
+    MacPDU macPDU;                      //Object MacPDU containing all information that will be sent to PHY
     bool verbose;                       //Verbosity flag
 
 public:
@@ -110,5 +112,10 @@ public:
      * @param macAddress Source MAC Address from which packet will be received
      */
     void decoding();
+
+    /**
+     * @brief [PROVISIONAL] Sets MAC PDU object with static information
+     */
+    void setMacPduStaticInformation();
 };
 #endif  //INCLUDED_MAC_CONTROLLER_H

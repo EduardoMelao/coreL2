@@ -23,13 +23,12 @@ using namespace lib5grange;
 class MacConfigRequest{
 private:
     fstream configurationFile;                      //File where configurations are persisted
-    uint8_t numberUEs;                                  //Number of UEs configured
+    uint8_t numberUEs;                              //Number of UEs configured
     vector<uint8_t> tpcs;                           //Transmission Power Control
     vector<allocation_cfg_t> uplinkReservations;    //Array of Uplink reservation configuration structures
     bool verbose;                                   //Verbosity flag
-
-public:
-    bool flagModified;  //Flag to indicate if configurations have been changed
+    bool flagModified;                              //Flag to indicate if configurations have been changed
+public: 
 
     /**
      * @brief Constructs a Mac Config Request object and initializes its variables with values persisted
@@ -62,6 +61,12 @@ public:
      * @param buffer Buffer containing coded Bytes
      */
     void decodeULReservation(vector<uint8_t> buffer);
+
+    /**
+     * @brief Gets flag to indicate if configurations fave changed
+     * @returns True if configurations have changed. False otherwise.
+     */
+    bool getFlagModified();
 };
 
 #endif  //INCLUDED_MAC_CONFIG_REQUEST_H
