@@ -177,12 +177,6 @@ CoreL1::sendPdu(
 {
     int socketOut;          //Descriptor of the socket to which data will be sent
     ssize_t numberSent;     //Number of bytes sent
-    
-    //Deserialize MAC PDU received
-    vector<uint8_t> serializedMacPdu;
-    serializedMacPdu.resize(size);
-    serializedMacPdu.assign(buffer, buffer+size);
-    MacPDU macPdu(serializedMacPdu);
 
     //Gets socket index
     socketOut = getSocketIndex((uint16_t)port);
@@ -191,7 +185,7 @@ CoreL1::sendPdu(
     if(socketOut!=-1){
 
         //Send information in buffer to socket
-        numberSent = sendto(socketsOut[socketOut], &(macPdu.mac_data_[0]), size, MSG_CONFIRM, (const struct sockaddr*)(&(socketNames[socketOut])), sizeof(socketNames[socketOut]));
+        numberSent = sendto(socketsOut[socketOut], buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&(socketNames[socketOut])), sizeof(socketNames[socketOut]));
 
         //Verify if transmission was successful
         if(numberSent!=-1){
@@ -262,11 +256,17 @@ CoreL1::encoding(){
     //Receive from L2
     size = recv(socketFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
 
+    //Deserialize MAC PDU received
+	vector<uint8_t> serializedMacPdu;
+	serializedMacPdu.resize(size);
+	serializedMacPdu.assign(buffer, buffer+size);
+	MacPDU macPdu(serializedMacPdu);
+
     //PROVISIONAL: Obtain MAC address form MAC header to identify port soon
-    macAddress = (((uint8_t)buffer[0])&15);
+	macAddress = (((uint8_t)macPdu.mac_data_[0])&15);
 
     //Send PDU through correct port  
-    sendPdu(buffer, size, ports[getSocketIndex(macAddress)]);
+    sendPdu((const char*) &(macPdu.mac_data_[0]), macPdu.mac_data_.size(), ports[getSocketIndex(macAddress)]);
 }
 
 void 
