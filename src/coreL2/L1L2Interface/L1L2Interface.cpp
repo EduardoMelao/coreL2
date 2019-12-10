@@ -108,7 +108,6 @@ L1L2Interface::sendPdu(
     size_t numberDataBytes = macPdu.mac_data_.size();   //Number of Data Bytes before inserting CRC
     macPdu.mac_data_.resize(numberDataBytes+2);
     crcPackageCalculate((char*)&(macPdu.mac_data_[0]), numberDataBytes);
-
     //Serialize MAC PDU
     vector<uint8_t> serializedMacPdu;
     macPdu.serialize(serializedMacPdu);
