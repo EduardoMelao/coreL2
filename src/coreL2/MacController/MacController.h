@@ -24,7 +24,6 @@
 #include "../ProtocolControl/MacCtHeader.h"
 #include "../ProtocolData/ProtocolData.h"
 #include "../ProtocolControl/ProtocolControl.h"
-#include "../MacConfigRequest/MacConfigRequest.h"
 #include "../../common/lib5grange/lib5grange.h"
 
 using namespace std;
@@ -51,7 +50,6 @@ private:
     MacAddressTable* ipMacTable;        //Table to associate IP addresses to 5G-RANGE domain MAC addresses
 	ProtocolData* protocolData;         //Object to deal with enqueueing DATA SDUS
     ProtocolControl* protocolControl;   //Object to deal with enqueueing CONTROL SDUS
-    MacConfigRequest* macConfigRequest; //Object to interface with CLI and store Dynamic Information
 	thread *threads;                    //Threads array
     MacPDU macPDU;                      //Object MacPDU containing all information that will be sent to PHY
     bool verbose;                       //Verbosity flag

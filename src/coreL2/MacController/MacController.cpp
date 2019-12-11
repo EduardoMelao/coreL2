@@ -84,13 +84,9 @@ MacController::MacController(
 
     //Create ProtocolControl to deal with MACC SDUs
     protocolControl = new ProtocolControl(this, verbose);
-
-    //Create new MacConfigRequest to deal with CLI
-    macConfigRequest = new MacConfigRequest(verbose);
 }
 
 MacController::~MacController(){
-    delete macConfigRequest;
     delete protocolControl;
     delete protocolData;
     delete mux;
