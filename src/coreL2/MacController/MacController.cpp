@@ -149,7 +149,7 @@ MacController::sendPdu(
 
     //Fill MAC PDU with information
     setMacPduStaticInformation();
-    macPDU.control_data_.assign(bufferPdu, bufferPdu+numberDataBytesRead);
+    macPDU.mac_data_.assign(bufferPdu, bufferPdu+numberDataBytesRead);
     macPDU.control_data_.assign(bufferControl, bufferControl+numberControlBytesRead);
     macPDU.allocation_.target_ue_id = macAddress;
     macPDU.mcs_.num_info_bytes = numberDataBytesRead;

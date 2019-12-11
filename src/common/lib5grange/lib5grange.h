@@ -13,8 +13,8 @@
 #include <vector>
 #include <array>
 
-#define ALL_TERMINAL (0xFFFF)
-#define BS_TERMINAL  (0x0000)
+#define ALL_TERMINAL (0xFF)
+#define BS_TERMINAL  (0x00)
 
 #define LAST_RB (131)
 #define MAX_NUM_RB (132)
