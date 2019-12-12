@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : December 3rd, 2019
+@Last alteration : December 12th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -32,6 +32,7 @@ using namespace std;
 #include "ProtocolPackage/ProtocolPackage.h"
 #include "Multiplexer/MacAddressTable/MacAddressTable.h"
 #include "MacController/MacController.h"
+#include "StaticDefaultParameters/StaticDefaultParameters.h"
 
 int main(int argc, char** argv){
     uint8_t* macAddresses;          //Array of 5GR MAC Addresses of attached equipments
@@ -42,36 +43,35 @@ int main(int argc, char** argv){
     uint16_t maxNumberBytes;        //Maximum number of bytes in PDU
     bool flagBS;                    //Base Station flag: true if BS, false if UE
 
-    //Print message if wrong usage of command line
-    if(argc<2){
-        cout<<"Usage BS: sudo ./a.out 0(BS) numberEquipments UE_macAddr1 ... UE_macAddrN MaxNBytes BS_macAddr [--v] [devname]"<<endl;
-        cout<<"Usage UE: sudo ./a.out 1(UE) BS_macAddr MaxNBytes UE_macAddr [--v] [devname]"<<endl;
-        exit(1);
+    //Verify verbose
+    if(argc<2)
+    	verbose = false;
+    else{
+    	if(argc==2){
+			if(argv[1][0]=='-')
+				verbose = true;
+			else devname=argv[1];
+    	}
+    	else if(argc==3){
+    		verbose = true;
+    		devname = argv[2];
+    	}
+    	else cout<<"Usage: sudo ./a.out [--v] [deviceNameTun]"<<endl;
     }
+    //Load static information
+    StaticDefaultParameters *staticParameters = new StaticDefaultParameters(verbose);
 
-    //Verifying Base Station flag
-    flagBS = (argv[1][0] == '0');
-
-    //Atributing value to numberEquipments
-    numberEquipments = flagBS? (argv[2][0] - 48):1;
-
-    //Defining arguments offset
-    argumentsOffset = flagBS? 3:2;
-
-    //Verbosity and devName arguments 
-    if(argc==(argumentsOffset+numberEquipments+3)){
-        if(argv[argumentsOffset+numberEquipments+2][0]=='-')
-            verbose = true;
-        else devname = argv[argumentsOffset+numberEquipments+2];
-    }
-    else if(argc==(argumentsOffset+numberEquipments+4)){
-        verbose = true;
-        devname = argv[argumentsOffset+numberEquipments+3];
-    }
+    //Attributing value to numberEquipments
+    numberEquipments = staticParameters->numberUEs;
 
     macAddresses = new uint8_t[numberEquipments];
-    for(int i=0;i<numberEquipments;i++)
-        macAddresses[i] = (uint8_t) strtol(argv[argumentsOffset+i], NULL, 10);
+
+    if(flagBS){
+		for(int i=0;i<numberEquipments;i++)
+			macAddresses[i] = staticParameters->ulReservations[i].target_ue_id;
+    }
+    else
+    	macAddresses[0] = 0;		//For User Equipment, only BS MAC Address
 
     //Creates and initializes a MacAddressTable with static informations
     MacAddressTable* ipMacTable = new MacAddressTable(verbose);
@@ -83,16 +83,15 @@ int main(int argc, char** argv){
     ipMacTable->addEntry(addressEntry2, 2, false);
     
     //Get maxNumberBytes from command line
-    maxNumberBytes = (uint16_t) strtol(argv[argumentsOffset+numberEquipments], NULL, 10);
+    maxNumberBytes = staticParameters->mtu;
 
     //Create a new MacController object
-    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, (int) argv[argumentsOffset+numberEquipments+1][0] - 48, verbose);
+    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, flagBS? 0:staticParameters->ulReservations[0].target_ue_id, staticParameters, verbose);
 
-
-
-    //Finnally, start threads
+    //Finally, start threads
     equipment.startThreads();
 
     delete ipMacTable;
     delete [] macAddresses;
+    delete staticParameters;
 }

@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : December 10th, 2019
+@Last alteration : December 11th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -324,11 +324,11 @@ CoreL1::receiveInterlayerMessage(){
             message+=buffer[i];
 
         if(message=="BSSubframeTx.Start"||message=="UESubframeTx.Start"){
-            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.Start message from "<<message[0]<<message[1]<<". Receiving PDU from L2..."<<endl;
+            if(verbose) cout<<"[CoreL1] Received SubframeTx.Start message from "<<message[0]<<message[1]<<". Receiving PDU from L2..."<<endl;
             encoding();
         }
         else if(message=="BSSubframeTx.End"||message=="UESubframeTx.End"){
-            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.End message from "<<message[0]<<message[1]<<"."<<endl;
+            if(verbose) cout<<"[CoreL1] Received SubframeTx.End message from "<<message[0]<<message[1]<<"."<<endl;
         }
 
         //Clear buffer and message and receive next control message

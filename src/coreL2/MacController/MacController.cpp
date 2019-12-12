@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : December 10th, 2019
+@Last alteration : December 12th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -27,13 +27,14 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 #include "MacController.h"
 
 MacController::MacController(
-        int numberEquipments,           //Number of equipments attached
-        uint8_t* _macAddressEquipments, //MAC Address of each attached equipment
-        uint16_t _maxNumberBytes,       //Maximum number of Bytes in PDU
-        const char* _deviceNameTun,     //TUN device name
-        MacAddressTable* _ipMacTable,   //MAC address - IP address table
-        uint8_t _macAddress,            //5GR MAC address
-        bool _verbose)                  //Verbosity flag
+        int numberEquipments,           			//Number of equipments attached
+        uint8_t* _macAddressEquipments, 			//MAC Address of each attached equipment
+        uint16_t _maxNumberBytes,       			//Maximum number of Bytes in PDU
+        const char* _deviceNameTun,     			//TUN device name
+        MacAddressTable* _ipMacTable,   			//MAC address - IP address table
+        uint8_t _macAddress,            			//5GR MAC address
+		StaticDefaultParameters* _staticParameters,	//All parameters loaded from file
+        bool _verbose)                  			//Verbosity flag
 {
     attachedEquipments = numberEquipments;
     macAddressEquipments = _macAddressEquipments;
@@ -84,9 +85,13 @@ MacController::MacController(
 
     //Create ProtocolControl to deal with MACC SDUs
     protocolControl = new ProtocolControl(this, verbose);
+
+    //Load static parameters from file
+    staticParameters = _staticParameters;
 }
 
 MacController::~MacController(){
+	delete staticParameters;
     delete protocolControl;
     delete protocolData;
     delete mux;
@@ -144,7 +149,7 @@ MacController::sendPdu(
     ssize_t numberControlBytesRead = macControlHeader.getControlData(bufferControl);
 
     //Fill MAC PDU with information
-    setMacPduStaticInformation();
+    setMacPduStaticInformation(numberDataBytesRead, macAddress);
     macPDU.mac_data_.assign(bufferPdu, bufferPdu+numberDataBytesRead);
     macPDU.control_data_.assign(bufferControl, bufferControl+numberControlBytesRead);
     macPDU.allocation_.target_ue_id = macAddress;
@@ -234,35 +239,36 @@ MacController::decoding()
 }
 
 void
-MacController::setMacPduStaticInformation(){
+MacController::setMacPduStaticInformation(size_t numberBytes, uint8_t macAddress){
     //Static information:
-    uint8_t ueID = 0xFF;                        //Equipment identification (0xFF indicates all terminals)
     unsigned numerologyID = 2;                  //Numerology identification
     float codeRate = 3/4;                       //Core rate used in codification
+
+    //Define Structures
     mimo_cfg_t mimoConfiguration;               //MIMO configuration structure
     mcs_cfg_t mcsConfiguration;                 //Modulation Coding Scheme configuration
     allocation_cfg_t allocationConfiguration;   //Resource allocation configuration
     macphyctl_t macPhyControl;                  //MAC-PHY control structure
-    size_t numberBytes = 1500;                     
 
     //MIMO Configuration
-    mimoConfiguration.scheme = NONE;
-    mimoConfiguration.num_tx_antenas = 1;
-    mimoConfiguration.precoding_mtx = 0;
+    mimoConfiguration.scheme = staticParameters->mimoConf==0? NONE:(staticParameters->mimoDiversityMultiplexing==0? DIVERSITY:MULTIPLEXING);
+    mimoConfiguration.num_tx_antenas = staticParameters->mimoAntenna==0? 2:4;
+    mimoConfiguration.precoding_mtx = staticParameters->precoding;
 
     //MCS Configuration
-    mcsConfiguration.num_info_bytes = numberBytes;
+    mcsConfiguration.num_info_bytes = maxNumberBytes;
+    mcsConfiguration.num_coded_bytes = maxNumberBytes/codeRate;
     mcsConfiguration.modulation = QAM64;
-    mcsConfiguration.num_info_bytes = 1500;
+    mcsConfiguration.power_offset = staticParameters->transmissionpowerControl;
 
     //Resource allocation configuration
     allocationConfiguration.first_rb = 0;
     allocationConfiguration.number_of_rb = get_num_required_rb(numerologyID, mimoConfiguration, mcsConfiguration.modulation, codeRate, numberBytes*8);
-    allocationConfiguration.target_ue_id = ueID;
+    allocationConfiguration.target_ue_id = macAddress;
 
     //MAC-PHY Control
     macPhyControl.first_tb_in_subframe = true;
-    macPhyControl.last_tb_in_subframe = false;
+    macPhyControl.last_tb_in_subframe = true;
     macPhyControl.sequence_number = 1;
     macPhyControl.subframe_number = 3;
 
