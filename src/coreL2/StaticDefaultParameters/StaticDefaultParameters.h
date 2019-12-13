@@ -37,14 +37,14 @@ public:
 	uint8_t mimoDiversityMultiplexing;			//[1 bit] 0 = Diversity; 1 = Multiplexing
 	uint8_t mimoAntenna;						//[1 bit] 0 = 2x2; 1 = 4x4
 	uint8_t mimoOpenLoopClosedLoop;				//[1 bit] 0 = Open Loop; 1 = Closed Loop
-	uint8_t precoding;							//[4 bits] MIMO codeblock configuration for DL and UL
+	uint8_t mimoPrecoding;						//[4 bits] MIMO codeblock configuration for DL and UL
 	uint8_t transmissionpowerControl;			//[8 bits] Transmission Power Control
-	uint8_t lutMatrix[17];						//[132 bits] BitMap from Fusion Spectrum Analysis
+	uint8_t fLutMatrix[17];						//[132 bits] BitMap from Fusion Spectrum Analysis
 	uint8_t rxMetricPeriodicity;				//[8 bits] CSI period for CQI, PMI and SSM provided by PHY
 	uint16_t mtu;								//[16 bits] Maximum transmission unity of the system
 	uint16_t ipTimeout;							//[16 bits] IP Timeout time(milliseconds)
-	uint16_t ssreportWaitTimeout;				//[16 bits] Spectrum Sensing Report Wait Timeout time(milliseconds)
-	uint16_t ackWaitTimeout;				    //[16 bits] Acknowledgement Wait Timeout time(milliseconds)
+	uint16_t ssreportWaitTimeout;				//[4 bits] Spectrum Sensing Report Wait Timeout time(milliseconds)
+	uint16_t ackWaitTimeout;				    //[4 bits] Acknowledgement Wait Timeout time(milliseconds)
 
 	/**
 	 * @brief Constructs object and read file to initialize all variables with default information

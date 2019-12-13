@@ -7,7 +7,7 @@
 @Arquive name : StaticDefaultParameters.cpp
 @Classification : Static Default Parameters
 @
-@Last alteration : December 12th, 2019
+@Last alteration : December 13th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -104,7 +104,7 @@ StaticDefaultParameters::StaticDefaultParameters(
 	mimoOpenLoopClosedLoop = stoi(readBuffer);
 	readBuffer.clear();
 	getline(defaultConfigurationsFile, readBuffer);
-	precoding = stoi(readBuffer);
+	mimoPrecoding = stoi(readBuffer);
 	readBuffer.clear();
 
 	//Gets Transmission Power Control Information
@@ -112,14 +112,14 @@ StaticDefaultParameters::StaticDefaultParameters(
 	transmissionpowerControl = stoi(readBuffer);
 	readBuffer.clear();
 
-	//Gets LUT matrix default value (only BS)
+	//Gets FUSION LUT matrix default value (only BS)
 	if(flagBS){
 		uint8_t defaultValue;
 		getline(defaultConfigurationsFile, readBuffer);
 		defaultValue = stoi(readBuffer);
 		readBuffer.clear();
 		for(int i=0;i<17;i++)
-			lutMatrix[i] = (defaultValue==0) ? 0:255;
+			fLutMatrix[i] = (defaultValue==0) ? 0:255;
 	}
 
 	//Gets Reception Metrics Periodicity

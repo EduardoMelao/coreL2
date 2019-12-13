@@ -7,7 +7,7 @@
 @Arquive name : ProtocolData.cpp
 @Classification : Protocol Data
 @
-@Last alteration : December 4th, 2019
+@Last alteration : December 13th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -38,9 +38,9 @@ ProtocolData::~ProtocolData() {}
 
 void 
 ProtocolData::enqueueDataSdus(){
-    int macSendingPDU;              //This auxiliary variable will store MAC Address if queue is full of SDUs
-    char bufferData[MAXIMUM_BUFFER_LENGTH];       //Buffer to store Data Bytes
-    ssize_t numberBytesRead = 0;    //Size of MACD SDU read in Bytes
+    int macSendingPDU;                      //This auxiliary variable will store MAC Address if queue is full of SDUs
+    char bufferData[MAXIMUM_BUFFER_LENGTH]; //Buffer to store Data Bytes
+    ssize_t numberBytesRead = 0;            //Size of MACD SDU read in Bytes
     
     //Infinite loop
     while(1){

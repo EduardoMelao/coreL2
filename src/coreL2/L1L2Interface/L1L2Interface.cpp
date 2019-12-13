@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : December 9th, 2019
+@Last alteration : December 13th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -27,7 +27,7 @@ using namespace std;
 using namespace lib5grange;
 
 L1L2Interface::L1L2Interface(
-    bool _verbose)              //Verbosity flag
+    bool _verbose)      //Verbosity flag
 {
     verbose = _verbose;
 
@@ -127,7 +127,7 @@ ssize_t
 L1L2Interface::receivePdu(
     const char* buffer,         //Buffer where PDU is going to be store
     size_t maximumSize,         //Maximum PDU size
-    uint8_t macAddress)              //Port to identify socket to listen to
+    uint8_t macAddress)         //Port to identify socket to listen to
 {
     ssize_t returnValue;    //Value that will be returned at the end of this procedure
     returnValue = recv(socketPduFromL1, (void*)buffer, maximumSize, MSG_WAITALL);

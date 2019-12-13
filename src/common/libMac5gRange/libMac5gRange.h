@@ -28,11 +28,11 @@ typedef struct{
     uint8_t rxMetricPeriodicity;                //CSI periodicity for CQI, PMI, RI and SSM provided by PHY
     
     /**
-     * \brief Serializatyion method for the struct
+     * @brief Serializatyion method for the struct
      * This method convert all menbers of the struct to a sequance of bytes and appends at the end
      * of the vector given as argument
      *
-     *  @param v: vector of bytes where the struct will be serialized
+     * @param bytes: vector of bytes where the struct will be serialized
      **/
     void serialize(vector<uint8_t> & bytes)
     {
@@ -49,6 +49,7 @@ typedef struct{
         push_bytes(bytes, auxiliary);
 
     }
+
     /** deserializatyion method for the struct (inverse order)**/
     void deserialize(vector<uint8_t> & bytes){
         uint8_t auxiliary;
@@ -78,17 +79,17 @@ typedef struct{
  * @brief Struct for UESubframeTx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    allocation_cfg_t ulReservation;            //UpLinkReservation
+    allocation_cfg_t ulReservation;             //UpLinkReservation
     uint8_t numerology;                         //Numerology to be used in Downlink
     uint8_t ofdm_gfdm;                          //Flag to indicate data transmission technique for Downlink (0=OFDM; 1=GFDM)
     uint8_t rxMetricPeriodicity;                //CSI periodicity for CQI, PMI, RI and SSM provided by PHY
     
     /**
-     * \brief Serializatyion method for the struct
+     * @brief Serializatyion method for the struct
      * This method convert all menbers of the struct to a sequance of bytes and appends at the end
      * of the vector given as argument
      *
-     *  @param v: vector of bytes where the struct will be serialized
+     * @param bytes: vector of bytes where the struct will be serialized
      **/
     void serialize(vector<uint8_t> & bytes)
     {
@@ -98,6 +99,7 @@ typedef struct{
         push_bytes(bytes, auxiliary);
 
     }
+    
     /** deserializatyion method for the struct (inverse order)**/
     void deserialize(vector<uint8_t> & bytes){
         uint8_t auxiliary;

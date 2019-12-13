@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : December 12th, 2019
+@Last alteration : December 13th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -157,15 +157,15 @@ MacController::sendPdu(
     macPDU.allocation_.number_of_rb = get_num_required_rb(macPDU.numID_, macPDU.mimo_, macPDU.mcs_.modulation, 3/4 , numberDataBytesRead*8);
 
     //Create Subframe.Start message
-    string messageParameters;		//This string will contain the parameters of the message
-	vector<uint8_t> messageParametersBytes;			//Vector to receive serialized parameters structure
+    string messageParameters;		            //This string will contain the parameters of the message
+	vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
 
     if(flagBS){
     	BSSubframeTx_Start messageBS;	//Message parameters structure
     	messageBS.numUEs = attachedEquipments;
     	messageBS.numPDUs = 1;
     	for(int i=0;i<17;i++)
-    		messageBS.fLutDL[i] = staticParameters->lutMatrix[i];
+    		messageBS.fLutDL[i] = staticParameters->fLutMatrix[i];
     	messageBS.ulReservations = staticParameters->ulReservations;
     	messageBS.numerology = staticParameters->numerology;
     	messageBS.ofdm_gfdm = staticParameters->ofdm_gfdm;
@@ -286,7 +286,7 @@ MacController::setMacPduStaticInformation(size_t numberBytes, uint8_t macAddress
     //MIMO Configuration
     mimoConfiguration.scheme = staticParameters->mimoConf==0? NONE:(staticParameters->mimoDiversityMultiplexing==0? DIVERSITY:MULTIPLEXING);
     mimoConfiguration.num_tx_antenas = staticParameters->mimoAntenna==0? 2:4;
-    mimoConfiguration.precoding_mtx = staticParameters->precoding;
+    mimoConfiguration.precoding_mtx = staticParameters->mimoPrecoding;
 
     //MCS Configuration
     mcsConfiguration.num_info_bytes = maxNumberBytes;

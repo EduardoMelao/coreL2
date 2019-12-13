@@ -7,7 +7,7 @@
 @Arquive name : TransmissionProtocol.cpp
 @Classification : Transmission Protocol
 @
-@Last alteration : December 10th, 2019
+@Last alteration : December 13th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -57,7 +57,7 @@ TransmissionProtocol::sendControlMessageToL1(
 bool 
 TransmissionProtocol::sendPackageToL3(
     char* buffer,   //Buffer where packet will be stored
-    size_t size)       //Size of information in Bytes
+    size_t size)    //Size of information in Bytes
 {
     if(verbose) cout<<"[TransmissionProtocol] Sending packet to L3."<<endl;
     return tunInterface->writeTunInterface(buffer, size);
