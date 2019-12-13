@@ -156,12 +156,43 @@ MacController::sendPdu(
     macPDU.mcs_.num_info_bytes = numberDataBytesRead;
     macPDU.allocation_.number_of_rb = get_num_required_rb(macPDU.numID_, macPDU.mimo_, macPDU.mcs_.modulation, 3/4 , numberDataBytesRead*8);
 
+    //Create Subframe.Start message
+    string messageParameters;		//This string will contain the parameters of the message
+	vector<uint8_t> messageParametersBytes;			//Vector to receive serialized parameters structure
+
+    if(flagBS){
+    	BSSubframeTx_Start messageBS;	//Message parameters structure
+    	messageBS.numUEs = attachedEquipments;
+    	messageBS.numPDUs = 1;
+    	messageBS.fLutDL = staticParameters->lutMatrix;
+    	messageBS.ulReservations = staticParameters->ulReservations;
+    	messageBS.numerology = staticParameters->numerology;
+    	messageBS.ofdm_gfdm = staticParameters->ofdm_gfdm;
+    	messageBS.rxMetricPeriodicity = staticParameters->rxMetricPeriodicity;
+    	messageBS.serialize(messageParametersBytes);
+    	for(int i=0;i<messageParametersBytes.size();i++)
+    		messageParameters+=messageParametersBytes[i];
+    }
+    else{
+    	UESubframeTx_Start messageUE;	//Messages parameters structure
+    	messageUE.ulReservation = staticParameters->ulReservations[0];
+    	messageUE.numerology = staticParameters->numerology;
+    	messageUE.ofdm_gfdm = staticParameters->ofdm_gfdm;
+    	messageUE.rxMetricPeriodicity = staticParameters->rxMetricPeriodicity;
+    	messageUE.serialize(messageParametersBytes);
+    	for(int i=0;i<messageParametersBytes.size();i++)
+    		messageParameters+=messageParametersBytes[i];
+    }
+
     //Downlink routine:
     string subFrameStartMessage = flagBS? "BS":"UE";
     subFrameStartMessage+="SubframeTx.Start";
     string subFrameEndMessage = flagBS? "BS":"UE";
-    subFrameEndMessage += "BSSubframeTx.End";
+    subFrameEndMessage += "SubframeTx.End";
     
+    //Add parameters
+    subFrameStartMessage+=messageParameters;
+
     protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
     transmissionProtocol->sendPackageToL1(macPDU, macAddress);
     protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
@@ -218,9 +249,10 @@ MacController::decoding()
         return;
     }
 
+    //Get MAC Address from MAC header
     macAddress = (buffer[0]>>4)&15;
     
-    if(verbose) cout<<"[MacController] Decoding MAC Address "<<macAddress<<": in progress..."<<endl;
+    if(verbose) cout<<"[MacController] Decoding MAC Address "<<(int)macAddress<<": in progress..."<<endl;
 
     //Create ProtocolPackage object to help removing Mac Header
     ProtocolPackage pdu(buffer, numberDecodingBytes , verbose);

@@ -19,9 +19,11 @@
 #include <sys/socket.h> //socket(), AF_INET, SOCK_DGRAM
 #include <arpa/inet.h>  //struct sockaddr_in
 #include <string.h>     //bzero()
+#include <vector>
 #include <unistd.h>     //close()
 #include <thread>       //thread
 #include "../common/lib5grange/lib5grange.h"
+#include "../common/libMac5gRange/libMac5gRange.h"
 
 using namespace std;
 using namespace lib5grange;

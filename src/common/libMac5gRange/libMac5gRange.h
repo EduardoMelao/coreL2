@@ -79,7 +79,7 @@ typedef struct{
  */
 typedef struct{
     allocation_cfg_t ulReservation;            //UpLinkReservation
-    uint8_t numerology;                         //Numerology to be used in downlink
+    uint8_t numerology;                         //Numerology to be used in Downlink
     uint8_t ofdm_gfdm;                          //Flag to indicate data transmission technique for Downlink (0=OFDM; 1=GFDM)
     uint8_t rxMetricPeriodicity;                //CSI periodicity for CQI, PMI, RI and SSM provided by PHY
     

@@ -319,13 +319,31 @@ CoreL1::receiveInterlayerMessage(){
     //Control message stream
     while(messageSize>0){
 
-        //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING message is transmitted alone (no data with it)
-        for(int i=0;i<messageSize;i++)
+        //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING ONLY SubframeTx.Start messages
+    	int subFrameStartSize = 18;
+        for(int i=0;i<subFrameStartSize;i++)
             message+=buffer[i];
 
+    	vector<uint8_t> messageParametersBytes;
+        if(message=="BSSubframeTx.Start"){
+        	BSSubframeTx_Start messageParameters;
+        	for(int i=subFrameStartSize;i<message.size();i++)
+        		messageParametersBytes.push_back(message[i]);
+        	messageParameters.deserialize(messageParametersBytes);
+        	if(verbose) cout<<"[CoreL1] Received BSSubframeTx.Start message. Receiving PDU from L2..."<<endl;
+			encoding();
+        }
+        if(message=="UESubframeTx.Start"){
+			UESubframeTx_Start messageParameters;
+			for(int i=subFrameStartSize;i<message.size();i++)
+				messageParametersBytes.push_back(message[i]);
+			messageParameters.deserialize(messageParametersBytes);
+			if(verbose) cout<<"[CoreL1] Received UESubframeTx.Start message. Receiving PDU from L2..."<<endl;
+			encoding();
+		}
+
         if(message=="BSSubframeTx.Start"||message=="UESubframeTx.Start"){
-            if(verbose) cout<<"[CoreL1] Received SubframeTx.Start message from "<<message[0]<<message[1]<<". Receiving PDU from L2..."<<endl;
-            encoding();
+
         }
         else if(message=="BSSubframeTx.End"||message=="UESubframeTx.End"){
             if(verbose) cout<<"[CoreL1] Received SubframeTx.End message from "<<message[0]<<message[1]<<"."<<endl;
