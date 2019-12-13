@@ -106,7 +106,7 @@ MacController::~MacController(){
 
 void 
 MacController::startThreads(){
-    int i, j;   //Auxiliary variables for loops
+    int i;   	//Auxiliary variable for loops
 
     //For each equipment
     for(i=0;i<attachedEquipments;i++){
@@ -164,13 +164,14 @@ MacController::sendPdu(
     	BSSubframeTx_Start messageBS;	//Message parameters structure
     	messageBS.numUEs = attachedEquipments;
     	messageBS.numPDUs = 1;
-    	messageBS.fLutDL = staticParameters->lutMatrix;
+    	for(int i=0;i<17;i++)
+    		messageBS.fLutDL[i] = staticParameters->lutMatrix[i];
     	messageBS.ulReservations = staticParameters->ulReservations;
     	messageBS.numerology = staticParameters->numerology;
     	messageBS.ofdm_gfdm = staticParameters->ofdm_gfdm;
     	messageBS.rxMetricPeriodicity = staticParameters->rxMetricPeriodicity;
     	messageBS.serialize(messageParametersBytes);
-    	for(int i=0;i<messageParametersBytes.size();i++)
+    	for(uint i=0;i<messageParametersBytes.size();i++)
     		messageParameters+=messageParametersBytes[i];
     }
     else{
@@ -180,7 +181,7 @@ MacController::sendPdu(
     	messageUE.ofdm_gfdm = staticParameters->ofdm_gfdm;
     	messageUE.rxMetricPeriodicity = staticParameters->rxMetricPeriodicity;
     	messageUE.serialize(messageParametersBytes);
-    	for(int i=0;i<messageParametersBytes.size();i++)
+    	for(uint i=0;i<messageParametersBytes.size();i++)
     		messageParameters+=messageParametersBytes[i];
     }
 
