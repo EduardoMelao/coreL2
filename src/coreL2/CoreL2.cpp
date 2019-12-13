@@ -58,8 +58,12 @@ int main(int argc, char** argv){
     	}
     	else cout<<"Usage: sudo ./a.out [--v] [deviceNameTun]"<<endl;
     }
+
     //Load static information
     StaticDefaultParameters *staticParameters = new StaticDefaultParameters(verbose);
+
+    //Attributing flagBS
+    flagBS = staticParameters->flagBS;
 
     //Attributing value to numberEquipments
     numberEquipments = staticParameters->numberUEs;
