@@ -326,18 +326,18 @@ CoreL1::receiveInterlayerMessage(){
 
     	vector<uint8_t> messageParametersBytes;
         if(message=="BSSubframeTx.Start"){
-        	BSSubframeTx_Start messageParameters;
-        	for(int i=subFrameStartSize;i<message.size();i++)
+        	BSSubframeTx_Start messageParametersBS;
+        	for(int i=subFrameStartSize;i<messageSize;i++)
         		messageParametersBytes.push_back(message[i]);
-        	messageParameters.deserialize(messageParametersBytes);
+        	messageParametersBS.deserialize(messageParametersBytes);
         	if(verbose) cout<<"[CoreL1] Received BSSubframeTx.Start message. Receiving PDU from L2..."<<endl;
 			encoding();
         }
         if(message=="UESubframeTx.Start"){
-			UESubframeTx_Start messageParameters;
-			for(int i=subFrameStartSize;i<message.size();i++)
+			UESubframeTx_Start messageParametersUE;
+			for(int i=subFrameStartSize;i<messageSize;i++)
 				messageParametersBytes.push_back(message[i]);
-			messageParameters.deserialize(messageParametersBytes);
+			messageParametersUE.deserialize(messageParametersBytes);
 			if(verbose) cout<<"[CoreL1] Received UESubframeTx.Start message. Receiving PDU from L2..."<<endl;
 			encoding();
 		}
