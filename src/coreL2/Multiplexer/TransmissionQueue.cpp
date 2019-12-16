@@ -7,7 +7,7 @@
 @Arquive name : TransmissionQueue.cpp
 @Classification : Multiplexer
 @
-@Last alteration : November 28th, 2019
+@Last alteration : December 13th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -29,7 +29,7 @@ TransmissionQueue::TransmissionQueue(
     int _maxNumberBytes,            //Maximum number of Bytes in a PDU
     uint8_t _sourceAddress,         //Source MAC Address
     uint8_t _destinationAddress,    //Destination MAC Address
-    int _maximumNumberSDUs,                    //Maximum number of SDUs supported by a PDU
+    int _maximumNumberSDUs,         //Maximum number of SDUs supported by a PDU
     bool _verbose)                  //Verbosity flag
 {
     maxNumberBytes = _maxNumberBytes;
@@ -115,9 +115,9 @@ TransmissionQueue::addSduPosition(
 
 bool 
 TransmissionQueue::addSDU(
-    char* sdu,          //Buffer containing single SDU
-    uint16_t size,      //SDU size
-    uint8_t flagDataControl)     //SDU Data/Control flag
+    char* sdu,                  //Buffer containing single SDU
+    uint16_t size,              //SDU size
+    uint8_t flagDataControl)    //SDU Data/Control flag
 {
     //Verify if it is possible to insert SDU
     if((size+2+getNumberofBytes())>maxNumberBytes){

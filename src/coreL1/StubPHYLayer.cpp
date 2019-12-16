@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : December 10th, 2019
+@Last alteration : December 13th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -319,16 +319,34 @@ CoreL1::receiveInterlayerMessage(){
     //Control message stream
     while(messageSize>0){
 
-        //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING message is transmitted alone (no data with it)
-        for(int i=0;i<messageSize;i++)
+        //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING ONLY SubframeTx.Start messages
+    	int subFrameStartSize = 18;
+        for(int i=0;i<subFrameStartSize;i++)
             message+=buffer[i];
 
+    	vector<uint8_t> messageParametersBytes;
+        if(message=="BSSubframeTx.Start"){
+        	BSSubframeTx_Start messageParametersBS;
+        	for(int i=subFrameStartSize;i<messageSize;i++)
+        		messageParametersBytes.push_back(message[i]);
+        	messageParametersBS.deserialize(messageParametersBytes);
+        	if(verbose) cout<<"[CoreL1] Received BSSubframeTx.Start message. Receiving PDU from L2..."<<endl;
+			encoding();
+        }
+        if(message=="UESubframeTx.Start"){
+			UESubframeTx_Start messageParametersUE;
+			for(int i=subFrameStartSize;i<messageSize;i++)
+				messageParametersBytes.push_back(message[i]);
+			messageParametersUE.deserialize(messageParametersBytes);
+			if(verbose) cout<<"[CoreL1] Received UESubframeTx.Start message. Receiving PDU from L2..."<<endl;
+			encoding();
+		}
+
         if(message=="BSSubframeTx.Start"||message=="UESubframeTx.Start"){
-            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.Start message from "<<message[0]<<message[1]<<". Receiving PDU from L2..."<<endl;
-            encoding();
+
         }
         else if(message=="BSSubframeTx.End"||message=="UESubframeTx.End"){
-            if(verbose) cout<<"[StubPHYLayer] Received SubframeTx.End message from "<<message[0]<<message[1]<<"."<<endl;
+            if(verbose) cout<<"[CoreL1] Received SubframeTx.End message from "<<message[0]<<message[1]<<"."<<endl;
         }
 
         //Clear buffer and message and receive next control message

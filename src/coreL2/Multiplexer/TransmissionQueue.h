@@ -47,8 +47,8 @@ private:
      */
     int currentBufferLength();     
 public:
-    uint8_t numberSDUs;          //Number of SDUs multiplexed
-    int maximumNumberSDUs;           //Maximum number of SDUs multiplexed
+    uint8_t numberSDUs;     //Number of SDUs multiplexed
+    int maximumNumberSDUs;  //Maximum number of SDUs multiplexed
 
     /**
      * @brief Constructs a new TransmissionQueue to accumulate SDUs for future transmission (encoding)
