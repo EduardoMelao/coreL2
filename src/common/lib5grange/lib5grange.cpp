@@ -68,12 +68,6 @@ namespace lib5grange{
 	MacPDU::MacPDU(){
 		numID_ = 0;
 		mac_data_   = {};
-		coded_data_ = {};
-		symbols_ = {};
-		mimo_symbols_[0] = {};
-		mimo_symbols_[1] = {};
-		mimo_symbols_[2] = {};
-		mimo_symbols_[3] = {};
 	}
 
 
@@ -103,26 +97,12 @@ namespace lib5grange{
 		mimo_.serialize(bytes);
 		mcs_.serialize(bytes);
 		serialize_vector(bytes, mac_data_);
-		serialize_vector(bytes, coded_data_);
-		serialize_vector(bytes, symbols_);
 		serialize_vector(bytes, control_data_);
-		serialize_vector(bytes, control_symbols_);
-		serialize_vector(bytes, mimo_symbols_[0]);
-		serialize_vector(bytes, mimo_symbols_[1]);
-		serialize_vector(bytes, mimo_symbols_[2]);
-		serialize_vector(bytes, mimo_symbols_[3]);
 	}
 
 	MacPDU::MacPDU(vector<uint8_t> & bytes)
 	{
-		deserialize_vector(mimo_symbols_[3], bytes);
-		deserialize_vector(mimo_symbols_[2], bytes);
-		deserialize_vector(mimo_symbols_[1], bytes);
-		deserialize_vector(mimo_symbols_[0], bytes);
-		deserialize_vector(control_symbols_, bytes);
 		deserialize_vector(control_data_, bytes);
-		deserialize_vector(symbols_, bytes);
-		deserialize_vector(coded_data_, bytes);
 		deserialize_vector(mac_data_, bytes);
 		mcs_.deserialize(bytes);
 		mimo_.deserialize(bytes);
