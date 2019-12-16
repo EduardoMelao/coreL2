@@ -20,16 +20,16 @@ using namespace std;
  */
 class MacCtHeader{
 private:
-    uint8_t flagBS;     //Flag to identify if this equipment is BS or UE
-    uint8_t id;         //BS->UE UE->BS 8 bits
-    uint8_t uplinkMCS;      //BS->UE        8 bits
-    uint8_t rbStart;    //BS->UE        8 bits
-    uint8_t numberRBs;     //BS->UE        8 bits
-    uint8_t MIMOon;     //BS->UE        1 bit
-    uint8_t MIMOdiversity;    //BS->UE        1 bit
-    uint8_t MIMOantenna;//BS->UE        1 bit
-    uint8_t MIMOopenLoopClosedLoop;   //BS->UE        1 bit
-    bool verbose;       //Verbosity flag
+    uint8_t flagBS;                 //Flag to identify if this equipment is BS or UE
+    uint8_t id;                     //BS->UE UE->BS 8 bits
+    uint8_t uplinkMCS;              //BS->UE        8 bits
+    uint8_t rbStart;                //BS->UE        8 bits
+    uint8_t numberRBs;              //BS->UE        8 bits
+    uint8_t MIMOon;                 //BS->UE        1 bit
+    uint8_t MIMOdiversity;          //BS->UE        1 bit
+    uint8_t MIMOantenna;            //BS->UE        1 bit
+    uint8_t MIMOopenLoopClosedLoop; //BS->UE        1 bit
+    bool verbose;                   //Verbosity flag
 
 public:
     /**

@@ -7,7 +7,7 @@
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : November 28th, 2019
+@Last alteration : December 13th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -57,10 +57,10 @@ Multiplexer::~Multiplexer()
 
 uint8_t
 Multiplexer::getMacAddress(
-    char* dataSdu)      //SDU containg IP bytes
+    char* dataSdu)          //SDU containg IP bytes
 {
-    uint8_t mac;        //MAC address of destination of the SDU
-    uint8_t ipAddress[4];  //Destination IP address encapsulated into SDU
+    uint8_t mac;            //MAC address of destination of the SDU
+    uint8_t ipAddress[4];   //Destination IP address encapsulated into SDU
 
     //Gets IP Address from packet
     for(int i=0;i<4;i++)

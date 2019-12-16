@@ -19,34 +19,37 @@ using namespace lib5grange;
  * @brief Struct for BSSubframeTx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    uint8_t numTRBsDL;                          //Number of transmission resource blocks in downlink
-    vector<allocation_cfg_t> ulReservations;   //UpLinkReservations for each UE
+	uint8_t numUEs;								//Total number of UEs in the system/network
+    uint8_t numPDUs;                          	//Number of MAC PDUs to transmit in next subframe
+    vector<allocation_cfg_t> ulReservations;   	//UpLinkReservations for each UE
     uint8_t numerology;                         //Numerology to be used in downlink
     uint8_t ofdm_gfdm;                          //Flag to indicate data transmission technique for Downlink (0=OFDM; 1=GFDM)
-    uint8_t lutDL[17];                          //Fusion Spectrum Analysis LUT
+    uint8_t fLutDL[17];                         //Fusion Spectrum Analysis LUT
     uint8_t rxMetricPeriodicity;                //CSI periodicity for CQI, PMI, RI and SSM provided by PHY
     
     /**
-     * \brief Serializatyion method for the struct
+     * @brief Serializatyion method for the struct
      * This method convert all menbers of the struct to a sequance of bytes and appends at the end
      * of the vector given as argument
      *
-     *  @param v: vector of bytes where the struct will be serialized
+     * @param bytes: vector of bytes where the struct will be serialized
      **/
     void serialize(vector<uint8_t> & bytes)
     {
         uint8_t auxiliary;
-        push_bytes(bytes, numTRBsDL);
+        push_bytes(bytes, numUEs);
+        push_bytes(bytes, numPDUs);
         for(int i=0;i<ulReservations.size();i++)
             ulReservations[i].serialize(bytes);
         for(int i=0;i<16;i++)
-            push_bytes(bytes, lutDL[i]);
-        auxiliary = (numerology<<4)|lutDL[16];
+            push_bytes(bytes, fLutDL[i]);
+        auxiliary = (numerology<<4)|fLutDL[16];
         push_bytes(bytes, auxiliary);
         auxiliary = (ofdm_gfdm<<7)|rxMetricPeriodicity;
         push_bytes(bytes, auxiliary);
 
     }
+
     /** deserializatyion method for the struct (inverse order)**/
     void deserialize(vector<uint8_t> & bytes){
         uint8_t auxiliary;
@@ -56,10 +59,10 @@ typedef struct{
 
         pop_bytes(auxiliary, bytes);
         numerology = (auxiliary>>4)&15;
-        lutDL[16] = auxiliary&15;
+        fLutDL[16] = auxiliary&15;
         
         for(int i=15;i>=0;i--)
-            pop_bytes(lutDL[i],bytes);
+            pop_bytes(fLutDL[i],bytes);
 
         int numberUEsAllocated = (bytes.size()-1)/sizeof(allocation_cfg_t);
         ulReservations.resize(numberUEsAllocated);
@@ -67,7 +70,8 @@ typedef struct{
         for(int i=numberUEsAllocated-1;i>=0;i--)
             ulReservations[i].deserialize(bytes);
 
-        pop_bytes(numTRBsDL, bytes);
+        pop_bytes(numPDUs, bytes);
+        pop_bytes(numUEs, bytes);
     }
 }BSSubframeTx_Start;
 
@@ -75,17 +79,17 @@ typedef struct{
  * @brief Struct for UESubframeTx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    allocation_cfg_t ulReservation;            //UpLinkReservation
-    uint8_t numerology;                         //Numerology to be used in downlink
+    allocation_cfg_t ulReservation;             //UpLinkReservation
+    uint8_t numerology;                         //Numerology to be used in Downlink
     uint8_t ofdm_gfdm;                          //Flag to indicate data transmission technique for Downlink (0=OFDM; 1=GFDM)
     uint8_t rxMetricPeriodicity;                //CSI periodicity for CQI, PMI, RI and SSM provided by PHY
     
     /**
-     * \brief Serializatyion method for the struct
+     * @brief Serializatyion method for the struct
      * This method convert all menbers of the struct to a sequance of bytes and appends at the end
      * of the vector given as argument
      *
-     *  @param v: vector of bytes where the struct will be serialized
+     * @param bytes: vector of bytes where the struct will be serialized
      **/
     void serialize(vector<uint8_t> & bytes)
     {
@@ -95,6 +99,7 @@ typedef struct{
         push_bytes(bytes, auxiliary);
 
     }
+    
     /** deserializatyion method for the struct (inverse order)**/
     void deserialize(vector<uint8_t> & bytes){
         uint8_t auxiliary;

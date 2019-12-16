@@ -7,7 +7,7 @@
 @Arquive name : CoreL1.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : December 3rd, 2019
+@Last alteration : December 13th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -43,13 +43,12 @@ int main(int argc, char** argv){
     numberEquipments = argv[1][0]-48;
 
     verbose = (argc==2+numberEquipments*3+1);
-    CoreL1* l1 = new CoreL1(verbose); //Create object CoreL1 with no verbose
+    CoreL1* l1 = new CoreL1(verbose);   //Create object CoreL1 with no verbose
 
     for(int i=0;i<numberEquipments;i++)
         l1->addSocket(argv[2+3*i], strtol(argv[2+3*i+1], NULL, 10), argv[2+3*i+2][0]-48);
 
-    //Start all threads
-    l1->startThreads();
+    l1->startThreads();     //Start all threads
 
     delete l1;
 }
