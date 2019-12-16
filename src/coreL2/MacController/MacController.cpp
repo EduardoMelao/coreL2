@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : December 13th, 2019
+@Last alteration : December 16th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -118,7 +118,7 @@ MacController::startThreads(){
     threads[i] = thread(&ProtocolData::enqueueDataSdus, protocolData);
 
     //Control SDUs controller thread
-    threads[i+1] = thread(&ProtocolControl::enqueueControlSdus, protocolControl);
+    //threads[i+1] = thread(&ProtocolControl::enqueueControlSdus, protocolControl);
 
     //TUN reading and enqueueing thread
     threads[i+2] = thread(&MacHighQueue::reading, macHigh);
@@ -263,9 +263,9 @@ MacController::decoding()
     TransmissionQueue *transmissionQueue = pdu.getMultiplexedSDUs();
     while((numberDecodingBytes = transmissionQueue->getSDU(buffer))>0){
         //Test if it is Control SDU
-        if(transmissionQueue->getCurrentDataControlFlag()==0)
-            protocolControl->decodeControlSdus(buffer, numberDecodingBytes);
-        else    //Data SDU
+        //if(transmissionQueue->getCurrentDataControlFlag()==0)
+            //protocolControl->decodeControlSdus(buffer, numberDecodingBytes);
+        //else    //Data SDU
             protocolData->decodeDataSdus(buffer, numberDecodingBytes);
     }
     delete transmissionQueue;

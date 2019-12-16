@@ -7,7 +7,7 @@
 @Arquive name : StaticDefaultParameters.cpp
 @Classification : Static Default Parameters
 @
-@Last alteration : December 13th, 2019
+@Last alteration : December 16th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -64,7 +64,7 @@ StaticDefaultParameters::StaticDefaultParameters(
 		ulReservations[i].first_rb = stoi(readBuffer);
 		readBuffer.clear();
 		getline(defaultConfigurationsFile, readBuffer);
-		ulReservations[i].number_of_rb = stoi(readBuffer) - ulReservations[i].first_rb;
+		ulReservations[i].number_of_rb = stoi(readBuffer);
 		readBuffer.clear();
 	}
 

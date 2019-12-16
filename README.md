@@ -9,7 +9,7 @@ Structure of Default information file. Just leave numbers in the file, respectin
  - BS		[1..132]	Number of RBs available for transmission
  - BS/UE	[0..15]		*User Equipment Identification
  - BS/UE	[1..132]	*RBStart
- - BS/UE	[1..132]	*RBEnd
+ - BS/UE	[1..132]	*NumRBs
  - BS/UE 	[0..5]		Numerology
  - BS/UE 	[0/1]		OFDM(0) or GFDM(1)
  - BS		[0..15]		MCS Downlink
