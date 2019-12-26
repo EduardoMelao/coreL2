@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : December 13th, 2019
+@Last alteration : December 26th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -342,10 +342,7 @@ CoreL1::receiveInterlayerMessage(){
 			encoding();
 		}
 
-        if(message=="BSSubframeTx.Start"||message=="UESubframeTx.Start"){
-
-        }
-        else if(message=="BSSubframeTx.End"||message=="UESubframeTx.End"){
+        if(message=="BSSubframeTx.End"||message=="UESubframeTx.End"){
             if(verbose) cout<<"[CoreL1] Received SubframeTx.End message from "<<message[0]<<message[1]<<"."<<endl;
         }
 
