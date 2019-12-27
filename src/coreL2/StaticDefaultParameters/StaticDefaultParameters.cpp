@@ -109,7 +109,7 @@ StaticDefaultParameters::StaticDefaultParameters(
 
 	//Gets Transmission Power Control Information
 	getline(defaultConfigurationsFile, readBuffer);
-	transmissionpowerControl = stoi(readBuffer);
+	transmissionPowerControl = stoi(readBuffer);
 	readBuffer.clear();
 
 	//Gets FUSION LUT matrix default value (only BS)

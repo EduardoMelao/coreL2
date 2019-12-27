@@ -1,4 +1,5 @@
 # MAC-5G-RANGE
+
 L2 layer for POC of 5G-RANGE project
 
 Structure of Default information file. Just leave numbers in the file, respecting the ranges indicated below:
