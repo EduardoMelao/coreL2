@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : December 13th, 2019
+@Last alteration : December 30th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -29,55 +29,47 @@ ProtocolControl::ProtocolControl(
         bool _verbose)                      //Verbosity flag
 {
     macController = _macController;
-    macControlqueue = new MacCQueue();
     verbose = _verbose;
 }
 
-ProtocolControl::~ProtocolControl() {
-    delete macControlqueue;
-}
+ProtocolControl::~ProtocolControl() { }
 
-void
-ProtocolControl::enqueueControlSdus(){
-    int macSendingPDU;                      //Auxiliary variable to store MAC Address if queue is full of SDUs to transmit
-    char bufControl[MAXIMUM_BUFFER_LENGTH]; //Buffer to store Control Bytes
+void 
+ProtocolControl::enqueueControlSdus(
+    uint8_t* controlSdu,    //MAC Control SDU
+    size_t numberBytes,     //Size of MACC SDU in Bytes
+    uint8_t macAddress)     //Destination MAC Address
+{
+    //Find index to identify the queue referring to this UE
+    int index;  //Index of destination UE in queues
+    for(index=0;index<macController->attachedEquipments;index++)
+        if(macAddress == macController->macAddressEquipments[index])
+            break;
 
-    ssize_t numberBytesRead = 0;    //Size of MACC SDU read in Bytes
-
-    //Inifinite loop
-    while (1){
-        //If multiplexing queue is empty, notify condition variable to trigger timeout timer
-        for(int i=0;i<macController->attachedEquipments;i++)
-            if(macController->mux->emptyPdu(macController->macAddressEquipments[i])) 
-                macController->queueConditionVariables[i].notify_all();
-
-        //Fulfill bufferControl with zeros        
-        bzero(bufControl, MAXIMUM_BUFFER_LENGTH);
-
-        //Test if it is BS or UE and decides which Control SDU to get
-        numberBytesRead = macController->flagBS? macControlqueue->getControlSduCSI(bufControl): macControlqueue->getControlSduULMCS(bufControl);
-        {   
-            //Locks mutex to write in multiplexer queue
-            lock_guard<mutex> lk(macController->queueMutex);
-            
-            //Send control PDU to all attached equipments
-            for(int i=0;i<macController->attachedEquipments;i++){
-                //Adds SDU to multiplexer
-                macSendingPDU = macController->mux->addSdu(bufControl, numberBytesRead, 0, macController->macAddressEquipments[i]);
-
-                //If the SDU was added successfully, continues the loop
-                if(macSendingPDU==-1)
-                    continue;
-
-                //Else, macSendingPDU contains the Transmission Queue MAC Address to perform PDU sending. 
-                //So, perform PDU sending
-                macController->sendPdu(macSendingPDU);
-
-                //Now, it is possible to add SDU to queue
-                macController->mux->addSdu(bufControl,numberBytesRead, 0,  macController->macAddressEquipments[i]);
-            }
-        }
+    if(index==macController->attachedEquipments){
+        if(verbose) cout<<"[ProtocolControl] Did not find MAC Address to send MACC SDU."<<endl;
+        exit(1);
     }
+
+    if(macController->mux->emptyPdu(macController->macAddressEquipments[index]))
+        	macController->queueConditionVariables[index].notify_all();     //index 0: UE has only BS as equipment
+
+    string sduBuffer;   //Buffer to store SDU for futher transmission
+
+    for(int i=0;i<numberBytes;i++)
+        sduBuffer[i] = controlSdu[i];
+    
+    lock_guard<mutex> lk(macController->queueMutex);
+
+    int macSendingPDU = macController->mux->addSdu(&(sduBuffer[0]), sduBuffer.size(), 0, macAddress);
+
+    //If addSdu returns -1, SDU was added successfully
+    if(macSendingPDU==-1) return;
+
+    //Else, queue is full. Need to send PDU
+    macController->sendPdu(macSendingPDU);
+
+    macController->mux->addSdu(&(sduBuffer[0]), sduBuffer.size(), 0, macAddress);
 }
 
 void 
@@ -85,26 +77,32 @@ ProtocolControl::decodeControlSdus(
     char* buffer,                   //Buffer containing Control SDU
     size_t numberDecodingBytes)     //Size of Control SDU in Bytes
 {
-    //PROVISIONAL: PRINT CONTROL SDU
-    if(verbose){
-        cout<<"[ProtocolControl] Control SDU received: ";
-        for(int i=0;i<numberDecodingBytes;i++)
-            cout<<buffer[i];
-        cout<<endl;
+    if(macController->flagBS){
+        if(numberDecodingBytes==3){     //It is probably an "ACK"
+            string receivedString;      //String to be compared to "ACK"
+            for(int i=0;i<numberDecodingBytes;i++)
+                receivedString[i] = buffer[i];
+            if(receivedString=="ACK"){
+                if(verbose) cout<<"[ProtocolControl] Received ACK from UE."<<endl;
+                lock_guard<mutex> lk(macController->dynamicParameters->dynamicParametersMutex);
+                {
+                    macController->dynamicParameters->setModified(false);
+                }
+            }
+        }
     }
-
-    if(!(macController->flagBS)){    //UE needs to return ACK to BS
+    else{    //UE needs to set its Dynamic Parameters and return ACK to BS
+        macController->managerDynamicParameters((uint8_t*) buffer, numberDecodingBytes);
         if(verbose) cout<<"[ProtocolControl] Returns ACK to BS..."<<endl;
         // ACK
         if(macController->mux->emptyPdu(macController->macAddressEquipments[0]))
         	macController->queueConditionVariables[0].notify_all();     //index 0: UE has only BS as equipment
 
-        char ackBuffer[MAXIMUM_BUFFER_LENGTH];
-        bzero(ackBuffer, MAXIMUM_BUFFER_LENGTH);
+        string ackBuffer;
 
-        size_t numberAckBytes = macControlqueue->getAck(ackBuffer);
+        ackBuffer = "ACK";
         lock_guard<mutex> lk(macController->queueMutex);
-        int macSendingPDU = macController->mux->addSdu(ackBuffer, numberAckBytes, 0,0);
+        int macSendingPDU = macController->mux->addSdu(&(ackBuffer[0]), ackBuffer.size(), 0,0);
 
         //If addSdu returns -1, SDU was added successfully
         if(macSendingPDU==-1) return;
@@ -112,7 +110,7 @@ ProtocolControl::decodeControlSdus(
         //Else, queue is full. Need to send PDU
         macController->sendPdu(macSendingPDU);
 
-        macController->mux->addSdu(ackBuffer, numberAckBytes, 0,0);
+        macController->mux->addSdu(&(ackBuffer[0]), ackBuffer.size(), 0,0);
     }    
 }
 

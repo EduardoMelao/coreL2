@@ -16,6 +16,7 @@ using namespace std;
 
 #include "../../common/lib5grange/lib5grange.h"
 #include "../../common/libMac5gRange/libMac5gRange.h"
+#include "../MacConfigRequest/MacConfigRequest.h"
 using namespace lib5grange;
 
 class StaticDefaultParameters{
@@ -25,7 +26,6 @@ private:
 
 public:
 	//Static information as informed on spreadsheet L1-L2_InterfaceDefinition.xlsx
-	bool flagBS;								//Flag to indicate if current equipment is 1 = Base Station or 0 = User Equipment
 	uint8_t numberUEs;							//[4 bits] Number of UserEquipments attached (ignore in case of UEs);
 	uint8_t numTRBsDL;							//[8 bits] Number of RBs DL for the aggregated channels
 	vector<allocation_cfg_t> ulReservations;	//[24 bits each] Spectrum allocation for Uplink
@@ -56,6 +56,12 @@ public:
 	 * @brief Destroys Static Default Parameters object
 	 */
 	~StaticDefaultParameters();
+
+	/**
+	 * @brief Loads a Dynamic Parameters Object with default information read from file
+	 * @param dynamicParameters MacConfigRequest object with dynamic parameters to be filled
+	 */
+	void loadDynamicParametersDefaultInformation(MacConfigRequest* dynamicParameters);
 
 };
 

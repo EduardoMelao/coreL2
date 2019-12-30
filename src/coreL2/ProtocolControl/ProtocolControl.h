@@ -11,8 +11,6 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "MacCQueue.h"
-
 #include "../Multiplexer/Multiplexer.h"
 #include "../MacController/MacController.h"
 
@@ -24,7 +22,6 @@ class MacController;	//Initializing class that will be defined in other .h file
 class ProtocolControl{
 private:
     MacController* macController;   //MAC Controller that instantiated this object and has all shared variables
-    MacCQueue* macControlqueue;     //Queue that generates Control SDUs for transmission
     bool verbose;                   //Verbosity flag
 
 public:
@@ -42,8 +39,11 @@ public:
     
     /**
      * @brief Procedure that executes forever and controls MACC SDUs generation, adding SDUs from MAC Control Queue to Multiplexer
+     * @param controlSdu MAC Control SDU Bytes
+     * @param numberBytes Size of MACC SDU in Bytes
+     * @param macAddress Destination MAC Address
      */
-    void enqueueControlSdus();
+    void enqueueControlSdus(uint8_t* controlSdu, size_t numberBytes, uint8_t macAddress);
 
     /**
      * @brief Receives and treat Control SDUs on decoding

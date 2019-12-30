@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : December 13th, 2019
+@Last alteration : December 30th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -86,11 +86,19 @@ MacController::MacController(
     //Create ProtocolControl to deal with MACC SDUs
     protocolControl = new ProtocolControl(this, verbose);
 
-    //Load static parameters from file
-    staticParameters = _staticParameters;
+    //These routines are executed only in BS:
+    if(flagBS){
+        //Load static parameters from file
+        staticParameters = _staticParameters;
+
+        //Fill dynamic Parameters with static parameters (stating system)
+        staticParameters->loadDynamicParametersDefaultInformation(dynamicParameters);
+    }
 }
 
 MacController::~MacController(){
+    if(dynamicParameters)
+        delete dynamicParameters;
 	delete staticParameters;
     delete protocolControl;
     delete protocolData;
@@ -292,7 +300,7 @@ MacController::setMacPduStaticInformation(size_t numberBytes, uint8_t macAddress
     mcsConfiguration.num_info_bytes = maxNumberBytes;
     mcsConfiguration.num_coded_bytes = maxNumberBytes/codeRate;
     mcsConfiguration.modulation = QAM64;
-    mcsConfiguration.power_offset = staticParameters->transmissionpowerControl;
+    mcsConfiguration.power_offset = staticParameters->transmissionPowerControl;
 
     //Resource allocation configuration
     allocationConfiguration.first_rb = 0;
@@ -310,4 +318,25 @@ MacController::setMacPduStaticInformation(size_t numberBytes, uint8_t macAddress
     macPDU.mimo_ = mimoConfiguration;
     macPDU.mcs_ = mcsConfiguration;
     macPDU.macphy_ctl_ = macPhyControl;
+}
+
+void 
+MacController::managerDynamicParameters(
+    uint8_t* bytesDynamicParameters,    //Serialized bytes from MacConfigRequest object
+    size_t numberBytes)                 //Number of bytes of serialized information
+{
+    vector<uint8_t> serializedBytes;        //Vector to be used for deserialization
+    serializedBytes.resize(numberBytes);    //Resize vector to its future size
+    
+    for(int i=0;i<numberBytes;i++)
+        serializedBytes.push_back(bytesDynamicParameters[i]);   //Copy information form array to vector
+
+    //Delete old Dynamic Parameters
+    if(dynamicParameters)
+        delete dynamicParameters;
+
+    //Deserialize bytes
+    dynamicParameters = new MacConfigRequest(serializedBytes);
+
+    if(verbose) cout<<"[MacController] Dynamic Parameters were managed successfully."<<endl;
 }

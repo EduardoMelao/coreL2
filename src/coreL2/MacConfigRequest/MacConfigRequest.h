@@ -34,10 +34,10 @@ private:
 	uint8_t mimoPrecoding;						//[4 bits] MIMO codeblock configuration for DL and UL
 	uint8_t transmissionPowerControl;			//[6 bits] Transmission Power Control
 	uint8_t rxMetricPeriodicity;				//[4 bits] CSI period for CQI, PMI and SSM provided by PHY
-	mutex dynamicParametersMutex;				//Mutex to control access and alterations on dynamic parameters 
 	bool verbose;								//Verbosity flag
 
 public:
+	mutex dynamicParametersMutex;				//Mutex to control access and alterations on dynamic parameters 
 
 	/**
 	 * @brief Constructor on BS side to initialize all variables with dynamic information
@@ -132,6 +132,12 @@ public:
 	 * @returns True if there are modified parameters. False otherwise
 	 */
 	bool isModified();
+
+	/**
+	 * @brief Sets value of modified flag
+	 * @param _modified New Value of modified flag
+	 */
+	void setModified(bool _modified);
 
 };
 

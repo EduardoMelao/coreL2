@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : December 12th, 2019
+@Last alteration : December 30th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -44,29 +44,32 @@ int main(int argc, char** argv){
     bool flagBS;                    //Base Station flag: true if BS, false if UE
 
     //Verify verbose
-    if(argc<2)
+    if(argc<3)
     	verbose = false;
     else{
-    	if(argc==2){
-			if(argv[1][0]=='-')
+    	if(argc==3){
+			if(argv[2][0]=='-')
 				verbose = true;
 			else devname=argv[1];
     	}
-    	else if(argc==3){
+    	else if(argc==4){
     		verbose = true;
     		devname = argv[2];
     	}
-    	else cout<<"Usage: sudo ./a.out [--v] [deviceNameTun]"<<endl;
+    	else cout<<"Usage: sudo ./a.out 0(UE)/1(BS) [--v] [deviceNameTun]"<<endl;
     }
 
-    //Load static information
-    StaticDefaultParameters *staticParameters = new StaticDefaultParameters(verbose);
+    flagBS = argv[1][0]=='1';
 
-    //Attributing flagBS
-    flagBS = staticParameters->flagBS;
-
-    //Attributing value to numberEquipments
-    numberEquipments = staticParameters->numberUEs;
+    //Load static information on BS and attributing value to numberEquipments
+    StaticDefaultParameters *staticParameters ;
+    if(flagBS){
+        staticParameters = new StaticDefaultParameters(verbose);
+        numberEquipments = staticParameters->numberUEs;
+    }
+    else
+        numberEquipments = 1;       //User Equipment's number of equipments (only BS)
+    
 
     macAddresses = new uint8_t[numberEquipments];
 
@@ -77,7 +80,7 @@ int main(int argc, char** argv){
     else
     	macAddresses[0] = 0;		//For User Equipment, only BS MAC Address
 
-    //Creates and initializes a MacAddressTable with static informations
+    //Creates and initializes a MacAddressTable with static informations (HARDCODE)
     MacAddressTable* ipMacTable = new MacAddressTable(verbose);
     uint8_t addressEntry0[4] = {10,0,0,10};
     uint8_t addressEntry1[4] = {10,0,0,11};

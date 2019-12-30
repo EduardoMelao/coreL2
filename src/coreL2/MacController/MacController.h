@@ -18,7 +18,6 @@
 #include "../Multiplexer/MacAddressTable/MacAddressTable.h"
 #include "../Multiplexer/TransmissionQueue.h"
 #include "../Multiplexer/Multiplexer.h"
-#include "../ProtocolControl/MacCQueue.h"
 #include "../ReceptionProtocol/ReceptionProtocol.h"
 #include "../TransmissionProtocol/TransmissionProtocol.h"
 #include "../ProtocolControl/MacCtHeader.h"
@@ -27,6 +26,7 @@
 #include "../../common/lib5grange/lib5grange.h"
 #include "../../common/libMac5gRange/libMac5gRange.h"
 #include "../StaticDefaultParameters/StaticDefaultParameters.h"
+#include "../MacConfigRequest/MacConfigRequest.h"
 
 using namespace std;
 
@@ -66,7 +66,8 @@ public:
     ReceptionProtocol* receptionProtocol;           //Object to receive packets from L1 and L3
     TransmissionProtocol* transmissionProtocol;     //Object to transmit packets to L1 and L3
     L1L2Interface* l1l2Interface;   //Object to manage interface with L1
-    StaticDefaultParameters* staticParameters;
+    StaticDefaultParameters* staticParameters;      //Object with static/default parameters read from a file
+    MacConfigRequest* dynamicParameters;            //Object with dynamic parameters 
     
     /**
      * @brief Initializes a MacController object to manage all 5G RANGE MAC Operations
@@ -121,5 +122,12 @@ public:
      * @param macAddress User equipment MAC Address (if it is sending or if is destination)
      */
     void setMacPduStaticInformation(size_t numberBytes, uint8_t macAddress);
+
+    /**
+     * @brief [UE] Receives bytes referring to Dynamic Parameters coming by MACC SDU and updates class with new information
+     * @param bytesDynamicParameters Serialized bytes from MacConfigRequest object
+     * @param size Number of bytes of serialized information
+     */ 
+    void managerDynamicParameters(uint8_t* bytesDynamicParameters, size_t numberBytes);
 };
 #endif  //INCLUDED_MAC_CONTROLLER_H

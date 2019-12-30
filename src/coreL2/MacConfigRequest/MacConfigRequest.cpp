@@ -7,7 +7,7 @@
 @Arquive name : MacConfigRequest.cpp
 @Classification : MAC Configuration Request
 @
-@Last alteration : December 27th, 2019
+@Last alteration : December 30th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -82,7 +82,8 @@ MacConfigRequest::MacConfigRequest(
 
 MacConfigRequest::~MacConfigRequest(){}
 
-void MacConfigRequest::setFLutMatrix(
+void 
+MacConfigRequest::setFLutMatrix(
     uint8_t* _fLutMatrix)       //Fusion Spectrum Analysis Lookup Table
 {
     lock_guard<mutex> lk(dynamicParametersMutex);   //Lock mutex until alterations are finished
@@ -93,7 +94,8 @@ void MacConfigRequest::setFLutMatrix(
     }
 }
 
-void MacConfigRequest::setUlReservations(
+void 
+MacConfigRequest::setUlReservations(
     vector<allocation_cfg_t> _ulReservations)    //Spectrum allocation for Uplink
 {
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
@@ -105,7 +107,8 @@ void MacConfigRequest::setUlReservations(
     }
 }
 
-void MacConfigRequest::setMcsDownlink(
+void 
+MacConfigRequest::setMcsDownlink(
     uint8_t _mcsDownlink)           //Modulation and Coding Scheme for Downlink
 {
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
@@ -115,7 +118,8 @@ void MacConfigRequest::setMcsDownlink(
     }
 }
 
-void MacConfigRequest::setMcsUplink(
+void 
+MacConfigRequest::setMcsUplink(
     uint8_t _mcsUplink)     //Modulation and Coding Scheme for Uplink
 {
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
@@ -125,7 +129,8 @@ void MacConfigRequest::setMcsUplink(
     }
 }
 
-void MacConfigRequest::setMimo(
+void 
+MacConfigRequest::setMimo(
     uint8_t _mimoConf,                      //MIMO configuration
     uint8_t _mimoDiversityMultiplexing,     //MIMO Diversity or Multiplexing
     uint8_t _mimoAntenna,                   //MIMO antenna scheme: 2x2 or 4x4
@@ -145,7 +150,8 @@ void MacConfigRequest::setMimo(
     }
 }
 
-void MacConfigRequest::setTPC(
+void 
+MacConfigRequest::setTPC(
     uint8_t _trasmissionPowerControl)
 {
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
@@ -155,7 +161,8 @@ void MacConfigRequest::setTPC(
     }
 }
 
-void MacConfigRequest::setRxMetricPeriodicity(
+void 
+MacConfigRequest::setRxMetricPeriodicity(
     uint8_t _rxMetricPeriodicity)
 {
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
@@ -165,7 +172,8 @@ void MacConfigRequest::setRxMetricPeriodicity(
     }
 }
 
-void MacConfigRequest::setModified(
+void 
+MacConfigRequest::setModified(
     bool _modified)     //New modified flag value
 {
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
@@ -174,7 +182,8 @@ void MacConfigRequest::setModified(
     }
 }
 
-void MacConfigRequest::serialize(
+void 
+MacConfigRequest::serialize(
     uint8_t targetUeId,         //Target UE Identification
     vector<uint8_t> & bytes)    //Vector where serialized bytes will be stored
 {
@@ -219,10 +228,17 @@ void MacConfigRequest::serialize(
     }
 }
 
-bool MacConfigRequest::isModified(){
+bool 
+MacConfigRequest::isModified(){
     lock_guard<mutex> lk(dynamicParametersMutex);   //Lock mutex until value is returned
     {
         return modified;
     }
 }
 
+void 
+MacConfigRequest::setModified(
+    bool _modified)     //New modified flag value
+{   
+    modified = _modified;    
+}
