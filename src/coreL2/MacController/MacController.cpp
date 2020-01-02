@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : December 30th, 2019
+@Last alteration : January 2nd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -339,4 +339,23 @@ MacController::managerDynamicParameters(
     dynamicParameters = new MacConfigRequest(serializedBytes);
 
     if(verbose) cout<<"[MacController] Dynamic Parameters were managed successfully."<<endl;
+}
+
+void
+MacController::manager(){
+    vector<uint8_t> dynamicParametersBytes;
+    //Infinite loop
+    while(1){
+        //Wait for TIMEOUT_DYNAMIC_PARAMETERS seconds
+        this_thread::sleep_for(chrono::seconds(TIMEOUT_DYNAMIC_PARAMETERS));
+
+        if(dynamicParameters->isModified()){
+            //Send a MACC SDU to each UE attached
+            for(int i=0;i<attachedEquipments;i++){
+                dynamicParametersBytes.clear();
+                dynamicParameters->serialize(macAddressEquipments[i], dynamicParametersBytes);
+                protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), macAddressEquipments[i]);
+            }
+        }
+    }
 }
