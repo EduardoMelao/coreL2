@@ -67,12 +67,11 @@ MacController::MacController(
     /** Threads order:
      * 0 .. attachedEquipments-1    ---> Timeout control threads
      * attachedEquipments           ---> ProtocolData MACD SDU enqueueing
-     * attachedEquipments+1         ---> ProtocolControl MACC SDU heneration and enqueueing
-     * attachedEquipments+2         ---> Data SDU enqueueing from TUN interface in MacHighQueue
-     * attachedEquipments+3         ---> Reading control messages from PHY
-     * attachedEquipments+4         ---> (BS Only) Send DynamicParameters to UE when changed
+     * attachedEquipments+1         ---> Data SDU enqueueing from TUN interface in MacHighQueue
+     * attachedEquipments+2         ---> Reading control messages from PHY
+     * attachedEquipments+3         ---> (BS Only) Send DynamicParameters to UE when changed
      */
-    threads = new thread[5+attachedEquipments];
+    threads = new thread[4+attachedEquipments];
 
     //Create Multiplexer and set its TransmissionQueues
     mux = new Multiplexer(maxNumberBytes, macAddress, ipMacTable, MAXSDUS, flagBS, verbose);
@@ -92,16 +91,14 @@ MacController::MacController(
     if(flagBS){
         //Load static parameters from file
         staticParameters = _staticParameters;
-
-        //Fill dynamic Parameters with static parameters (stating system)
-        staticParameters->loadDynamicParametersDefaultInformation(dynamicParameters);
     }
 }
 
 MacController::~MacController(){
     if(dynamicParameters)
         delete dynamicParameters;
-	delete staticParameters;
+    if(staticParameters)
+    	delete staticParameters;
     delete protocolControl;
     delete protocolData;
     delete mux;
@@ -127,21 +124,17 @@ MacController::startThreads(){
     //TUN queue control thread
     threads[i] = thread(&ProtocolData::enqueueDataSdus, protocolData);
 
-    //Control SDUs controller thread
-    threads[i+1] = thread(&ProtocolControl::enqueueControlSdus, protocolControl);
-
     //TUN reading and enqueueing thread
-    threads[i+2] = thread(&MacHighQueue::reading, macHigh);
+    threads[i+1] = thread(&MacHighQueue::reading, macHigh);
 
     //Control messages from PHY reading
-    threads[i+3] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl);
+    threads[i+2] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl);
 
     //(Only BS) Manager threads: Send MACC SDUs when Dynamic Parameters are changed
-    if(flagBS)
-        threads[i+4] = thread(&MacController::manager, this);
+    threads[i+3] = thread(&MacController::manager, this);
 
     //Join all threads
-    int numberThreads = flagBS? 5+attachedEquipments:4+attachedEquipments;
+    int numberThreads = flagBS? 4+attachedEquipments:3+attachedEquipments;
     for(i=0;i<numberThreads;i++)
         threads[i].join();
 }
@@ -350,6 +343,9 @@ MacController::managerDynamicParameters(
 
 void
 MacController::manager(){
+    //Fill dynamic Parameters with static parameters (stating system)
+    staticParameters->loadDynamicParametersDefaultInformation(dynamicParameters);
+
     vector<uint8_t> dynamicParametersBytes;
     //Infinite loop
     while(1){
@@ -357,12 +353,16 @@ MacController::manager(){
         this_thread::sleep_for(chrono::seconds(TIMEOUT_DYNAMIC_PARAMETERS));
 
         if(dynamicParameters->isModified()){
-            //Send a MACC SDU to each UE attached
-            for(int i=0;i<attachedEquipments;i++){
-                dynamicParametersBytes.clear();
-                dynamicParameters->serialize(macAddressEquipments[i], dynamicParametersBytes);
-                protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), macAddressEquipments[i]);
-            }
+        	dynamicParameters->dynamicParametersMutex.lock();
+        	{
+        		//Send a MACC SDU to each UE attached
+				for(int i=0;i<attachedEquipments;i++){
+					dynamicParametersBytes.clear();
+					dynamicParameters->serialize(macAddressEquipments[i], dynamicParametersBytes);
+					protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), macAddressEquipments[i]);
+				}
+        	}
+        	dynamicParameters->dynamicParametersMutex.unlock();
         }
     }
 }

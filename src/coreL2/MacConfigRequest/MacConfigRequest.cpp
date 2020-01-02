@@ -7,7 +7,7 @@
 @Arquive name : MacConfigRequest.cpp
 @Classification : MAC Configuration Request
 @
-@Last alteration : December 30th, 2019
+@Last alteration : January 2nd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -192,53 +192,40 @@ MacConfigRequest::serialize(
     int counter;            //Counter to help loop controls
     uint8_t auxiliary;      //Auxiliary variable to help shift binaries
 
-    lock_guard<mutex> lk(dynamicParametersMutex);   //Lock mutex until operation is finished
-    {
-        for(int counter=0;counter<16;counter++)
-            push_bytes(bytes, fLutMatrix[counter]);
-        
-        //Least significant 4 bits: fLutMatrix[16]
-        //Most significant 4 bits: rxMetrixPeriodicity
-        auxiliary = (fLutMatrix[16]&15)|((rxMetricPeriodicity&15)<<4);
-        push_bytes(bytes, auxiliary);
+	for(counter=0;counter<16;counter++)
+		push_bytes(bytes, fLutMatrix[counter]);
 
-        for(int counter=0;counter<ulReservations.size();counter++){
-            if(ulReservations[counter].target_ue_id==targetUeId){
-                push_bytes(bytes, ulReservations[counter].target_ue_id);
-                push_bytes(bytes, ulReservations[counter].first_rb);
-                push_bytes(bytes, ulReservations[counter].number_of_rb);
-            }
-        }
-        if(counter==ulReservations.size()){
-            if(verbose) cout<<"[MacConfigRequest] Target UE not found to serialize"<<endl;
-            exit(1);
-        }
+	//Least significant 4 bits: fLutMatrix[16]
+	//Most significant 4 bits: rxMetrixPeriodicity
+	auxiliary = (fLutMatrix[16]&15)|((rxMetricPeriodicity&15)<<4);
+	push_bytes(bytes, auxiliary);
 
-        //Least significant 4 bits: mcsDownlink
-        //Most significant 4 bits: mcsUplink
-        auxiliary = (mcsDownlink&15)|((mcsUplink&15)<<4);
-        push_bytes(bytes, auxiliary);
+	for(counter=0;counter<ulReservations.size();counter++){
+		if(ulReservations[counter].target_ue_id==targetUeId){
+			push_bytes(bytes, ulReservations[counter].target_ue_id);
+			push_bytes(bytes, ulReservations[counter].first_rb);
+			push_bytes(bytes, ulReservations[counter].number_of_rb);
+		}
+	}
+	if(counter==ulReservations.size()){
+		if(verbose) cout<<"[MacConfigRequest] Target UE not found to serialize"<<endl;
+		exit(1);
+	}
 
-        auxiliary = (mimoPrecoding&15)|((mimoOpenLoopClosedLoop&1)<<4)|((mimoAntenna&1)<<5)|((mimoDiversityMultiplexing&1)<<6)|((mimoConf&1)<<7);
-        push_bytes(bytes, auxiliary);
+	//Least significant 4 bits: mcsDownlink
+	//Most significant 4 bits: mcsUplink
+	auxiliary = (mcsDownlink&15)|((mcsUplink&15)<<4);
+	push_bytes(bytes, auxiliary);
 
-        push_bytes(bytes, transmissionPowerControl);
+	auxiliary = (mimoPrecoding&15)|((mimoOpenLoopClosedLoop&1)<<4)|((mimoAntenna&1)<<5)|((mimoDiversityMultiplexing&1)<<6)|((mimoConf&1)<<7);
+	push_bytes(bytes, auxiliary);
 
-        if(verbose) cout<<"[MacConfigRequest] Serialization successful with "<<bytes.size()<<" bytes of information."<<endl;   
-    }
+	push_bytes(bytes, transmissionPowerControl);
+
+	if(verbose) cout<<"[MacConfigRequest] Serialization successful with "<<bytes.size()<<" bytes of information."<<endl;
 }
 
 bool 
 MacConfigRequest::isModified(){
-    lock_guard<mutex> lk(dynamicParametersMutex);   //Lock mutex until value is returned
-    {
         return modified;
-    }
-}
-
-void 
-MacConfigRequest::setModified(
-    bool _modified)     //New modified flag value
-{   
-    modified = _modified;    
 }

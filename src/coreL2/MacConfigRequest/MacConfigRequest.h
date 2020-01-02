@@ -133,12 +133,6 @@ public:
 	 */
 	bool isModified();
 
-	/**
-	 * @brief Sets value of modified flag
-	 * @param _modified New Value of modified flag
-	 */
-	void setModified(bool _modified);
-
 };
 
 #endif  //INCLUDED_MAC_CONFIG_REQUEST_H
