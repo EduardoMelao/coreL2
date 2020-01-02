@@ -7,7 +7,7 @@
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : December 13th, 2019
+@Last alteration : January 2nd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -133,7 +133,7 @@ Multiplexer::addSdu(
 
     //Test if there number of SDUs extrapolates maximum
     if(transmissionQueues[i]->numberSDUs+1 == transmissionQueues[i]->maximumNumberSDUs){
-        if(verbose) cout<<"[TransmissionQueue] Tried to multiplex more SDUs than supported."<<endl;
+        if(verbose) cout<<"[Multiplexer] Tried to multiplex more SDUs than supported."<<endl;
         return _destinationMac;
     }
 

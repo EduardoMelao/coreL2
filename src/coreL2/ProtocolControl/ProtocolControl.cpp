@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : December 30th, 2019
+@Last alteration : January 2nd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -54,14 +54,14 @@ ProtocolControl::enqueueControlSdus(
     if(macController->mux->emptyPdu(macController->macAddressEquipments[index]))
         	macController->queueConditionVariables[index].notify_all();     //index 0: UE has only BS as equipment
 
-    string sduBuffer;   //Buffer to store SDU for futher transmission
+    char sduBuffer[MAXIMUM_BUFFER_LENGTH];   //Buffer to store SDU for futher transmission
 
     for(int i=0;i<numberBytes;i++)
         sduBuffer[i] = controlSdu[i];
     
     lock_guard<mutex> lk(macController->queueMutex);
 
-    int macSendingPDU = macController->mux->addSdu(&(sduBuffer[0]), sduBuffer.size(), 0, macAddress);
+    int macSendingPDU = macController->mux->addSdu(sduBuffer, numberBytes, 0, macAddress);
 
     //If addSdu returns -1, SDU was added successfully
     if(macSendingPDU==-1) return;
@@ -69,7 +69,7 @@ ProtocolControl::enqueueControlSdus(
     //Else, queue is full. Need to send PDU
     macController->sendPdu(macSendingPDU);
 
-    macController->mux->addSdu(&(sduBuffer[0]), sduBuffer.size(), 0, macAddress);
+    macController->mux->addSdu(sduBuffer, numberBytes, 0, macAddress);
 }
 
 void 

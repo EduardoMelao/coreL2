@@ -35,7 +35,7 @@ using namespace std;
 #define SRC_OFFSET 12   //IP packet source address offset in bytes 
 #define DST_OFFSET 16   //IP packet destination address offset in bytes
 #define TIMEOUT 1      	//Timeout(nanoseconds) to send PDU if there is information to transmit
-#define TIMEOUT_DYNAMIC_PARAMETERS 10   //Timeout(seconds) to check for dynamic parameters alterations
+#define TIMEOUT_DYNAMIC_PARAMETERS 5   //Timeout(seconds) to check for dynamic parameters alterations
 
 //Initializing classes that will be defined in other .h files
 class ProtocolData;		

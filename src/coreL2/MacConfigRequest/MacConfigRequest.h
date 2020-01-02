@@ -40,22 +40,10 @@ public:
 	mutex dynamicParametersMutex;				//Mutex to control access and alterations on dynamic parameters 
 
 	/**
-	 * @brief Constructor on BS side to initialize all variables with dynamic information
-	 * @param _fLutMatrix BitMap from Fusion Spectrum Analisys
-	 * @param _ulReservations Spectrum allocation for Uplink
-	 * @param _mcsDownlink Modulation and Coding Scheme for Downlink
-	 * @param _mcsUplink Modulation and Coding Scheme for Uplink
-	 * @param _mimoConf SISO(0) or MIMO(1) flag
-	 * @param _mimoDiversityMultiplexing Diversity(0) or Multiplexing(1) flag
-	 * @param _mimoAntenna MIMO 2x2(0) or 4x4(1) antenna scheme
-	 * @param _mimoOpenLoopClosedLoop MIMO 0 = Open Loop; 1 = Closed Loop
-	 * @param _mimoPrecoding MIMO codeblock configuration for DL and UL
-	 * @param _transmissionPowerControl Transmission Power Control
-	 * @param _rxMetricPeriodicity CSI period for CQI, PMI and SSM provided by PHY
-	 * @param _verbose Verbosity flag
+	 *@brief Empty constructor for Dynamic Variables
+	 *@param _verbose Verbosity flag
 	 */
-	MacConfigRequest(uint8_t* _fLutMatrix, vector<allocation_cfg_t> _ulReservations, uint8_t _mcsDownlink, uint8_t _mcsUplink, uint8_t _mimoConf, uint8_t _mimoDiversityMultiplexing,
-						uint8_t _mimoAntenna, uint8_t _mimoOpenLoopClosedLoop, uint8_t _mimoPrecoding, uint8_t _transmissionPowerControl, uint8_t _rxMetricPeriodicity, bool _verbose);
+	MacConfigRequest(bool _verbose);
 
 	/**
 	 * @brief Constructor on UE side to initialize all variables with dynamic information from MACC SDU
@@ -67,6 +55,23 @@ public:
 	 * @brief Destructs MacConfigRequest object
 	 */
 	~MacConfigRequest();
+
+	/**
+	 * @brief Initialize all variables with dynamic information
+	 * @param _fLutMatrix BitMap from Fusion Spectrum Analisys
+	 * @param _ulReservations Spectrum allocation for Uplink
+	 * @param _mcsDownlink Modulation and Coding Scheme for Downlink
+	 * @param _mcsUplink Modulation and Coding Scheme for Uplink
+	 * @param _mimoConf SISO(0) or MIMO(1) flag
+	 * @param _mimoDiversityMultiplexing Diversity(0) or Multiplexing(1) flag
+	 * @param _mimoAntenna MIMO 2x2(0) or 4x4(1) antenna scheme
+	 * @param _mimoOpenLoopClosedLoop MIMO 0 = Open Loop; 1 = Closed Loop
+	 * @param _mimoPrecoding MIMO codeblock configuration for DL and UL
+	 * @param _transmissionPowerControl Transmission Power Control
+	 * @param _rxMetricPeriodicity CSI period for CQI, PMI and SSM provided by PHY
+	 */
+	void fillDynamicVariables(uint8_t* _fLutMatrix, vector<allocation_cfg_t> _ulReservations, uint8_t _mcsDownlink, uint8_t _mcsUplink, uint8_t _mimoConf, uint8_t _mimoDiversityMultiplexing,
+						uint8_t _mimoAntenna, uint8_t _mimoOpenLoopClosedLoop, uint8_t _mimoPrecoding, uint8_t _transmissionPowerControl, uint8_t _rxMetricPeriodicity);
 
 	/**
 	 * @brief Sets Fusion Lookup Matrix

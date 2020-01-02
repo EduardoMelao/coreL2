@@ -91,6 +91,9 @@ MacController::MacController(
     if(flagBS){
         //Load static parameters from file
         staticParameters = _staticParameters;
+
+        //Initialize Dynamic Parameters class
+        dynamicParameters = new MacConfigRequest(verbose);
     }
 }
 

@@ -7,7 +7,7 @@
 @Arquive name : StaticDefaultParameters.cpp
 @Classification : Static Default Parameters
 @
-@Last alteration : December 30th, 2019
+@Last alteration : January 2nd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -145,7 +145,7 @@ StaticDefaultParameters::loadDynamicParametersDefaultInformation(
 	MacConfigRequest* dynamicParameters)	//MacConfigRequest object with dynamic information to be filled
 
 {
-	dynamicParameters = new MacConfigRequest(fLutMatrix, ulReservations, mcsDownlink, mcsUplink, mimoConf, mimoDiversityMultiplexing, mimoAntenna,
-												mimoOpenLoopClosedLoop, mimoPrecoding, transmissionPowerControl, rxMetricPeriodicity, verbose);
+	dynamicParameters->fillDynamicVariables(fLutMatrix, ulReservations, mcsDownlink, mcsUplink, mimoConf, mimoDiversityMultiplexing, mimoAntenna,
+												mimoOpenLoopClosedLoop, mimoPrecoding, transmissionPowerControl, rxMetricPeriodicity);
 	if(verbose) cout<<"[StaticDefaultParameters] MacConfigRequest filled correctly."<<endl;
 }

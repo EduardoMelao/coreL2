@@ -25,26 +25,8 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 #include "MacConfigRequest.h"
 
 MacConfigRequest::MacConfigRequest(
-    uint8_t* _fLutMatrix,                       //Bitmap from Fusion Spectrum Analysis
-    vector<allocation_cfg_t> _ulReservations,   //Spectrum allocation from Uplink
-    uint8_t _mcsDownlink,                       //Modulation and Coding Scheme for Downlink
-    uint8_t _mcsUplink,                         //Modulation and Coding Scheme for Uplink
-    uint8_t _mimoConf,                          //SISO(0) oe MIMO(1) flag
-    uint8_t _mimoDiversityMultiplexing,         //Diversity(0) or Multiplexing(1) flag
-	uint8_t _mimoAntenna,                       //MIMO 2x2(0) or 4x4(1) antenna scheme
-    uint8_t _mimoOpenLoopClosedLoop,            //MIMO 0 = Open Loop; 1 = Closed Loop
-    uint8_t _mimoPrecoding,                     //MIMO codeblock configuration for DL and UL
-    uint8_t _transmissionPowerControl,          //Transmission Power Control
-    uint8_t _rxMetricPeriodicity,               //CSI period for CQI, PMI and SSM provided by PHY
-    bool _verbose)                              //Verbosity flag
+		bool _verbose)		//Verbosity flag
 {
-    setFLutMatrix(_fLutMatrix);
-    setUlReservations(_ulReservations);
-    setMcsDownlink(_mcsDownlink);
-    setMcsUplink(_mcsUplink);
-    setMimo(_mimoConf, _mimoDiversityMultiplexing, _mimoAntenna, _mimoOpenLoopClosedLoop, _mimoPrecoding);
-    setTPC(_transmissionPowerControl);
-    setRxMetricPeriodicity(_rxMetricPeriodicity);
     verbose = _verbose;
 }
 
@@ -81,6 +63,29 @@ MacConfigRequest::MacConfigRequest(
 }
 
 MacConfigRequest::~MacConfigRequest(){}
+
+void
+MacConfigRequest::fillDynamicVariables(
+    uint8_t* _fLutMatrix,                       //Bitmap from Fusion Spectrum Analysis
+    vector<allocation_cfg_t> _ulReservations,   //Spectrum allocation from Uplink
+    uint8_t _mcsDownlink,                       //Modulation and Coding Scheme for Downlink
+    uint8_t _mcsUplink,                         //Modulation and Coding Scheme for Uplink
+    uint8_t _mimoConf,                          //SISO(0) oe MIMO(1) flag
+    uint8_t _mimoDiversityMultiplexing,         //Diversity(0) or Multiplexing(1) flag
+	uint8_t _mimoAntenna,                       //MIMO 2x2(0) or 4x4(1) antenna scheme
+    uint8_t _mimoOpenLoopClosedLoop,            //MIMO 0 = Open Loop; 1 = Closed Loop
+    uint8_t _mimoPrecoding,                     //MIMO codeblock configuration for DL and UL
+    uint8_t _transmissionPowerControl,          //Transmission Power Control
+    uint8_t _rxMetricPeriodicity)               //CSI period for CQI, PMI and SSM provided by PHY
+{
+    setFLutMatrix(_fLutMatrix);
+    setUlReservations(_ulReservations);
+    setMcsDownlink(_mcsDownlink);
+    setMcsUplink(_mcsUplink);
+    setMimo(_mimoConf, _mimoDiversityMultiplexing, _mimoAntenna, _mimoOpenLoopClosedLoop, _mimoPrecoding);
+    setTPC(_transmissionPowerControl);
+    setRxMetricPeriodicity(_rxMetricPeriodicity);
+}
 
 void 
 MacConfigRequest::setFLutMatrix(
@@ -205,6 +210,7 @@ MacConfigRequest::serialize(
 			push_bytes(bytes, ulReservations[counter].target_ue_id);
 			push_bytes(bytes, ulReservations[counter].first_rb);
 			push_bytes(bytes, ulReservations[counter].number_of_rb);
+			break;
 		}
 	}
 	if(counter==ulReservations.size()){
