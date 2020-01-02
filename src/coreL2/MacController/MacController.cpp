@@ -63,14 +63,16 @@ MacController::MacController(
 
     macHigh = new MacHighQueue(receptionProtocol, _verbose);
 
+    //Threads definition
     /** Threads order:
      * 0 .. attachedEquipments-1    ---> Timeout control threads
      * attachedEquipments           ---> ProtocolData MACD SDU enqueueing
      * attachedEquipments+1         ---> ProtocolControl MACC SDU heneration and enqueueing
      * attachedEquipments+2         ---> Data SDU enqueueing from TUN interface in MacHighQueue
      * attachedEquipments+3         ---> Reading control messages from PHY
+     * attachedEquipments+4         ---> (BS Only) Send DynamicParameters to UE when changed
      */
-    threads = new thread[4+attachedEquipments];
+    threads = new thread[5+attachedEquipments];
 
     //Create Multiplexer and set its TransmissionQueues
     mux = new Multiplexer(maxNumberBytes, macAddress, ipMacTable, MAXSDUS, flagBS, verbose);
@@ -134,8 +136,13 @@ MacController::startThreads(){
     //Control messages from PHY reading
     threads[i+3] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl);
 
+    //(Only BS) Manager threads: Send MACC SDUs when Dynamic Parameters are changed
+    if(flagBS)
+        threads[i+4] = thread(&MacController::manager, this);
+
     //Join all threads
-    for(i=0;i<attachedEquipments+4;i++)
+    int numberThreads = flagBS? 5+attachedEquipments:4+attachedEquipments;
+    for(i=0;i<numberThreads;i++)
         threads[i].join();
 }
 
