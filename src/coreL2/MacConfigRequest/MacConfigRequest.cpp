@@ -30,12 +30,16 @@ MacConfigRequest::MacConfigRequest(
     verbose = _verbose;
 }
 
-MacConfigRequest::MacConfigRequest(
+
+MacConfigRequest::~MacConfigRequest(){}
+
+void MacConfigRequest::deserialize(
     vector<uint8_t> & bytes)    //Bytes containing serialized values
 {
     uint8_t auxiliary;          //Auxiliary variable to store temporary information
 
     pop_bytes(mtu, bytes);
+
     pop_bytes(transmissionPowerControl, bytes);
 
     pop_bytes(auxiliary, bytes);
@@ -60,10 +64,7 @@ MacConfigRequest::MacConfigRequest(
 
     for(int i=15;i>=0;i--)
         pop_bytes(fLutMatrix[i], bytes);
-
 }
-
-MacConfigRequest::~MacConfigRequest(){}
 
 void
 MacConfigRequest::fillDynamicVariables(

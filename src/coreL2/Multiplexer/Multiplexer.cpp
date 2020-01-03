@@ -7,7 +7,7 @@
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : January 2nd, 2019
+@Last alteration : January 3rd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -205,3 +205,11 @@ Multiplexer::getNumberTransmissionQueues(){
     return numberTransmissionQueues;
 }
 
+void
+Multiplexer::setMaxNumberBytes(
+		uint16_t _maxNumberBytes)	//Maximum number of Bytes for each PDU
+{
+	maxNumberBytes = _maxNumberBytes;
+	for(int i=0;i<numberTransmissionQueues;i++)
+		transmissionQueues[i]->maxNumberBytes = _maxNumberBytes;
+}

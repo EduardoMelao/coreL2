@@ -101,5 +101,11 @@ public:
      * @returns Number of TransmissionQueues
      */    
     int getNumberTransmissionQueues();
+
+    /**
+     * @brief Sets Maximum number of Bytes for each PDU on multiplexer and transmission queues
+     * @param _maxNumberBytes
+     */
+    void setMaxNumberBytes(uint16_t _maxNumberBytes);
 };
 #endif  //INCLUDED_MULTIPLEXER_H

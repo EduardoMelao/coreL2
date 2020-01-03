@@ -98,11 +98,9 @@ ProtocolControl::decodeControlSdus(
         if(macController->mux->emptyPdu(macController->macAddressEquipments[0]))
         	macController->queueConditionVariables[0].notify_all();     //index 0: UE has only BS as equipment
 
-        string ackBuffer;
-
-        ackBuffer = "ACK";
+        char ackBuffer[3] = {'A', 'C', 'K'};
         lock_guard<mutex> lk(macController->queueMutex);
-        int macSendingPDU = macController->mux->addSdu(&(ackBuffer[0]), ackBuffer.size(), 0,0);
+        int macSendingPDU = macController->mux->addSdu(ackBuffer, 3, 0,0);
 
         //If addSdu returns -1, SDU was added successfully
         if(macSendingPDU==-1) return;
@@ -110,7 +108,7 @@ ProtocolControl::decodeControlSdus(
         //Else, queue is full. Need to send PDU
         macController->sendPdu(macSendingPDU);
 
-        macController->mux->addSdu(&(ackBuffer[0]), ackBuffer.size(), 0,0);
+        macController->mux->addSdu(ackBuffer, 3, 0,0);
     }    
 }
 

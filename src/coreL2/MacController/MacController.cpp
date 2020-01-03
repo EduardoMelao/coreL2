@@ -87,13 +87,13 @@ MacController::MacController(
     //Create ProtocolControl to deal with MACC SDUs
     protocolControl = new ProtocolControl(this, verbose);
 
+    //Initialize Dynamic Parameters class
+    dynamicParameters = new MacConfigRequest(verbose);
+
     //These routines are executed only in BS:
     if(flagBS){
         //Load static parameters from file
         staticParameters = _staticParameters;
-
-        //Initialize Dynamic Parameters class
-        dynamicParameters = new MacConfigRequest(verbose);
     }
 }
 
@@ -187,14 +187,19 @@ MacController::sendPdu(
     		messageParameters+=messageParametersBytes[i];
     }
     else{
-    	UESubframeTx_Start messageUE;	//Messages parameters structure
-    	messageUE.ulReservation = staticParameters->ulReservations[0];
-    	messageUE.numerology = staticParameters->numerology;
-    	messageUE.ofdm_gfdm = staticParameters->ofdm_gfdm;
-    	messageUE.rxMetricPeriodicity = staticParameters->rxMetricPeriodicity;
-    	messageUE.serialize(messageParametersBytes);
-    	for(uint i=0;i<messageParametersBytes.size();i++)
-    		messageParameters+=messageParametersBytes[i];
+    	if(maxNumberBytes>0){
+			UESubframeTx_Start messageUE;	//Messages parameters structure
+			messageUE.ulReservation = dynamicParameters->ulReservations[0];
+			messageUE.numerology = dynamicParameters->;
+			messageUE.ofdm_gfdm = dynamicParameters->ofdm_gfdm;
+			messageUE.rxMetricPeriodicity = dynamicParameters->rxMetricPeriodicity;
+			messageUE.serialize(messageParametersBytes);
+			for(uint i=0;i<messageParametersBytes.size();i++)
+				messageParameters+=messageParametersBytes[i];
+    	}
+    	else{
+    		if(verbose) cout<<"[MacController] UE not configured yet"<<endl;
+    	}
     }
 
     //Downlink routine:
@@ -330,20 +335,16 @@ MacController::managerDynamicParameters(
     size_t numberBytes)                 //Number of bytes of serialized information
 {
     vector<uint8_t> serializedBytes;        //Vector to be used for deserialization
-    serializedBytes.resize(numberBytes);    //Resize vector to its future size
-    
+
     for(int i=0;i<numberBytes;i++)
         serializedBytes.push_back(bytesDynamicParameters[i]);   //Copy information form array to vector
 
-    //Delete old Dynamic Parameters
-    if(dynamicParameters)
-        delete dynamicParameters;
-
     //Deserialize bytes
-    dynamicParameters = new MacConfigRequest(serializedBytes);
+    dynamicParameters->deserialize(serializedBytes);
 
     //PROVISIONAL: Sets MacController MTU
     maxNumberBytes = dynamicParameters->getMtu();
+    mux->setMaxNumberBytes(maxNumberBytes);
 
     if(verbose) cout<<"[MacController] Dynamic Parameters were managed successfully."<<endl;
 }

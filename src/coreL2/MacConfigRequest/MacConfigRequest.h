@@ -21,6 +21,8 @@ using namespace lib5grange;
 
 class MacConfigRequest{
 private:
+public:
+	//PROVISIONAL: NEED TO MAKE GETTERS FOR ALL VARIABLES
 	//Dynamic information as informed on spreadsheet L1-L2_InterfaceDefinition.xlsx
 	bool modified;                              //Flag to indicate if there's information changed to send to UE via MACC SDU
     uint8_t fLutMatrix[17];						//[132 bits] BitMap from Fusion Spectrum Analysis
@@ -35,22 +37,14 @@ private:
 	uint8_t transmissionPowerControl;			//[6 bits] Transmission Power Control
 	uint8_t rxMetricPeriodicity;				//[4 bits] CSI period for CQI, PMI and SSM provided by PHY
 	uint16_t mtu;								//[16 bits] Maximum Transmission Unit Size in Bytes
+	mutex dynamicParametersMutex;				//Mutex to control access and alterations on dynamic parameters
 	bool verbose;								//Verbosity flag
-
-public:
-	mutex dynamicParametersMutex;				//Mutex to control access and alterations on dynamic parameters 
 
 	/**
 	 *@brief Empty constructor for Dynamic Variables
 	 *@param _verbose Verbosity flag
 	 */
 	MacConfigRequest(bool _verbose);
-
-	/**
-	 * @brief Constructor on UE side to initialize all variables with dynamic information from MACC SDU
-	 * @param bytes Bytes with all variables information serialized
-	 */
-	MacConfigRequest(vector<uint8_t> & bytes);
 
 	/**
 	 * @brief Destructs MacConfigRequest object
@@ -74,6 +68,12 @@ public:
 	 */
 	void fillDynamicVariables(uint8_t* _fLutMatrix, vector<allocation_cfg_t> _ulReservations, uint8_t _mcsDownlink, uint8_t _mcsUplink, uint8_t _mimoConf, uint8_t _mimoDiversityMultiplexing,
 						uint8_t _mimoAntenna, uint8_t _mimoOpenLoopClosedLoop, uint8_t _mimoPrecoding, uint8_t _transmissionPowerControl, uint8_t _rxMetricPeriodicity, uint16_t _mtu);
+
+	/**
+	 * @brief Deserialize bytes to initialize all variables with dynamic information from MACC SDU
+	 * @param bytes Bytes with all variables information serialized
+	 */
+	void deserialize(vector<uint8_t> & bytes);
 
 	/**
 	 * @brief Sets Fusion Lookup Matrix
