@@ -4,8 +4,6 @@ L2 layer for POC of 5G-RANGE project
 
 Structure of Default information file. Just leave numbers in the file, respecting the ranges indicated below:
 
-
- - BS/UE	[0/1]		Flag to indicate if it is UE (0) or BS (1)
  - BS		[1..15]		Number of UEs 
  - BS		[1..132]	Number of RBs available for transmission
  - BS/UE	[0..15]		*User Equipment Identification
@@ -29,4 +27,4 @@ Structure of Default information file. Just leave numbers in the file, respectin
  - BS		[1..10]	    Ack timeout
 
 
-`*` These three information are read Number of UEs times (for BS), these are Uplink reservations for each UE. 
+`*` These three informations are read Number of UEs times (for BS), these are Uplink reservations for each UE. 
