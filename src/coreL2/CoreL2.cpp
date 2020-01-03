@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : December 30th, 2019
+@Last alteration : January 3rd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -35,6 +35,7 @@ using namespace std;
 #include "StaticDefaultParameters/StaticDefaultParameters.h"
 
 int main(int argc, char** argv){
+	uint8_t ueMacAddress;			//Mac Address of UserEquipment
     uint8_t* macAddresses;          //Array of 5GR MAC Addresses of attached equipments
     int numberEquipments;           //Number of attached equipments
     int argumentsOffset;			//Arguments interpretation offset
@@ -43,23 +44,35 @@ int main(int argc, char** argv){
     uint16_t maxNumberBytes;        //Maximum number of bytes in PDU
     bool flagBS;                    //Base Station flag: true if BS, false if UE
 
-    //Verify verbose
-    if(argc<3)
-    	verbose = false;
-    else{
-    	if(argc==3){
-			if(argv[2][0]=='-')
-				verbose = true;
-			else devname=argv[1];
-    	}
-    	else if(argc==4){
-    		verbose = true;
-    		devname = argv[2];
-    	}
-    	else cout<<"Usage: sudo ./a.out 0(UE)/1(BS) [--v] [deviceNameTun]"<<endl;
-    }
+	//Verify if it is BS or UE, MAC Address and verbose
+	if(argc<2){
+		cout<<"Usage: sudo ./a.out 0(UE)/1(BS) [--v] [deviceNameTun]"<<endl;
+		exit(1);
+	}
 
-    flagBS = argv[1][0]=='1';
+	flagBS = argv[1][0]=='1';
+	if(!flagBS)
+		ueMacAddress = argv[2][0]-48;
+
+	argumentsOffset = flagBS? 2:3;
+
+	if(argc<(argumentsOffset+1))
+		verbose = false;
+	else{
+		if(argc==(argumentsOffset+1)){
+			if(argv[argumentsOffset][0]=='-')
+				verbose = true;
+			else devname=argv[argumentsOffset];
+		}
+		else if(argc==argumentsOffset+2){
+			verbose = true;
+			devname = argv[argumentsOffset+1];
+		}
+		else{
+			cout<<"Usage: sudo ./a.out 0(UE)/1(BS) [--v] [deviceNameTun]"<<endl;
+			exit(1);
+		}
+	}
 
     //Load static information on BS and attributing value to numberEquipments
     StaticDefaultParameters *staticParameters ;
@@ -90,10 +103,10 @@ int main(int argc, char** argv){
     ipMacTable->addEntry(addressEntry2, 2, false);
     
     //Get maxNumberBytes from command line
-    maxNumberBytes = staticParameters->mtu;
+    maxNumberBytes = flagBS? staticParameters->mtu:0;
 
     //Create a new MacController object
-    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, flagBS? 0:staticParameters->ulReservations[0].target_ue_id, staticParameters, verbose);
+    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, flagBS? 0:ueMacAddress, staticParameters, verbose);
 
     //Finally, start threads
     equipment.startThreads();

@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : January 2nd, 2020
+@Last alteration : January 3rd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -134,7 +134,8 @@ MacController::startThreads(){
     threads[i+2] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl);
 
     //(Only BS) Manager threads: Send MACC SDUs when Dynamic Parameters are changed
-    threads[i+3] = thread(&MacController::manager, this);
+    if(flagBS)
+    	threads[i+3] = thread(&MacController::manager, this);
 
     //Join all threads
     int numberThreads = flagBS? 4+attachedEquipments:3+attachedEquipments;
@@ -340,6 +341,9 @@ MacController::managerDynamicParameters(
 
     //Deserialize bytes
     dynamicParameters = new MacConfigRequest(serializedBytes);
+
+    //PROVISIONAL: Sets MacController MTU
+    maxNumberBytes = dynamicParameters->getMtu();
 
     if(verbose) cout<<"[MacController] Dynamic Parameters were managed successfully."<<endl;
 }

@@ -146,6 +146,6 @@ StaticDefaultParameters::loadDynamicParametersDefaultInformation(
 
 {
 	dynamicParameters->fillDynamicVariables(fLutMatrix, ulReservations, mcsDownlink, mcsUplink, mimoConf, mimoDiversityMultiplexing, mimoAntenna,
-												mimoOpenLoopClosedLoop, mimoPrecoding, transmissionPowerControl, rxMetricPeriodicity);
+												mimoOpenLoopClosedLoop, mimoPrecoding, transmissionPowerControl, rxMetricPeriodicity, mtu);
 	if(verbose) cout<<"[StaticDefaultParameters] MacConfigRequest filled correctly."<<endl;
 }

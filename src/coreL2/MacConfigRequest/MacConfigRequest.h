@@ -34,6 +34,7 @@ private:
 	uint8_t mimoPrecoding;						//[4 bits] MIMO codeblock configuration for DL and UL
 	uint8_t transmissionPowerControl;			//[6 bits] Transmission Power Control
 	uint8_t rxMetricPeriodicity;				//[4 bits] CSI period for CQI, PMI and SSM provided by PHY
+	uint16_t mtu;								//[16 bits] Maximum Transmission Unit Size in Bytes
 	bool verbose;								//Verbosity flag
 
 public:
@@ -69,9 +70,10 @@ public:
 	 * @param _mimoPrecoding MIMO codeblock configuration for DL and UL
 	 * @param _transmissionPowerControl Transmission Power Control
 	 * @param _rxMetricPeriodicity CSI period for CQI, PMI and SSM provided by PHY
+	 * @param _mtu Maximum Transmission Unit
 	 */
 	void fillDynamicVariables(uint8_t* _fLutMatrix, vector<allocation_cfg_t> _ulReservations, uint8_t _mcsDownlink, uint8_t _mcsUplink, uint8_t _mimoConf, uint8_t _mimoDiversityMultiplexing,
-						uint8_t _mimoAntenna, uint8_t _mimoOpenLoopClosedLoop, uint8_t _mimoPrecoding, uint8_t _transmissionPowerControl, uint8_t _rxMetricPeriodicity);
+						uint8_t _mimoAntenna, uint8_t _mimoOpenLoopClosedLoop, uint8_t _mimoPrecoding, uint8_t _transmissionPowerControl, uint8_t _rxMetricPeriodicity, uint16_t _mtu);
 
 	/**
 	 * @brief Sets Fusion Lookup Matrix
@@ -120,6 +122,12 @@ public:
 	void setRxMetricPeriodicity(uint8_t _rxMetricPeriodicity);
 	
 	/**
+	 * @brief Sets MTU
+	 * @param _mtu New MTU
+	 */
+	void setMtu(uint16_t _mtu);
+
+	/**
 	 * @brief Sets modified flag to an especific value
 	 * @param _modified New modified flag value
 	 */
@@ -137,6 +145,12 @@ public:
 	 * @returns True if there are modified parameters. False otherwise
 	 */
 	bool isModified();
+
+	/**
+	 * @brief Gets current system MTU
+	 * @returns Maximum Transmission Unit
+	 */
+	uint16_t getMtu();
 
 };
 

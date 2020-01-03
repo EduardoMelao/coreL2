@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : January 2nd, 2019
+@Last alteration : January 3rd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -93,7 +93,7 @@ ProtocolControl::decodeControlSdus(
     }
     else{    //UE needs to set its Dynamic Parameters and return ACK to BS
         macController->managerDynamicParameters((uint8_t*) buffer, numberDecodingBytes);
-        if(verbose) cout<<"[ProtocolControl] Returns ACK to BS..."<<endl;
+        if(verbose) cout<<"[ProtocolControl] UE Configured correctly. Returning ACK to BS..."<<endl;
         // ACK
         if(macController->mux->emptyPdu(macController->macAddressEquipments[0]))
         	macController->queueConditionVariables[0].notify_all();     //index 0: UE has only BS as equipment

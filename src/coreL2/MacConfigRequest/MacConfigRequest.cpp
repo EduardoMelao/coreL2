@@ -7,7 +7,7 @@
 @Arquive name : MacConfigRequest.cpp
 @Classification : MAC Configuration Request
 @
-@Last alteration : January 2nd, 2019
+@Last alteration : January 3rd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -35,6 +35,7 @@ MacConfigRequest::MacConfigRequest(
 {
     uint8_t auxiliary;          //Auxiliary variable to store temporary information
 
+    pop_bytes(mtu, bytes);
     pop_bytes(transmissionPowerControl, bytes);
 
     pop_bytes(auxiliary, bytes);
@@ -76,7 +77,8 @@ MacConfigRequest::fillDynamicVariables(
     uint8_t _mimoOpenLoopClosedLoop,            //MIMO 0 = Open Loop; 1 = Closed Loop
     uint8_t _mimoPrecoding,                     //MIMO codeblock configuration for DL and UL
     uint8_t _transmissionPowerControl,          //Transmission Power Control
-    uint8_t _rxMetricPeriodicity)               //CSI period for CQI, PMI and SSM provided by PHY
+    uint8_t _rxMetricPeriodicity,               //CSI period for CQI, PMI and SSM provided by PHY
+	uint16_t _mtu)								//Maximum Transmission Unit
 {
     setFLutMatrix(_fLutMatrix);
     setUlReservations(_ulReservations);
@@ -85,6 +87,7 @@ MacConfigRequest::fillDynamicVariables(
     setMimo(_mimoConf, _mimoDiversityMultiplexing, _mimoAntenna, _mimoOpenLoopClosedLoop, _mimoPrecoding);
     setTPC(_transmissionPowerControl);
     setRxMetricPeriodicity(_rxMetricPeriodicity);
+    setMtu(_mtu);
 }
 
 void 
@@ -178,6 +181,17 @@ MacConfigRequest::setRxMetricPeriodicity(
 }
 
 void 
+MacConfigRequest::setMtu(
+    uint16_t _mtu)
+{
+    lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
+    {
+        mtu = _mtu;     //Assign new values
+        modified = true;    //Change flag after modifying value
+    }
+}
+
+void
 MacConfigRequest::setModified(
     bool _modified)     //New modified flag value
 {
@@ -228,10 +242,17 @@ MacConfigRequest::serialize(
 
 	push_bytes(bytes, transmissionPowerControl);
 
+	push_bytes(bytes, mtu);
+
 	if(verbose) cout<<"[MacConfigRequest] Serialization successful with "<<bytes.size()<<" bytes of information."<<endl;
 }
 
 bool 
 MacConfigRequest::isModified(){
         return modified;
+}
+
+uint16_t
+MacConfigRequest::getMtu(){
+	return mtu;
 }
