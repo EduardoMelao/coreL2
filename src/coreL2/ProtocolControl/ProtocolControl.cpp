@@ -81,13 +81,10 @@ ProtocolControl::decodeControlSdus(
         if(numberDecodingBytes==3){     //It is probably an "ACK"
             string receivedString;      //String to be compared to "ACK"
             for(int i=0;i<numberDecodingBytes;i++)
-                receivedString[i] = buffer[i];
+                receivedString += buffer[i];
             if(receivedString=="ACK"){
                 if(verbose) cout<<"[ProtocolControl] Received ACK from UE."<<endl;
-                lock_guard<mutex> lk(macController->dynamicParameters->dynamicParametersMutex);
-                {
-                    macController->dynamicParameters->setModified(false);
-                }
+                macController->dynamicParameters->setModified(false);
             }
         }
     }
@@ -134,11 +131,11 @@ ProtocolControl::receiveInterlayerMessages(){
             message+=buffer[i];
 
         if(message=="SubframeRx.Start"){
-            if(verbose) cout<<"[StubPHYLayer] Received SubframeRx.Start message."<<endl;
+            if(verbose) cout<<"[ProtocolControl] Received SubframeRx.Start message."<<endl;
             macController->decoding();
         }
         else if(message=="SubframeRx.End"){
-            if(verbose) cout<<"[StubPHYLayer] Received SubframeRx.End message."<<endl;
+            if(verbose) cout<<"[ProtocolControl] Received SubframeRx.End message."<<endl;
         }
 
         //Clear buffer and message and receive next control message
