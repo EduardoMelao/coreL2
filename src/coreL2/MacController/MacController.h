@@ -34,7 +34,6 @@ using namespace std;
 #define MAXIMUM_BUFFER_LENGTH 2048    //Maximum buffer length in bytes
 #define SRC_OFFSET 12   //IP packet source address offset in bytes 
 #define DST_OFFSET 16   //IP packet destination address offset in bytes
-#define TIMEOUT 1      	//Timeout(nanoseconds) to send PDU if there is information to transmit
 #define TIMEOUT_DYNAMIC_PARAMETERS 5   //Timeout(seconds) to check for dynamic parameters alterations
 
 //Initializing classes that will be defined in other .h files
@@ -77,12 +76,11 @@ public:
      * @param _maxNumberBytes Maximum number of PDU in Bytes 
      * @param _deviceNameTun Customized name for TUN Interface
      * @param _ipMacTable Static table to link IP addresses to 5G-RANGE MAC addresses
-     * @param _macAddress Current MAC address
      * @param _staticParameters Structure containing all static parameters loaded from file
      * @param _verbose Verbosity flag
      */
     MacController(int numberEquipments, uint8_t* _macAddressessEquipments, uint16_t _maxNumberBytes, 
-        const char* _deviceNameTun, MacAddressTable* _ipMacTable, uint8_t _macAddress, StaticDefaultParameters* _staticParameters, bool _verbose);
+        const char* _deviceNameTun, MacAddressTable* _ipMacTable, StaticDefaultParameters* _staticParameters, bool _verbose);
     
     /**
      * @brief Destructs MacController object

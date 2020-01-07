@@ -7,7 +7,7 @@
 @Arquive name : StaticDefaultParameters.cpp
 @Classification : Static Default Parameters
 @
-@Last alteration : January 2nd, 2019
+@Last alteration : January 7th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -34,15 +34,17 @@ StaticDefaultParameters::StaticDefaultParameters(
 
 	defaultConfigurationsFile = fstream("Default.txt");
 
-	//Gets Number of UEs
+	//Gets FlagBS
 	getline(defaultConfigurationsFile, readBuffer);
-	numberUEs = stoi(readBuffer);
-	readBuffer.clear();
+	flagBS = (readBuffer[0]=='1');
 
-	//Gets Number of RBs available for DL
-	getline(defaultConfigurationsFile, readBuffer);
-	numTRBsDL = stoi(readBuffer);
-	readBuffer.clear();
+	//Gets Number of UEs (only BS)
+	if(flagBS){
+		getline(defaultConfigurationsFile, readBuffer);
+		numberUEs = stoi(readBuffer);
+		readBuffer.clear();
+	}
+	else numberUEs = 1;			//Consider UE has only one equipment: BS
 
 	//Gets UPLinkReservations
 	ulReservations.resize(numberUEs);
@@ -68,10 +70,12 @@ StaticDefaultParameters::StaticDefaultParameters(
 	ofdm_gfdm = stoi(readBuffer);
 	readBuffer.clear();
 
-	//Gets MCS Downlink
-	getline(defaultConfigurationsFile, readBuffer);
-	mcsDownlink = stoi(readBuffer);
-	readBuffer.clear();
+	//Gets MCS Downlink (only BS)
+	if(flagBS){
+		getline(defaultConfigurationsFile, readBuffer);
+		mcsDownlink = stoi(readBuffer);
+		readBuffer.clear();
+	}
 
 	//Gets MCS Uplink
 	getline(defaultConfigurationsFile, readBuffer);
@@ -100,13 +104,15 @@ StaticDefaultParameters::StaticDefaultParameters(
 	transmissionPowerControl = stoi(readBuffer);
 	readBuffer.clear();
 
-	//Gets FUSION LUT matrix default value
-	uint8_t defaultValue;
-	getline(defaultConfigurationsFile, readBuffer);
-	defaultValue = stoi(readBuffer);
-	readBuffer.clear();
-	for(int i=0;i<17;i++)
-		fLutMatrix[i] = (defaultValue==0) ? 0:255;
+	//Gets FUSION LUT matrix default value (only BS)
+	if(flagBS){
+		uint8_t defaultValue;
+		getline(defaultConfigurationsFile, readBuffer);
+		defaultValue = stoi(readBuffer);
+		readBuffer.clear();
+		for(int i=0;i<17;i++)
+			fLutMatrix[i] = (defaultValue==0) ? 0:255;
+	}
 
 	//Gets Reception Metrics Periodicity
 	getline(defaultConfigurationsFile, readBuffer);
@@ -123,15 +129,18 @@ StaticDefaultParameters::StaticDefaultParameters(
 	ipTimeout = stoi(readBuffer);
 	readBuffer.clear();
 
-	//Gets Spectrum Sensing Report waiting Timeout
-	getline(defaultConfigurationsFile, readBuffer);
-	ssreportWaitTimeout = stoi(readBuffer);
-	readBuffer.clear();
+	//The following are only for BS
+	if(flagBS){
+		//Gets Spectrum Sensing Report waiting Timeout
+		getline(defaultConfigurationsFile, readBuffer);
+		ssreportWaitTimeout = stoi(readBuffer);
+		readBuffer.clear();
 
-	//Gets Acknowledgement waiting Timeout
-	getline(defaultConfigurationsFile, readBuffer);
-	ackWaitTimeout = stoi(readBuffer);
-	readBuffer.clear();
+		//Gets Acknowledgement waiting Timeout
+		getline(defaultConfigurationsFile, readBuffer);
+		ackWaitTimeout = stoi(readBuffer);
+		readBuffer.clear();
+	}
 
 	defaultConfigurationsFile.close();
 
@@ -145,7 +154,11 @@ StaticDefaultParameters::loadDynamicParametersDefaultInformation(
 	MacConfigRequest* dynamicParameters)	//MacConfigRequest object with dynamic information to be filled
 
 {
-	dynamicParameters->fillDynamicVariables(fLutMatrix, ulReservations, mcsDownlink, mcsUplink, mimoConf, mimoDiversityMultiplexing, mimoAntenna,
-												mimoOpenLoopClosedLoop, mimoPrecoding, transmissionPowerControl, rxMetricPeriodicity, mtu);
+	if(flagBS)
+		dynamicParameters->fillDynamicVariables(fLutMatrix, ulReservations, mcsDownlink, mcsUplink, mimoConf, mimoDiversityMultiplexing, mimoAntenna,
+												mimoOpenLoopClosedLoop, mimoPrecoding, transmissionPowerControl, rxMetricPeriodicity);
+	else
+		dynamicParameters->fillDynamicVariables(ulReservations, mcsUplink, mimoConf, mimoDiversityMultiplexing, mimoAntenna,
+												mimoOpenLoopClosedLoop, mimoPrecoding, transmissionPowerControl, rxMetricPeriodicity);
 	if(verbose) cout<<"[StaticDefaultParameters] MacConfigRequest filled correctly."<<endl;
 }

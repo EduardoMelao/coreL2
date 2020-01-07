@@ -21,8 +21,8 @@ using namespace lib5grange;
 
 class MacConfigRequest{
 private:
-public:
 	//PROVISIONAL: NEED TO MAKE GETTERS FOR ALL VARIABLES
+public:
 	//Dynamic information as informed on spreadsheet L1-L2_InterfaceDefinition.xlsx
 	bool modified;                              //Flag to indicate if there's information changed to send to UE via MACC SDU
     uint8_t fLutMatrix[17];						//[132 bits] BitMap from Fusion Spectrum Analysis
@@ -36,7 +36,6 @@ public:
 	uint8_t mimoPrecoding;						//[4 bits] MIMO codeblock configuration for DL and UL
 	uint8_t transmissionPowerControl;			//[6 bits] Transmission Power Control
 	uint8_t rxMetricPeriodicity;				//[4 bits] CSI period for CQI, PMI and SSM provided by PHY
-	uint16_t mtu;								//[16 bits] Maximum Transmission Unit Size in Bytes
 	mutex dynamicParametersMutex;				//Mutex to control access and alterations on dynamic parameters
 	bool verbose;								//Verbosity flag
 
@@ -52,7 +51,7 @@ public:
 	~MacConfigRequest();
 
 	/**
-	 * @brief Initialize all variables with dynamic information
+	 * @brief Initialize all variables with dynamic information on BS
 	 * @param _fLutMatrix BitMap from Fusion Spectrum Analisys
 	 * @param _ulReservations Spectrum allocation for Uplink
 	 * @param _mcsDownlink Modulation and Coding Scheme for Downlink
@@ -64,10 +63,24 @@ public:
 	 * @param _mimoPrecoding MIMO codeblock configuration for DL and UL
 	 * @param _transmissionPowerControl Transmission Power Control
 	 * @param _rxMetricPeriodicity CSI period for CQI, PMI and SSM provided by PHY
-	 * @param _mtu Maximum Transmission Unit
 	 */
 	void fillDynamicVariables(uint8_t* _fLutMatrix, vector<allocation_cfg_t> _ulReservations, uint8_t _mcsDownlink, uint8_t _mcsUplink, uint8_t _mimoConf, uint8_t _mimoDiversityMultiplexing,
-						uint8_t _mimoAntenna, uint8_t _mimoOpenLoopClosedLoop, uint8_t _mimoPrecoding, uint8_t _transmissionPowerControl, uint8_t _rxMetricPeriodicity, uint16_t _mtu);
+						uint8_t _mimoAntenna, uint8_t _mimoOpenLoopClosedLoop, uint8_t _mimoPrecoding, uint8_t _transmissionPowerControl, uint8_t _rxMetricPeriodicity);
+
+	/**
+	 * @brief Initialize all variables with dynamic information on UE
+	 * @param _ulReservation Spectrum allocation for Uplink
+	 * @param _mcsUplink Modulation and Coding Scheme for Uplink
+	 * @param _mimoConf SISO(0) or MIMO(1) flag
+	 * @param _mimoDiversityMultiplexing Diversity(0) or Multiplexing(1) flag
+	 * @param _mimoAntenna MIMO 2x2(0) or 4x4(1) antenna scheme
+	 * @param _mimoOpenLoopClosedLoop MIMO 0 = Open Loop; 1 = Closed Loop
+	 * @param _mimoPrecoding MIMO codeblock configuration for DL and UL
+	 * @param _transmissionPowerControl Transmission Power Control
+	 * @param _rxMetricPeriodicity CSI period for CQI, PMI and SSM provided by PHY
+	 */
+	void fillDynamicVariables(vector<allocation_cfg_t> _ulReservation, uint8_t _mcsUplink, uint8_t _mimoConf, uint8_t _mimoDiversityMultiplexing, uint8_t _mimoAntenna, 
+							uint8_t _mimoOpenLoopClosedLoop, uint8_t _mimoPrecoding, uint8_t _transmissionPowerControl, uint8_t _rxMetricPeriodicity);
 
 	/**
 	 * @brief Deserialize bytes to initialize all variables with dynamic information from MACC SDU
@@ -120,12 +133,6 @@ public:
 	 * @param _rxMetricPeriodicity CSI period for CQI, PMI and SSM provided by PHY
 	 */
 	void setRxMetricPeriodicity(uint8_t _rxMetricPeriodicity);
-	
-	/**
-	 * @brief Sets MTU
-	 * @param _mtu New MTU
-	 */
-	void setMtu(uint16_t _mtu);
 
 	/**
 	 * @brief Sets modified flag to an especific value
@@ -145,13 +152,6 @@ public:
 	 * @returns True if there are modified parameters. False otherwise
 	 */
 	bool isModified();
-
-	/**
-	 * @brief Gets current system MTU
-	 * @returns Maximum Transmission Unit
-	 */
-	uint16_t getMtu();
-
 };
 
 #endif  //INCLUDED_MAC_CONFIG_REQUEST_H

@@ -26,8 +26,8 @@ private:
 
 public:
 	//Static information as informed on spreadsheet L1-L2_InterfaceDefinition.xlsx
+	bool flagBS;								//Flag to indicate if current equipment is BS or UE
 	uint8_t numberUEs;							//[4 bits] Number of UserEquipments attached (ignore in case of UEs);
-	uint8_t numTRBsDL;							//[8 bits] Number of RBs DL for the aggregated channels
 	vector<allocation_cfg_t> ulReservations;	//[24 bits each] Spectrum allocation for Uplink
 	uint8_t numerology;							//[3 bits] Numerology identification
 	uint8_t ofdm_gfdm;							//[1 bit] Flag to indicate data transmission technique. 0=OFDM/1=GFDM
@@ -42,7 +42,7 @@ public:
 	uint8_t fLutMatrix[17];						//[132 bits] BitMap from Fusion Spectrum Analysis
 	uint8_t rxMetricPeriodicity;				//[4 bits] CSI period for CQI, PMI and SSM provided by PHY
 	uint16_t mtu;								//[16 bits] Maximum transmission unity of the system
-	uint16_t ipTimeout;							//[16 bits] IP Timeout time(milliseconds)
+	uint16_t ipTimeout;							//[16 bits] IP Timeout time (milliseconds)
 	uint16_t ssreportWaitTimeout;				//[4 bits] Spectrum Sensing Report Wait Timeout time(milliseconds)
 	uint16_t ackWaitTimeout;				    //[4 bits] Acknowledgement Wait Timeout time(milliseconds)
 

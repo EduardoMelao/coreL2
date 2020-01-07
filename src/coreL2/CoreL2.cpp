@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : January 3rd, 2019
+@Last alteration : January 7th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -35,7 +35,6 @@ using namespace std;
 #include "StaticDefaultParameters/StaticDefaultParameters.h"
 
 int main(int argc, char** argv){
-	uint8_t ueMacAddress;			//Mac Address of UserEquipment
     uint8_t* macAddresses;          //Array of 5GR MAC Addresses of attached equipments
     int numberEquipments;           //Number of attached equipments
     int argumentsOffset;			//Arguments interpretation offset
@@ -44,54 +43,29 @@ int main(int argc, char** argv){
     uint16_t maxNumberBytes;        //Maximum number of bytes in PDU
     bool flagBS;                    //Base Station flag: true if BS, false if UE
 
-	//Verify if it is BS or UE, MAC Address and verbose
-	if(argc<2){
-		cout<<"Usage: sudo ./a.out 0(UE)/1(BS) [--v] [deviceNameTun]"<<endl;
-		exit(1);
-	}
-
-	flagBS = argv[1][0]=='1';
-	if(!flagBS)
-		ueMacAddress = argv[2][0]-48;
-
-	argumentsOffset = flagBS? 2:3;
-
-	if(argc<(argumentsOffset+1))
-		verbose = false;
-	else{
-		if(argc==(argumentsOffset+1)){
-			if(argv[argumentsOffset][0]=='-')
-				verbose = true;
-			else devname=argv[argumentsOffset];
-		}
-		else if(argc==argumentsOffset+2){
-			verbose = true;
-			devname = argv[argumentsOffset+1];
-		}
-		else{
-			cout<<"Usage: sudo ./a.out 0(UE)/1(BS) [--v] [deviceNameTun]"<<endl;
-			exit(1);
-		}
-	}
-
-    //Load static information on BS and attributing value to numberEquipments
-    StaticDefaultParameters *staticParameters ;
-    if(flagBS){
-        staticParameters = new StaticDefaultParameters(verbose);
-        numberEquipments = staticParameters->numberUEs;
+	//Verify verbose
+    verbose = false;
+    if(argc==2){
+        if(argv[1][0]=='-') verbose = true;
+        else devname = argv[1];
     }
-    else
-        numberEquipments = 1;       //User Equipment's number of equipments (only BS)
-    
+    if(argc==3){
+        verbose = true;
+        devname = argv[2];
+    }
+
+    //Load static information on BS/UE and attributing value to numberEquipments
+    StaticDefaultParameters* staticParameters = new StaticDefaultParameters(verbose);
+    numberEquipments = staticParameters->numberUEs;
+    flagBS = staticParameters->flagBS;
 
     macAddresses = new uint8_t[numberEquipments];
 
     if(flagBS){
-		for(int i=0;i<numberEquipments;i++)
-			macAddresses[i] = staticParameters->ulReservations[i].target_ue_id;
+        for(int i=0;i<numberEquipments;i++)
+            macAddresses[i] = staticParameters->ulReservations[i].target_ue_id;
     }
-    else
-    	macAddresses[0] = 0;		//For User Equipment, only BS MAC Address
+    else macAddresses[0] = 0;   //BS is UE's "attached equipment"
 
     //Creates and initializes a MacAddressTable with static informations (HARDCODE)
     MacAddressTable* ipMacTable = new MacAddressTable(verbose);
@@ -103,10 +77,10 @@ int main(int argc, char** argv){
     ipMacTable->addEntry(addressEntry2, 2, false);
     
     //Get maxNumberBytes from command line
-    maxNumberBytes = flagBS? staticParameters->mtu:0;
+    maxNumberBytes = staticParameters->mtu;
 
     //Create a new MacController object
-    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, flagBS? 0:ueMacAddress, staticParameters, verbose);
+    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, staticParameters, verbose);
 
     //Finally, start threads
     equipment.startThreads();

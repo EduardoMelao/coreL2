@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : January 3rd, 2020
+@Last alteration : January 7th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -32,7 +32,6 @@ MacController::MacController(
         uint16_t _maxNumberBytes,       			//Maximum number of Bytes in PDU
         const char* _deviceNameTun,     			//TUN device name
         MacAddressTable* _ipMacTable,   			//MAC address - IP address table
-        uint8_t _macAddress,            			//5GR MAC address
 		StaticDefaultParameters* _staticParameters,	//All parameters loaded from file
         bool _verbose)                  			//Verbosity flag
 {
@@ -41,8 +40,8 @@ MacController::MacController(
     maxNumberBytes = _maxNumberBytes;
     verbose = _verbose;
     ipMacTable = _ipMacTable;
-    macAddress = _macAddress;
-    flagBS = ipMacTable->getFlagBS(macAddress);
+    flagBS = _staticParameters->flagBS;
+    macAddress = flagBS? 0:_staticParameters->ulReservations[0].target_ue_id;
     
     //Create condition variables
     queueConditionVariables = new condition_variable[numberEquipments];
@@ -61,6 +60,7 @@ MacController::MacController(
     receptionProtocol = new ReceptionProtocol(l1l2Interface, tunInterface, verbose);
     transmissionProtocol = new TransmissionProtocol(l1l2Interface,tunInterface, verbose);
 
+    //Create MACHigh queue to store IP packets received from TUN
     macHigh = new MacHighQueue(receptionProtocol, _verbose);
 
     //Threads definition
@@ -90,11 +90,11 @@ MacController::MacController(
     //Initialize Dynamic Parameters class
     dynamicParameters = new MacConfigRequest(verbose);
 
-    //These routines are executed only in BS:
-    if(flagBS){
-        //Load static parameters from file
-        staticParameters = _staticParameters;
-    }
+    //Load static parameters from file
+    staticParameters = _staticParameters;
+
+    //Fill dynamic Parameters with static parameters (stating system)
+    staticParameters->loadDynamicParametersDefaultInformation(dynamicParameters);
 }
 
 MacController::~MacController(){
@@ -177,11 +177,11 @@ MacController::sendPdu(
     	messageBS.numUEs = attachedEquipments;
     	messageBS.numPDUs = 1;
     	for(int i=0;i<17;i++)
-    		messageBS.fLutDL[i] = staticParameters->fLutMatrix[i];
-    	messageBS.ulReservations = staticParameters->ulReservations;
+    		messageBS.fLutDL[i] = dynamicParameters->fLutMatrix[i];
+    	messageBS.ulReservations = dynamicParameters->ulReservations;
     	messageBS.numerology = staticParameters->numerology;
     	messageBS.ofdm_gfdm = staticParameters->ofdm_gfdm;
-    	messageBS.rxMetricPeriodicity = staticParameters->rxMetricPeriodicity;
+    	messageBS.rxMetricPeriodicity = dynamicParameters->rxMetricPeriodicity;
     	messageBS.serialize(messageParametersBytes);
     	for(uint i=0;i<messageParametersBytes.size();i++)
     		messageParameters+=messageParametersBytes[i];
@@ -190,8 +190,8 @@ MacController::sendPdu(
     	if(maxNumberBytes>0){
 			UESubframeTx_Start messageUE;	//Messages parameters structure
 			messageUE.ulReservation = dynamicParameters->ulReservations[0];
-			messageUE.numerology = dynamicParameters->;
-			messageUE.ofdm_gfdm = dynamicParameters->ofdm_gfdm;
+			messageUE.numerology = staticParameters->numerology;
+			messageUE.ofdm_gfdm = staticParameters->ofdm_gfdm;
 			messageUE.rxMetricPeriodicity = dynamicParameters->rxMetricPeriodicity;
 			messageUE.serialize(messageParametersBytes);
 			for(uint i=0;i<messageParametersBytes.size();i++)
@@ -221,7 +221,7 @@ MacController::timeoutController(
     int index)      //Index that identifies the condition variable and destination MAC Address of a queue 
 {
     //Timeout declaration: static
-    chrono::nanoseconds timeout = chrono::nanoseconds(TIMEOUT);	//ns
+    chrono::nanoseconds timeout = chrono::milliseconds(staticParameters->ipTimeout);    //ms
 
     //Communication infinite loop
     while(1){
@@ -342,18 +342,11 @@ MacController::managerDynamicParameters(
     //Deserialize bytes
     dynamicParameters->deserialize(serializedBytes);
 
-    //PROVISIONAL: Sets MacController MTU
-    maxNumberBytes = dynamicParameters->getMtu();
-    mux->setMaxNumberBytes(maxNumberBytes);
-
     if(verbose) cout<<"[MacController] Dynamic Parameters were managed successfully."<<endl;
 }
 
 void
-MacController::manager(){
-    //Fill dynamic Parameters with static parameters (stating system)
-    staticParameters->loadDynamicParametersDefaultInformation(dynamicParameters);
-
+MacController::manager(){   //This thread executes only on BS
     vector<uint8_t> dynamicParametersBytes;
     //Infinite loop
     while(1){
