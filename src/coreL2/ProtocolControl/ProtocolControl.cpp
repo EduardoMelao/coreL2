@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : January 3rd, 2019
+@Last alteration : January 8th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -42,16 +42,20 @@ ProtocolControl::enqueueControlSdus(
 {
     //Find index to identify the queue referring to this UE
     int index;  //Index of destination UE in queues
-    for(index=0;index<macController->attachedEquipments;index++)
-        if(macAddress == macController->macAddressEquipments[index])
-            break;
+    if(!macController->flagBS)      //If it is UE, then it only has BS "attached"
+        index=0;
+    else{
+        for(index=0;index<macController->staticParameters->numberUEs;index++)
+            if(macAddress == macController->staticParameters->ulReservations[index].target_ue_id)
+                break;
 
-    if(index==macController->attachedEquipments){
-        if(verbose) cout<<"[ProtocolControl] Did not find MAC Address to send MACC SDU."<<endl;
-        exit(1);
+        if(index==macController->staticParameters->numberUEs){
+            if(verbose) cout<<"[ProtocolControl] Did not find MAC Address to send MACC SDU."<<endl;
+            exit(1);
+        }
     }
 
-    if(macController->mux->emptyPdu(macController->macAddressEquipments[index]))
+    if(macController->mux->emptyPdu(macAddress))
         	macController->queueConditionVariables[index].notify_all();     //index 0: UE has only BS as equipment
 
     char sduBuffer[MAXIMUM_BUFFER_LENGTH];   //Buffer to store SDU for futher transmission
@@ -92,7 +96,7 @@ ProtocolControl::decodeControlSdus(
         macController->managerDynamicParameters((uint8_t*) buffer, numberDecodingBytes);
         if(verbose) cout<<"[ProtocolControl] UE Configured correctly. Returning ACK to BS..."<<endl;
         // ACK
-        if(macController->mux->emptyPdu(macController->macAddressEquipments[0]))
+        if(macController->mux->emptyPdu(0))
         	macController->queueConditionVariables[0].notify_all();     //index 0: UE has only BS as equipment
 
         char ackBuffer[3] = {'A', 'C', 'K'};

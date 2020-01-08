@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : January 7th, 2019
+@Last alteration : January 8th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -20,12 +20,10 @@ Direction : Diretoria de Operações (DO)
 UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 @Description : Medium Access Control (MAC) Layer main module for PoC in project H2020 5G-RANGE. 
-    This module initializes the other modules of 5G-RANGE MAC System.
+    This module initializes Static/Default parameters and the main module of 5G-RANGE MAC System.
 */
 
 #include <iostream>
-#include <stdlib.h> //strtol
-#include <thread>
 using namespace std;
 
 //Custom headers implemented
@@ -40,11 +38,9 @@ int main(int argc, char** argv){
     int argumentsOffset;			//Arguments interpretation offset
     bool verbose = false;           //Verbosity flag
     char *devname = NULL;           //Tun interface name
-    uint16_t maxNumberBytes;        //Maximum number of bytes in PDU
     bool flagBS;                    //Base Station flag: true if BS, false if UE
 
 	//Verify verbose
-    verbose = false;
     if(argc==2){
         if(argv[1][0]=='-') verbose = true;
         else devname = argv[1];
@@ -58,14 +54,7 @@ int main(int argc, char** argv){
     StaticDefaultParameters* staticParameters = new StaticDefaultParameters(verbose);
     numberEquipments = staticParameters->numberUEs;
     flagBS = staticParameters->flagBS;
-
-    macAddresses = new uint8_t[numberEquipments];
-
-    if(flagBS){
-        for(int i=0;i<numberEquipments;i++)
-            macAddresses[i] = staticParameters->ulReservations[i].target_ue_id;
-    }
-    else macAddresses[0] = 0;   //BS is UE's "attached equipment"
+    if(!flagBS) staticParameters->numberUEs = 1;
 
     //Creates and initializes a MacAddressTable with static informations (HARDCODE)
     MacAddressTable* ipMacTable = new MacAddressTable(verbose);
@@ -75,12 +64,9 @@ int main(int argc, char** argv){
     ipMacTable->addEntry(addressEntry0, 0, true);
     ipMacTable->addEntry(addressEntry1, 1, false);
     ipMacTable->addEntry(addressEntry2, 2, false);
-    
-    //Get maxNumberBytes from command line
-    maxNumberBytes = staticParameters->mtu;
 
-    //Create a new MacController object
-    MacController equipment(numberEquipments, macAddresses, (uint16_t) maxNumberBytes, devname, ipMacTable, staticParameters, verbose);
+    //Create a new MacController (main module) object
+    MacController equipment(devname, ipMacTable, staticParameters, verbose);
 
     //Finally, start threads
     equipment.startThreads();
