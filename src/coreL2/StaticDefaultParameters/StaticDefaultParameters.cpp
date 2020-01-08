@@ -1,13 +1,13 @@
 /* ***************************************/
 /* Copyright Notice                      */
-/* Copyright(c)2019 5G Range Consortium  */
+/* Copyright(c)2020 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
 /**
 @Arquive name : StaticDefaultParameters.cpp
 @Classification : Static Default Parameters
 @
-@Last alteration : December 26th, 2019
+@Last alteration : January 7th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -37,7 +37,6 @@ StaticDefaultParameters::StaticDefaultParameters(
 	//Gets FlagBS
 	getline(defaultConfigurationsFile, readBuffer);
 	flagBS = (readBuffer[0]=='1');
-	readBuffer.clear();
 
 	//Gets Number of UEs (only BS)
 	if(flagBS){
@@ -45,14 +44,7 @@ StaticDefaultParameters::StaticDefaultParameters(
 		numberUEs = stoi(readBuffer);
 		readBuffer.clear();
 	}
-	else numberUEs = 1;		//Consider just one UE if it is not BS
-
-	//Gets Number of RBs available for DL (only BS)
-	if(flagBS){
-		getline(defaultConfigurationsFile, readBuffer);
-		numTRBsDL = stoi(readBuffer);
-		readBuffer.clear();
-	}
+	else numberUEs = 1;			//Consider UE has only one equipment: BS
 
 	//Gets UPLinkReservations
 	ulReservations.resize(numberUEs);
@@ -109,7 +101,7 @@ StaticDefaultParameters::StaticDefaultParameters(
 
 	//Gets Transmission Power Control Information
 	getline(defaultConfigurationsFile, readBuffer);
-	transmissionpowerControl = stoi(readBuffer);
+	transmissionPowerControl = stoi(readBuffer);
 	readBuffer.clear();
 
 	//Gets FUSION LUT matrix default value (only BS)
@@ -132,13 +124,13 @@ StaticDefaultParameters::StaticDefaultParameters(
 	mtu = stoi(readBuffer);
 	readBuffer.clear();
 
+	//Gets IP Timeout
+	getline(defaultConfigurationsFile, readBuffer);
+	ipTimeout = stoi(readBuffer);
+	readBuffer.clear();
+
 	//The following are only for BS
 	if(flagBS){
-		//Gets IP Timeout
-		getline(defaultConfigurationsFile, readBuffer);
-		ipTimeout = stoi(readBuffer);
-		readBuffer.clear();
-
 		//Gets Spectrum Sensing Report waiting Timeout
 		getline(defaultConfigurationsFile, readBuffer);
 		ssreportWaitTimeout = stoi(readBuffer);
@@ -156,3 +148,17 @@ StaticDefaultParameters::StaticDefaultParameters(
 }
 
 StaticDefaultParameters::~StaticDefaultParameters() {}
+
+void 
+StaticDefaultParameters::loadDynamicParametersDefaultInformation(
+	MacConfigRequest* dynamicParameters)	//MacConfigRequest object with dynamic information to be filled
+
+{
+	if(flagBS)
+		dynamicParameters->fillDynamicVariables(fLutMatrix, ulReservations, mcsDownlink, mcsUplink, mimoConf, mimoDiversityMultiplexing, mimoAntenna,
+												mimoOpenLoopClosedLoop, mimoPrecoding, transmissionPowerControl, rxMetricPeriodicity);
+	else
+		dynamicParameters->fillDynamicVariables(ulReservations, mcsUplink, mimoConf, mimoDiversityMultiplexing, mimoAntenna,
+												mimoOpenLoopClosedLoop, mimoPrecoding, transmissionPowerControl, rxMetricPeriodicity);
+	if(verbose) cout<<"[StaticDefaultParameters] MacConfigRequest filled correctly."<<endl;
+}

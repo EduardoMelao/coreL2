@@ -1,13 +1,13 @@
 /* ***************************************/
 /* Copyright Notice                      */
-/* Copyright(c)2019 5G Range Consortium  */
+/* Copyright(c)2020 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
 /**
 @Arquive name : ProtocolData.cpp
 @Classification : Protocol Data
 @
-@Last alteration : December 13th, 2019
+@Last alteration : January 8th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -55,33 +55,37 @@ ProtocolData::enqueueDataSdus(){
             numberBytesRead = macHigh->getNextSdu(bufferData);
 
             //If multiplexer queue is empty, notify condition variable to trigger timeout timer
-            for(int i=0;i<macController->attachedEquipments;i++){
-                if(macController->macAddressEquipments[i]==macController->mux->getMacAddress(bufferData)){
-                    if(macController->mux->emptyPdu(macController->macAddressEquipments[i])){
-                        macController->queueConditionVariables[i].notify_all();
+            if(!macController->staticParameters->flagBS){    //If UE, test if its (unique) queue to BS is empty, then notify condition variables
+                if(macController->mux->emptyPdu(0))
+                    macController->queueConditionVariables[0].notify_all();
+            }
+            else{
+                for(int i=0;i<macController->staticParameters->numberUEs;i++){
+                    if(macController->staticParameters->ulReservations[i].target_ue_id==macController->mux->getMacAddress(bufferData)){
+                        if(macController->mux->emptyPdu(macController->staticParameters->ulReservations[i].target_ue_id)){
+                            macController->queueConditionVariables[i].notify_all();
+                        }
+                        else break;
                     }
-                    else break;
                 }
             }
 
-            {   
-                //Locks mutex to write in Multiplexer queue
-                lock_guard<mutex> lk(macController->queueMutex);
-                
-                //Adds SDU to multiplexer
-                macSendingPDU = macController->mux->addSdu(bufferData, numberBytesRead);
+            //Locks mutex to write in Multiplexer queue
+            lock_guard<mutex> lk(macController->queueMutex);
+            
+            //Adds SDU to multiplexer
+            macSendingPDU = macController->mux->addSdu(bufferData, numberBytesRead);
 
-                //If the SDU was added successfully, continues the loop
-                if(macSendingPDU==-1)
-                    continue;
+            //If the SDU was added successfully, continues the loop
+            if(macSendingPDU==-1)
+                continue;
 
-                //Else, macSendingPDU contains the Transmission Queue destination MAC to perform PDU sending. 
-                //So, perform PDU sending
-                macController->sendPdu(macSendingPDU);
+            //Else, macSendingPDU contains the Transmission Queue destination MAC to perform PDU sending. 
+            //So, perform PDU sending
+            macController->sendPdu(macSendingPDU);
 
-                //Now, it is possible to add SDU to queue
-                macController->mux->addSdu(bufferData,numberBytesRead);
-            }
+            //Now, it is possible to add SDU to queue
+            macController->mux->addSdu(bufferData,numberBytesRead);
         }
     }
 }
