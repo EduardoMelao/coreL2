@@ -1,12 +1,10 @@
 # MAC-5G-RANGE
+
 L2 layer for POC of 5G-RANGE project
 
 Structure of Default information file. Just leave numbers in the file, respecting the ranges indicated below:
-
-
- - BS/UE	[0/1]		Flag to indicate if it is UE (0) or BS (1)
+ - BS/UE    [0..1]      Flag BS(1) or UE(0)
  - BS		[1..15]		Number of UEs 
- - BS		[1..132]	Number of RBs available for transmission
  - BS/UE	[0..15]		*User Equipment Identification
  - BS/UE	[1..132]	*RBStart
  - BS/UE	[1..132]	*NumRBs
@@ -23,9 +21,9 @@ Structure of Default information file. Just leave numbers in the file, respectin
  - BS		[0/1]		Fusion LUT Matrix values for all RBs
  - BS/UE	[1..10]	    Rx Metrics Periodicity in ms
  - BS/UE	[0..1500]	MTU
- - BS		[0..65536]	IP timeout
+ - BS/UE	[0..65536]	IP timeout
  - BS		[1..10]	    SS Report timeout
  - BS		[1..10]	    Ack timeout
 
 
-`*` These three information are read Number of UEs times (for BS), these are Uplink reservations for each UE. 
+`*` These three informations are read Number of UEs times (for BS), these are Uplink reservations for each UE. 
