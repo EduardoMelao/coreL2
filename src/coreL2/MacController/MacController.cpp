@@ -358,8 +358,8 @@ MacController::manager(){   //This thread executes only on BS
 					protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), staticParameters->ulReservations[i].target_ue_id);
 				}
         	}
-            dynamicParameters->setModified(1);
         	dynamicParameters->dynamicParametersMutex.unlock();
+            dynamicParameters->setModified(1);
         }
     }
 }
