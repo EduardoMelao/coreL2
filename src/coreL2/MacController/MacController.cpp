@@ -348,7 +348,7 @@ MacController::manager(){   //This thread executes only on BS
         //Wait for TIMEOUT_DYNAMIC_PARAMETERS seconds
         this_thread::sleep_for(chrono::seconds(TIMEOUT_DYNAMIC_PARAMETERS));
 
-        if(dynamicParameters->isModified()){
+        if(dynamicParameters->getModified()>0){
         	dynamicParameters->dynamicParametersMutex.lock();
         	{
         		//Send a MACC SDU to each UE attached
@@ -358,6 +358,7 @@ MacController::manager(){   //This thread executes only on BS
 					protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), staticParameters->ulReservations[i].target_ue_id);
 				}
         	}
+            dynamicParameters->setModified(1);
         	dynamicParameters->dynamicParametersMutex.unlock();
         }
     }

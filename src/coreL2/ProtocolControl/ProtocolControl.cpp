@@ -88,7 +88,10 @@ ProtocolControl::decodeControlSdus(
                 receivedString += buffer[i];
             if(receivedString=="ACK"){
                 if(verbose) cout<<"[ProtocolControl] Received ACK from UE."<<endl;
-                macController->dynamicParameters->setModified(false);
+                if(macController->dynamicParameters->getModified()==1){
+                    macController->dynamicParameters->setModified(0);
+                }
+                else if(verbose) cout<<"[ProtocolControl] There were values changed before receiving ACK."<<endl;
             }
         }
     }
