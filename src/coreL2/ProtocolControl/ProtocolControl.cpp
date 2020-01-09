@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : January 8th, 2019
+@Last alteration : January 9th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -129,18 +129,34 @@ ProtocolControl::receiveInterlayerMessages(){
 
     //Control message stream
     while(messageSize>0){
-
-        //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING message is transmitted alone (no parameters with it)
-        for(int i=0;i<messageSize;i++)
+        
+        //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING ONLY SubframeRx.Start messages
+    	int subFrameStartSize = 18;
+        for(int i=0;i<subFrameStartSize;i++)
             message+=buffer[i];
 
-        if(message=="SubframeRx.Start"){
-            if(verbose) cout<<"[ProtocolControl] Received SubframeRx.Start message."<<endl;
+    	vector<uint8_t> messageParametersBytes;
+
+        if(message=="BSSubframeRx.Start"){
+        	BSSubframeRx_Start messageParametersBS;
+        	for(int i=subFrameStartSize;i<messageSize;i++)
+        		messageParametersBytes.push_back(message[i]);
+        	messageParametersBS.deserialize(messageParametersBytes);
+        	if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start message. Receiving PDU from L1..."<<endl;
+
+			macController->dynamicParameters->setMcsUplink(LinkAdaptation::getSinrConvertToCqiUplink(messageParametersBS.sinr));
             macController->decoding();
         }
-        else if(message=="SubframeRx.End"){
-            if(verbose) cout<<"[ProtocolControl] Received SubframeRx.End message."<<endl;
-        }
+        if(message=="UESubframeRx.Start"){
+			UESubframeRx_Start messageParametersUE;
+			for(int i=subFrameStartSize;i<messageSize;i++)
+				messageParametersBytes.push_back(message[i]);
+			messageParametersUE.deserialize(messageParametersBytes);
+			if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start message. Receiving PDU from L1..."<<endl;
+
+			macController->dynamicParameters->setMcsUplink(LinkAdaptation::getSinrConvertToCqiUplink(messageParametersUE.sinr));
+            macController->decoding();
+		}
 
         //Clear buffer and message and receive next control message
         bzero(buffer, MAXIMUM_BUFFER_LENGTH);

@@ -7,7 +7,7 @@
 @Arquive name : MacConfigRequest.cpp
 @Classification : MAC Configuration Request
 @
-@Last alteration : January 7th, 2019
+@Last alteration : January 9th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -137,8 +137,10 @@ MacConfigRequest::setMcsDownlink(
 {
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
     {
-        mcsDownlink = _mcsDownlink;     //Assign new value
-        modified = true;                //Change flag after modifying value
+        if(mcsDownlink!=_mcsDownlink){
+            mcsDownlink = _mcsDownlink;     //Assign new value
+            modified = true;                //Change flag after modifying value
+        }
     }
 }
 
@@ -148,8 +150,10 @@ MacConfigRequest::setMcsUplink(
 {
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
     {
-        mcsUplink = _mcsUplink;     //Assign new value
-        modified = true;            //Change flag after modifying value
+        if(mcsUplink!=_mcsUplink){
+            mcsUplink = _mcsUplink;     //Assign new value
+            modified = true;            //Change flag after modifying value
+        }
     }
 }
 

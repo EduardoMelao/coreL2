@@ -13,6 +13,7 @@
 
 #include "../Multiplexer/Multiplexer.h"
 #include "../MacController/MacController.h"
+#include "../LinkAdaptation/LinkAdaptation.h"
 
 class MacController;	//Initializing class that will be defined in other .h file
 

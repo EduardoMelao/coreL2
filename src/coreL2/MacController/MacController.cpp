@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : January 8th, 2020
+@Last alteration : January 9th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -165,7 +165,7 @@ MacController::sendPdu(
     macPDU.mcs_.num_info_bytes = numberDataBytesRead;
     macPDU.allocation_.number_of_rb = get_num_required_rb(macPDU.numID_, macPDU.mimo_, macPDU.mcs_.modulation, 3/4 , numberDataBytesRead*8);
 
-    //Create Subframe.Start message
+    //Create SubframeTx.Start message
     string messageParameters;		            //This string will contain the parameters of the message
 	vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
 
@@ -183,7 +183,7 @@ MacController::sendPdu(
     	for(uint i=0;i<messageParametersBytes.size();i++)
     		messageParameters+=messageParametersBytes[i];
     }
-    else{       //Create BSSubframeTx.Start message
+    else{       //Create UESubframeTx.Start message
         UESubframeTx_Start messageUE;	//Messages parameters structure
         messageUE.ulReservation = dynamicParameters->ulReservations[0];
         messageUE.numerology = staticParameters->numerology;
