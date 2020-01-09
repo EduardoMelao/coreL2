@@ -140,7 +140,7 @@ ProtocolControl::receiveInterlayerMessages(){
         if(message=="BSSubframeRx.Start"){
         	BSSubframeRx_Start messageParametersBS;
         	for(int i=subFrameStartSize;i<messageSize;i++)
-        		messageParametersBytes.push_back(message[i]);
+        		messageParametersBytes.push_back(buffer[i]);
         	messageParametersBS.deserialize(messageParametersBytes);
         	if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start message. Receiving PDU from L1..."<<endl;
 
@@ -150,7 +150,7 @@ ProtocolControl::receiveInterlayerMessages(){
         if(message=="UESubframeRx.Start"){
 			UESubframeRx_Start messageParametersUE;
 			for(int i=subFrameStartSize;i<messageSize;i++)
-				messageParametersBytes.push_back(message[i]);
+				messageParametersBytes.push_back(buffer[i]);
 			messageParametersUE.deserialize(messageParametersBytes);
 			if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start message. Receiving PDU from L1..."<<endl;
 
