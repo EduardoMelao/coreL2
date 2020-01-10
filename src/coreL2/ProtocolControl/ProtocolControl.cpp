@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : January 9th, 2019
+@Last alteration : January 10th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -79,7 +79,8 @@ ProtocolControl::enqueueControlSdus(
 void 
 ProtocolControl::decodeControlSdus(
     char* buffer,                   //Buffer containing Control SDU
-    size_t numberDecodingBytes)     //Size of Control SDU in Bytes
+    size_t numberDecodingBytes,     //Size of Control SDU in Bytes
+    uint8_t macAddress)             //Source MAC Address
 {
     if(macController->flagBS){
         if(numberDecodingBytes==3){     //It is probably an "ACK"
@@ -94,6 +95,24 @@ ProtocolControl::decodeControlSdus(
                 else if(verbose) cout<<"[ProtocolControl] There were values changed before receiving ACK."<<endl;
             }
         }
+        else{   //RxMetrics
+            //Verify index
+            int index = macController->getIndex(macAddress);
+            if(index == -1){
+                if(verbose) cout<<"[ProtocolControl] Error decoding RxMetrics."<<endl;
+                exit(1);
+            }
+
+            //Decode Bytes
+            vector<uint8_t> rxMetricsBytes;
+            for(int i=0;i<numberDecodingBytes;i++)
+                rxMetricsBytes.push_back(buffer[i]);
+
+            //Deserialize Bytes
+            macController->rxMetrics[index].deserialize(rxMetricsBytes);
+
+            if(verbose) cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received."<<endl;
+        }   
     }
     else{    //UE needs to set its Dynamic Parameters and return ACK to BS
         macController->managerDynamicParameters((uint8_t*) buffer, numberDecodingBytes);
@@ -112,7 +131,7 @@ ProtocolControl::decodeControlSdus(
         //Else, queue is full. Need to send PDU
         macController->sendPdu(macSendingPDU);
 
-        macController->mux->addSdu(ackBuffer, 3, 0,0);
+        macController->mux->addSdu(ackBuffer, 3, 0, 0);
     }    
 }
 
@@ -128,6 +147,8 @@ void
 ProtocolControl::receiveInterlayerMessages(){
     char buffer[MAXIMUM_BUFFER_LENGTH]; //Buffer where message will be stored
     string message;                     //String containing message converted from char*
+    uint8_t cqi;                        //Channel Quality information based on SINR measurement from PHY
+
     ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
 
     //Control message stream
@@ -146,8 +167,10 @@ ProtocolControl::receiveInterlayerMessages(){
         		messageParametersBytes.push_back(buffer[i]);
         	messageParametersBS.deserialize(messageParametersBytes);
         	if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start message. Receiving PDU from L1..."<<endl;
-
-			macController->dynamicParameters->setMcsUplink(LinkAdaptation::getSinrConvertToCqiUplink(messageParametersBS.sinr));
+            
+            //Perform channel quality information calculation and uplink MCS calculation
+            cqi = LinkAdaptation::getSinrConvertToCqi(messageParametersBS.sinr);
+			macController->dynamicParameters->setMcsUplink(AdaptiveModulationCoding::getCqiConvertToMcs(cqi));
             macController->decoding();
         }
         if(message=="UESubframeRx.Start"){
@@ -157,7 +180,13 @@ ProtocolControl::receiveInterlayerMessages(){
 			messageParametersUE.deserialize(messageParametersBytes);
 			if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start message. Receiving PDU from L1..."<<endl;
 
-			macController->dynamicParameters->setMcsUplink(LinkAdaptation::getSinrConvertToCqiUplink(messageParametersUE.sinr));
+            //Perform RXMetrics calculation
+            macController->rxMetrics->accessControl.lock();     //Lock mutex to prevent access conflict
+            macController->rxMetrics->cqiReport = LinkAdaptation::getSinrConvertToCqi(messageParametersUE.sinr);    //SINR->CQI calculation
+            Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm, macController->rxMetrics->ssReport);     //SSM->SSReport calculation
+            macController->rxMetrics->pmi = messageParametersUE.pmi;
+            macController->rxMetrics->ri = messageParametersUE.ri;
+            macController->rxMetrics->accessControl.unlock();   //Unlock Mutex
             macController->decoding();
 		}
 

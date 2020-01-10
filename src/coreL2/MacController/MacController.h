@@ -53,6 +53,7 @@ private:
     ProtocolControl* protocolControl;   //Object to deal with enqueueing CONTROL SDUS
 	thread *threads;                    //Threads array
     MacPDU macPDU;                      //Object MacPDU containing all information that will be sent to PHY
+    unsigned int subframeCounter;       //Subframe counter used for RxMetrics reporting to BS.
     bool verbose;                       //Verbosity flag
 
 public:
@@ -65,6 +66,7 @@ public:
     L1L2Interface* l1l2Interface;   //Object to manage interface with L1
     StaticDefaultParameters* staticParameters;      //Object with static/default parameters read from a file
     MacConfigRequest* dynamicParameters;            //Object with dynamic parameters 
+    RxMetrics* rxMetrics;                           //Array of Reception Metrics for each UE
     
     /**
      * @brief Initializes a MacController object to manage all 5G RANGE MAC Operations
@@ -126,5 +128,16 @@ public:
      * @brief (PROVISIONAL) Periodically checks for changes in Dynamic Parameters and sends them to UEs via MACC SDUs
      */
     void manager();
+
+    /**
+     * @brief (Only UE) Periodically sends RxMetrics Report to BS
+     */
+    void rxMetricsReport();
+
+    /**
+     * @brief Gets index referent to macAddress on all class arrays
+     * @param macAddress MAC Address 
+     */
+    int getIndex(uint8_t macAddress);
 };
 #endif  //INCLUDED_MAC_CONTROLLER_H

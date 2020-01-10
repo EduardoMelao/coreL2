@@ -4,8 +4,8 @@
 /* All rights Reserved                   */
 /*****************************************/
 /**
-@Arquive name : LinkAdaptation.cpp
-@Classification : Link Adaptation
+@Arquive name : Cosora.cpp
+@Classification : Cosora
 @
 @Last alteration : January 10th, 2019
 @Responsible : Eduardo Melao
@@ -19,21 +19,20 @@ Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
 Direction : Diretoria de Operações (DO)
 UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
-@Description : Module to perform Link Adaptation calculations.
+@Description : Module to perform Collaborative Spectrum Sensing Optimized for Rural Areas calculations.
 */
 
-#include "LinkAdaptation.h"
+#include "Cosora.h"
 
-LinkAdaptation::LinkAdaptation() {}
+Cosora::Cosora() {}
 
-LinkAdaptation::~LinkAdaptation() {}
+Cosora::~Cosora() {}
 
-uint8_t
-LinkAdaptation::getSinrConvertToCqi(
-    float sinr)     //Signal to Interference plus Noise Ratio informed by PHY
-{   
-    uint8_t cqiUplink;      //Channel Quality Information
-    //PROVISIONAL: do some calculations/Look tables here
-    cqiUplink = 10;
-    return cqiUplink;
+void Cosora::calculateSpectrumSensingValue(
+    uint8_t* spectrumSensingMeasurement,        //Measurements from PHY
+    uint8_t* spectrumSensingReport)             //Report of RBs idleness 
+{
+    //PROVISIONAL: simple copy of the values.
+    for(int i=0;i<17;i++)
+        spectrumSensingReport[i] = spectrumSensingMeasurement[i];
 }

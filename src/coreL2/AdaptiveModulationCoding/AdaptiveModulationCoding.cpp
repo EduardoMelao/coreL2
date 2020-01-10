@@ -7,7 +7,7 @@
 @Arquive name : LinkAdaptation.cpp
 @Classification : Link Adaptation
 @
-@Last alteration : January 9th, 2019
+@Last alteration : January 10th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -29,11 +29,11 @@ AdaptiveModulationCoding::AdaptiveModulationCoding() {}
 AdaptiveModulationCoding::~AdaptiveModulationCoding() {}
 
 uint8_t
-AdaptiveModulationCoding::getCqiUplinkConvertToUplinkMcs(
-    uint8_t cqiUplink)      //Uplink Channel Quality Information
+AdaptiveModulationCoding::getCqiConvertToMcs(
+    uint8_t cqi)      //Channel Quality Information
 {
-    uint8_t uplinkMcs;  //Uplink Modulation and Coding Scheme
-    //PROVISIONAL: do some calculations here with cqiUplink and
-    uplinkMcs = 9;
-    return uplinkMcs;
+    uint8_t mcs;  //Modulation and Coding Scheme
+    //PROVISIONAL: do some calculations here with cqi and returns
+    mcs = 9;
+    return mcs;
 }

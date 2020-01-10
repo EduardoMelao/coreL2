@@ -26,10 +26,10 @@ public:
     ~AdaptiveModulationCoding();
 
     /**
-     * @brief Based on CQI Uplink, performs calculation of Uplink MCS
-     * @returns Uplink Modulation and Coding Scheme
+     * @brief Based on CQI, performs calculation of MCS
+     * @returns Modulation and Coding Scheme
      */
-    static uint8_t getCqiUplinkConvertToUplinkMcs(uint8_t cqiUplink);
+    static uint8_t getCqiConvertToMcs(uint8_t cqi);
 };
 
 #endif  //INCLUDED_ADAPTIVE_MODULATION_CODING_H

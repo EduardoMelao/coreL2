@@ -14,6 +14,8 @@
 #include "../Multiplexer/Multiplexer.h"
 #include "../MacController/MacController.h"
 #include "../LinkAdaptation/LinkAdaptation.h"
+#include "../AdaptiveModulationCoding/AdaptiveModulationCoding.h"
+#include "../Cosora/Cosora.h"
 
 class MacController;	//Initializing class that will be defined in other .h file
 
@@ -50,8 +52,9 @@ public:
      * @brief Receives and treat Control SDUs on decoding
      * @param buffer Buffer containing Control SDU
      * @param numberDecodingBytes Size of Control SDU in Bytes
+     * @param macAddress Source MAC Address
      */
-    void decodeControlSdus(char* buffer, size_t numberDecodingBytes);
+    void decodeControlSdus(char* buffer, size_t numberDecodingBytes, uint8_t macAddress);
 
     /**
      * @brief Perform transmission of Interlayer Control Messages to PHY

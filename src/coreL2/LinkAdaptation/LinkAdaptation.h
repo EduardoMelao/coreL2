@@ -9,8 +9,6 @@
 
 #include <stdint.h>     //uint8_t
 
-#include "../AdaptiveModulationCoding/AdaptiveModulationCoding.h"
-
 /**
  * @brief Class to perform Link Adaptation calculations such as converting SINR to CQI-UL
  */
@@ -28,9 +26,9 @@ public:
     ~LinkAdaptation();
 
     /**
-     * @brief Based on SINR, performs calculation of Channel Quality Information for Uplink and Uplink MCS
-     * @returns Uplink Modulation and Coding Scheme
+     * @brief Based on SINR, performs calculation of Channel Quality Information
+     * @returns Channel Quality Information
      */
-    static uint8_t getSinrConvertToCqiUplink(float sinr);
+    static uint8_t getSinrConvertToCqi(float sinr);
 };
 #endif  //INCLUDED_LINK_ADAPTATION_H

@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : January 9th, 2020
+@Last alteration : January 10th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -94,9 +94,16 @@ MacController::MacController(
 
     //Fill dynamic Parameters with static parameters (stating system)
     staticParameters->loadDynamicParametersDefaultInformation(dynamicParameters);
+
+    //Create a RxMetrics array
+    rxMetrics = new RxMetrics[staticParameters->numberUEs];
+
+    //Set subframe counter to zero
+    subframeCounter = 0;
 }
 
 MacController::~MacController(){
+    delete [] rxMetrics;
     delete dynamicParameters;
     delete staticParameters;
     delete protocolControl;
@@ -273,11 +280,20 @@ MacController::decoding()
     while((numberDecodingBytes = transmissionQueue->getSDU(buffer))>0){
         //Test if it is Control SDU
         if(transmissionQueue->getCurrentDataControlFlag()==0)
-            protocolControl->decodeControlSdus(buffer, numberDecodingBytes);
+            protocolControl->decodeControlSdus(buffer, numberDecodingBytes, macAddress);
         else    //Data SDU
             protocolData->decodeDataSdus(buffer, numberDecodingBytes);
     }
     delete transmissionQueue;
+
+    //If it is UE, increase subframeCounter
+    if(!flagBS){    
+        subframeCounter++;
+        if(subframeCounter==dynamicParameters->rxMetricPeriodicity){
+            rxMetricsReport();
+            subframeCounter = 0;
+        }
+    }
 }
 
 void
@@ -362,4 +378,26 @@ MacController::manager(){   //This thread executes only on BS
             dynamicParameters->setModified(1);
         }
     }
+}
+
+void 
+MacController::rxMetricsReport(){  //This thread executes only on UE
+    vector<uint8_t> rxMetricsBytes;
+
+    rxMetrics->serialize(rxMetricsBytes);
+    
+    if(verbose) cout<<"[MacController] RxMetrics report with size "<<rxMetricsBytes.size()<<" enqueued to BS."<<endl;
+
+    protocolControl->enqueueControlSdus(&(rxMetricsBytes[0]), rxMetricsBytes.size(), 0);
+	
+}
+
+int
+MacController::getIndex(
+    uint8_t macAddress)
+{
+    for(int i=0;i<staticParameters->numberUEs;i++)
+        if(macAddress==staticParameters->ulReservations[i].target_ue_id)
+            return i;
+    return -1;
 }
