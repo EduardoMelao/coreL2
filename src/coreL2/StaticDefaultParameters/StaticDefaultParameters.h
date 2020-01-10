@@ -43,8 +43,8 @@ public:
 	uint8_t rxMetricPeriodicity;				//[4 bits] CSI period for CQI, PMI and SSM provided by PHY
 	uint16_t mtu;								//[16 bits] Maximum transmission unity of the system
 	uint16_t ipTimeout;							//[16 bits] IP Timeout time (milliseconds)
-	uint16_t ssreportWaitTimeout;				//[4 bits] Spectrum Sensing Report Wait Timeout time(milliseconds)
-	uint16_t ackWaitTimeout;				    //[4 bits] Acknowledgement Wait Timeout time(milliseconds)
+	uint8_t ssreportWaitTimeout;				//[4 bits] Spectrum Sensing Report Wait Timeout time(milliseconds)
+	uint8_t ackWaitTimeout;				    	//[4 bits] Acknowledgement Wait Timeout time(milliseconds)
 
 	/**
 	 * @brief Constructs object and read file to initialize all variables with default information
