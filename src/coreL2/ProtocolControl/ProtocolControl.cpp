@@ -111,7 +111,13 @@ ProtocolControl::decodeControlSdus(
             //Deserialize Bytes
             macController->rxMetrics[index].deserialize(rxMetricsBytes);
 
-            if(verbose) cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received."<<endl;
+            //Calculate new DLMCS
+            macController->dynamicParameters->setMcsDownlink(AdaptiveModulationCoding::getCqiConvertToMcs(macController->rxMetrics[index].cqiReport));
+
+            if(verbose){
+                cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received.";
+                cout<<"RBS idle: "<<Cosora::spectrumSensingConvertToRBIdle(macController->rxMetrics[index].ssReport)<<endl;
+            }
         }   
     }
     else{    //UE needs to set its Dynamic Parameters and return ACK to BS

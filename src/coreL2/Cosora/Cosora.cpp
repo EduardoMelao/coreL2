@@ -28,11 +28,20 @@ Cosora::Cosora() {}
 
 Cosora::~Cosora() {}
 
-void Cosora::calculateSpectrumSensingValue(
+void 
+Cosora::calculateSpectrumSensingValue(
     uint8_t* spectrumSensingMeasurement,        //Measurements from PHY
     uint8_t* spectrumSensingReport)             //Report of RBs idleness 
 {
     //PROVISIONAL: simple copy of the values.
     for(int i=0;i<17;i++)
         spectrumSensingReport[i] = spectrumSensingMeasurement[i];
+}
+
+uint16_t
+Cosora::spectrumSensingConvertToRBIdle(
+    uint8_t* spectrumSensingReport)     //Spectrum Sensing Report calculated on UE
+{
+    //PROVISIONAL: do some calculations here
+    return 130;
 }
