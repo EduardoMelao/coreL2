@@ -7,7 +7,7 @@
 @Arquive name : MacConfigRequest.cpp
 @Classification : MAC Configuration Request
 @
-@Last alteration : January 7th, 2019
+@Last alteration : January 9th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -114,7 +114,7 @@ MacConfigRequest::setFLutMatrix(
     {
         for(int i=0;i<17;i++)
             fLutMatrix[i] = _fLutMatrix[i];     //Copy array values
-        modified = true;                        //Change flag after modifying values
+        modified ++;                            //Change counter after modifying values
     }
 }
 
@@ -127,7 +127,7 @@ MacConfigRequest::setUlReservations(
         ulReservations.clear();
         for(int i=0;i<_ulReservations.size();i++)
             ulReservations.push_back(_ulReservations[i]);   //Copy values
-        modified = true;                                    //Change flag after modifying values
+        modified ++;                                        //Change counter after modifying values
     }
 }
 
@@ -137,8 +137,10 @@ MacConfigRequest::setMcsDownlink(
 {
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
     {
-        mcsDownlink = _mcsDownlink;     //Assign new value
-        modified = true;                //Change flag after modifying value
+        if(mcsDownlink!=_mcsDownlink){
+            mcsDownlink = _mcsDownlink;     //Assign new value
+            modified ++;                    //Change counter after modifying value
+        }
     }
 }
 
@@ -148,8 +150,10 @@ MacConfigRequest::setMcsUplink(
 {
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
     {
-        mcsUplink = _mcsUplink;     //Assign new value
-        modified = true;            //Change flag after modifying value
+        if(mcsUplink!=_mcsUplink){
+            mcsUplink = _mcsUplink;     //Assign new value
+            modified ++;                //Change counter after modifying value
+        }
     }
 }
 
@@ -170,7 +174,7 @@ MacConfigRequest::setMimo(
         mimoOpenLoopClosedLoop = _mimoOpenLoopClosedLoop;
         mimoPrecoding = _mimoPrecoding;
         
-        modified = true;    //Change flag after modifying value
+        modified ++;        //Change counter after modifying value
     }
 }
 
@@ -181,7 +185,7 @@ MacConfigRequest::setTPC(
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
     {
         transmissionPowerControl = _trasmissionPowerControl;    //Assign new values
-        modified = true;    //Change flag after modifying value
+        modified ++;        //Change counter after modifying value
     }
 }
 
@@ -192,13 +196,13 @@ MacConfigRequest::setRxMetricPeriodicity(
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
     {
         rxMetricPeriodicity = _rxMetricPeriodicity;     //Assign new values
-        modified = true;    //Change flag after modifying value
+        modified ++;        //Change counter after modifying value
     }
 }
 
 void
 MacConfigRequest::setModified(
-    bool _modified)     //New modified flag value
+    uint8_t _modified)  //New modified counter value
 {
     lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
     {
@@ -250,7 +254,7 @@ MacConfigRequest::serialize(
 	if(verbose) cout<<"[MacConfigRequest] Serialization successful with "<<bytes.size()<<" bytes of information."<<endl;
 }
 
-bool 
-MacConfigRequest::isModified(){
+uint8_t 
+MacConfigRequest::getModified(){
         return modified;
 }

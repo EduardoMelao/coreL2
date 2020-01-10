@@ -24,8 +24,10 @@ private:
 	//PROVISIONAL: NEED TO MAKE GETTERS FOR ALL VARIABLES
 public:
 	//Dynamic information as informed on spreadsheet L1-L2_InterfaceDefinition.xlsx
-	bool modified;                              //Flag to indicate if there's information changed to send to UE via MACC SDU
-    uint8_t fLutMatrix[17];						//[132 bits] BitMap from Fusion Spectrum Analysis
+	uint8_t modified;                         	//Counter to indicate state of alterations: 0: no alterations; greater than 0: there are alterations
+												//While waiting for UE ACK, modified = 1; If its value increases, changes have to be sent again.
+    
+	uint8_t fLutMatrix[17];						//[132 bits] BitMap from Fusion Spectrum Analysis
 	vector<allocation_cfg_t> ulReservations;	//[24 bits each] Spectrum allocation for Uplink
 	uint8_t mcsDownlink;						//[4 bit] Modulation and Coding Scheme for Downlink
 	uint8_t mcsUplink;							//[4 bit] Modulation and Coding Scheme for Uplink
@@ -135,10 +137,10 @@ public:
 	void setRxMetricPeriodicity(uint8_t _rxMetricPeriodicity);
 
 	/**
-	 * @brief Sets modified flag to an especific value
-	 * @param _modified New modified flag value
+	 * @brief Sets modified counter to an especific value
+	 * @param _modified New modified counter value
 	 */
-	void setModified(bool _modified);
+	void setModified(uint8_t _modified);
 
 	/**
 	 * @brief Seriaizes all variables to a sequence of bytes to be transmitted
@@ -149,9 +151,9 @@ public:
 
 	/**
 	 * @brief Test if there are paremeters to transmit
-	 * @returns True if there are modified parameters. False otherwise
+	 * @returns Greater than 0 if there are modified parameters sent. 0 otherwise
 	 */
-	bool isModified();
+	uint8_t getModified();
 };
 
 #endif  //INCLUDED_MAC_CONFIG_REQUEST_H
