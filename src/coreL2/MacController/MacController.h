@@ -25,7 +25,7 @@
 #include "../ProtocolControl/ProtocolControl.h"
 #include "../../common/lib5grange/lib5grange.h"
 #include "../../common/libMac5gRange/libMac5gRange.h"
-#include "../StaticDefaultParameters/StaticDefaultParameters.h"
+#include "../SystemParameters/StaticDefaultParameters.h"
 #include "../MacConfigRequest/MacConfigRequest.h"
 
 using namespace std;
@@ -45,7 +45,7 @@ class ProtocolControl;
  */
 class MacController{
 private:
-    uint8_t macAddress;                 //MAC Address of equipment
+    uint8_t currentMacAddress;          //MAC Address of current equipment
     TunInterface* tunInterface;         //TunInterface object to perform L3 packet capture
     MacHighQueue* macHigh;              //Queue to receive and enqueue L3 packets
     MacAddressTable* ipMacTable;        //Table to associate IP addresses to 5G-RANGE domain MAC addresses
@@ -65,7 +65,7 @@ public:
     TransmissionProtocol* transmissionProtocol;     //Object to transmit packets to L1 and L3
     L1L2Interface* l1l2Interface;   //Object to manage interface with L1
     StaticDefaultParameters* staticParameters;      //Object with static/default parameters read from a file
-    MacConfigRequest* dynamicParameters;            //Object with dynamic parameters 
+    MacConfigRequest* macConfigRequest;             //Object to configure dynamic parameters 
     RxMetrics* rxMetrics;                           //Array of Reception Metrics for each UE
     
     /**
@@ -107,8 +107,9 @@ public:
     /**
      * @brief Procedure that performs decoding of PDUs received from L1
      * @param macAddress Source MAC Address from which packet will be received
+     * @returns Source MAC Address
      */
-    void decoding();
+    uint8_t decoding();
 
     /**
      * @brief Sets MAC PDU object with static information
