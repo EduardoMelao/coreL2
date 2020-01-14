@@ -62,11 +62,11 @@ DynamicParameters::fillDynamicVariables(
     transmissionPowerControl = _transmissionPowerControl;
     rxMetricPeriodicity = _rxMetricPeriodicity;
 
-    //Unlock mutex semaphore
-    dynamicParametersMutex.unlock();
-
     //Increase modified counter
     modified++;
+
+    //Unlock mutex semaphore
+    dynamicParametersMutex.unlock();
 }
 
 void
@@ -317,6 +317,15 @@ DynamicParameters::setModified(
     {
         modified = _modified;   //Assign new value
     }
+}
+
+uint8_t
+DynamicParameters::getModified()
+{
+	lock_guard<mutex>  lk(dynamicParametersMutex);  //Lock mutex until alterations are finished
+	{
+		return modified;
+	}
 }
 
 

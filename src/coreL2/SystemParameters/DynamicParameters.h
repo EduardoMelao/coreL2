@@ -38,10 +38,10 @@ private:
 	vector<uint8_t> mimoPrecoding;				//[4 bits each] MIMO codeblock configuration for DL and UL
 	vector<uint8_t> transmissionPowerControl;	//[6 bits each] Transmission Power Control
 	vector<uint8_t> rxMetricPeriodicity;		//[4 bits each] CSI period for CQI, PMI and SSM provided by PHY
+	mutex dynamicParametersMutex;				//Mutex to control access and alterations on dynamic parameters
 	bool verbose;								//Verbosity flag
 
 public:
-	mutex dynamicParametersMutex;				//Mutex to control access and alterations on dynamic parameters
 	
     /**
 	 *@brief Empty constructor for Dynamic Variables
