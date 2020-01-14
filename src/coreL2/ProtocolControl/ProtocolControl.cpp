@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : January 10th, 2019
+@Last alteration : January 14th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -89,8 +89,8 @@ ProtocolControl::decodeControlSdus(
                 receivedString += buffer[i];
             if(receivedString=="ACK"){
                 if(verbose) cout<<"[ProtocolControl] Received ACK from UE."<<endl;
-                if(macController->dynamicParameters->getModified()==1){
-                    macController->dynamicParameters->setModified(0);
+                if(macController->macConfigRequest->dynamicParameters->getModified()==1){
+                    macController->macConfigRequest->dynamicParameters->setModified(0);
                 }
                 else if(verbose) cout<<"[ProtocolControl] There were values changed before receiving ACK."<<endl;
             }
@@ -112,7 +112,7 @@ ProtocolControl::decodeControlSdus(
             macController->rxMetrics[index].deserialize(rxMetricsBytes);
 
             //Calculate new DLMCS
-            macController->dynamicParameters->setMcsDownlink(AdaptiveModulationCoding::getCqiConvertToMcs(macController->rxMetrics[index].cqiReport));
+            macController->macConfigRequest->dynamicParameters->setMcsDownlink(macAddress,AdaptiveModulationCoding::getCqiConvertToMcs(macController->rxMetrics[index].cqiReport));
 
             if(verbose){
                 cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received.";
@@ -154,6 +154,7 @@ ProtocolControl::receiveInterlayerMessages(){
     char buffer[MAXIMUM_BUFFER_LENGTH]; //Buffer where message will be stored
     string message;                     //String containing message converted from char*
     uint8_t cqi;                        //Channel Quality information based on SINR measurement from PHY
+    uint8_t sourceMacAddress;           //Source MAC Address
 
     ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
 
@@ -176,8 +177,12 @@ ProtocolControl::receiveInterlayerMessages(){
             
             //Perform channel quality information calculation and uplink MCS calculation
             cqi = LinkAdaptation::getSinrConvertToCqi(messageParametersBS.sinr);
-			macController->dynamicParameters->setMcsUplink(AdaptiveModulationCoding::getCqiConvertToMcs(cqi));
-            macController->decoding();
+
+            //Receive source MAC Address from decoding function
+            sourceMacAddress = macController->decoding();
+
+            //Calculates new UL MCS and sets it
+            macController->macConfigRequest->dynamicParameters->setMcsUplink(sourceMacAddress, AdaptiveModulationCoding::getCqiConvertToMcs(cqi));
         }
         if(message=="UESubframeRx.Start"){
 			UESubframeRx_Start messageParametersUE;

@@ -5,7 +5,7 @@
 /*****************************************/
 
 #ifndef INCLUDED_ADAPTIVE_MODULATION_CODING_H
-#define INCLUDED_LINK_ADAPTATION_H
+#define INCLUDED_ADAPTIVE_MODULATION_CODING_H
 
 #include <stdint.h>     //uint8_t
 
