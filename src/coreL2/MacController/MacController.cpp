@@ -250,19 +250,19 @@ MacController::decoding()
     //Error checking
     if(numberDecodingBytes==-1 && verbose){ 
         cout<<"[MacController] Error reading from socket."<<endl;
-        return;
+        return 0;
     }
 
     //CRC checking
     if(numberDecodingBytes==-2 && verbose){ 
         cout<<"[MacController] Drop packet due to CRC Error."<<endl;
-        return;
+        return 0;
     }
 
     //EOF checking
     if(numberDecodingBytes==0 && verbose){ 
         cout<<"[MacController] End of Transmission."<<endl;
-        return;
+        return 0;
     }
 
     //Get MAC Address from MAC header
@@ -366,18 +366,14 @@ MacController::manager(){   //This thread executes only on BS
         this_thread::sleep_for(chrono::seconds(TIMEOUT_DYNAMIC_PARAMETERS));
 
         if(macConfigRequest->dynamicParameters->getModified()>0){
-        	macConfigRequest->dynamicParameters->dynamicParametersMutex.lock();
-        	{
-        		//Send a MACC SDU to each UE attached
-				for(int i=0;i<staticParameters->numberUEs;i++){
-					dynamicParametersBytes.clear();
-					macConfigRequest->dynamicParameters->serialize(staticParameters->ulReservations[i].target_ue_id, dynamicParametersBytes);
-					protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), staticParameters->ulReservations[i].target_ue_id);
-				}
-        	}
-        	macConfigRequest->dynamicParameters->dynamicParametersMutex.unlock();
-            macConfigRequest->dynamicParameters->setModified(1);
-        }
+			//Send a MACC SDU to each UE attached
+			for(int i=0;i<staticParameters->numberUEs;i++){
+				dynamicParametersBytes.clear();
+				macConfigRequest->dynamicParameters->serialize(staticParameters->ulReservations[i].target_ue_id, dynamicParametersBytes);
+				protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), staticParameters->ulReservations[i].target_ue_id);
+			}
+		}
+		macConfigRequest->dynamicParameters->setModified(1);
     }
 }
 
