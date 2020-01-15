@@ -33,6 +33,7 @@ LinkAdaptation::getSinrConvertToCqi(
     float sinr)     //Signal to Interference plus Noise Ratio informed by PHY
 {   
     uint8_t cqiUplink;      //Channel Quality Information
+    
     //PROVISIONAL: do some calculations/Look tables here
     cqiUplink = 10;
     return cqiUplink;

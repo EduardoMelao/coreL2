@@ -45,11 +45,9 @@ ProtocolControl::enqueueControlSdus(
     if(!macController->flagBS)      //If it is UE, then it only has BS "attached"
         index=0;
     else{
-        for(index=0;index<macController->staticParameters->numberUEs;index++)
-            if(macAddress == macController->staticParameters->ulReservations[index].target_ue_id)
-                break;
+        index = macController->getIndex(macAddress);
 
-        if(index==macController->staticParameters->numberUEs){
+        if(index==-1){
             if(verbose) cout<<"[ProtocolControl] Did not find MAC Address to send MACC SDU."<<endl;
             exit(1);
         }
@@ -60,11 +58,14 @@ ProtocolControl::enqueueControlSdus(
 
     char sduBuffer[MAXIMUM_BUFFER_LENGTH];   //Buffer to store SDU for futher transmission
 
+    //Copy MACC SDU
     for(int i=0;i<numberBytes;i++)
         sduBuffer[i] = controlSdu[i];
     
+    //Lock Mutex
     lock_guard<mutex> lk(macController->queueMutex);
 
+    //Try to add SDU to sending queue
     int macSendingPDU = macController->mux->addSdu(sduBuffer, numberBytes, 0, macAddress);
 
     //If addSdu returns -1, SDU was added successfully
@@ -73,6 +74,7 @@ ProtocolControl::enqueueControlSdus(
     //Else, queue is full. Need to send PDU
     macController->sendPdu(macSendingPDU);
 
+    //Then, adds Sdu
     macController->mux->addSdu(sduBuffer, numberBytes, 0, macAddress);
 }
 
@@ -82,11 +84,16 @@ ProtocolControl::decodeControlSdus(
     size_t numberDecodingBytes,     //Size of Control SDU in Bytes
     uint8_t macAddress)             //Source MAC Address
 {
+    //If it is BS, it can receive ACKs or Rx Metrics
     if(macController->flagBS){
-        if(numberDecodingBytes==3){     //It is probably an "ACK"
+        if(numberDecodingBytes==3){     //It is an "ACK"
             string receivedString;      //String to be compared to "ACK"
+
+            //Convert array received to string
             for(int i=0;i<numberDecodingBytes;i++)
                 receivedString += buffer[i];
+            
+            //Compare Strings
             if(receivedString=="ACK"){
                 if(verbose) cout<<"[ProtocolControl] Received ACK from UE."<<endl;
                 if(macController->macConfigRequest->dynamicParameters->getModified()==1){
@@ -104,7 +111,7 @@ ProtocolControl::decodeControlSdus(
             }
 
             //Decode Bytes
-            vector<uint8_t> rxMetricsBytes;
+            vector<uint8_t> rxMetricsBytes;         //Serialized Rx Metrics bytes
             for(int i=0;i<numberDecodingBytes;i++)
                 rxMetricsBytes.push_back(buffer[i]);
 
@@ -156,6 +163,7 @@ ProtocolControl::receiveInterlayerMessages(){
     uint8_t cqi;                        //Channel Quality information based on SINR measurement from PHY
     uint8_t sourceMacAddress;           //Source MAC Address
 
+    //Receive Control message
     ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
 
     //Control message stream
@@ -166,13 +174,18 @@ ProtocolControl::receiveInterlayerMessages(){
         for(int i=0;i<subFrameStartSize;i++)
             message+=buffer[i];
 
-    	vector<uint8_t> messageParametersBytes;
+    	vector<uint8_t> messageParametersBytes;     //Bytes of serialized message parameters
 
         if(message=="BSSubframeRx.Start"){
-        	BSSubframeRx_Start messageParametersBS;
+        	BSSubframeRx_Start messageParametersBS;     //Define struct for BS paremeters
+
+            //Copy buffer to vector
         	for(int i=subFrameStartSize;i<messageSize;i++)
         		messageParametersBytes.push_back(buffer[i]);
+            
+            //Deserialize message
         	messageParametersBS.deserialize(messageParametersBytes);
+
         	if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start message. Receiving PDU from L1..."<<endl;
             
             //Perform channel quality information calculation and uplink MCS calculation
@@ -185,9 +198,13 @@ ProtocolControl::receiveInterlayerMessages(){
             macController->macConfigRequest->dynamicParameters->setMcsUplink(sourceMacAddress, AdaptiveModulationCoding::getCqiConvertToMcs(cqi));
         }
         if(message=="UESubframeRx.Start"){
-			UESubframeRx_Start messageParametersUE;
+			UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
+
+            //Copy buffer to vector
 			for(int i=subFrameStartSize;i<messageSize;i++)
 				messageParametersBytes.push_back(buffer[i]);
+
+            //Deserialize message
 			messageParametersUE.deserialize(messageParametersBytes);
 			if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start message. Receiving PDU from L1..."<<endl;
 

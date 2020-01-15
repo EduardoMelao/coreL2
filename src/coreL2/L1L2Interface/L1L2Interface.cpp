@@ -108,6 +108,7 @@ L1L2Interface::sendPdu(
     size_t numberDataBytes = macPdu.mac_data_.size();   //Number of Data Bytes before inserting CRC
     macPdu.mac_data_.resize(numberDataBytes+2);
     crcPackageCalculate((char*)&(macPdu.mac_data_[0]), numberDataBytes);
+
     //Serialize MAC PDU
     vector<uint8_t> serializedMacPdu;
     macPdu.serialize(serializedMacPdu);
@@ -130,12 +131,16 @@ L1L2Interface::receivePdu(
     uint8_t macAddress)         //Port to identify socket to listen to
 {
     ssize_t returnValue;    //Value that will be returned at the end of this procedure
+
+    //Perform socket UDP packet reception
     returnValue = recv(socketPduFromL1, (void*)buffer, maximumSize, MSG_WAITALL);
+
+    //Test if PDU received is valid and checks CRC
     if(returnValue>0){
         if(!crcPackageChecking((char*)buffer, returnValue))
             return -2;
     }
-    return returnValue==0? 0:returnValue-2;     //Value returned considers size without CRC
+    return returnValue==0? 0:returnValue-2;     //Value returned considers size without CRC Bytes
 }
 
 void
@@ -174,6 +179,7 @@ L1L2Interface::crcPackageChecking(
     char* buffer,       //Bytes of PDU
     int size)           //Size of PDU in Bytes
 {
+    //Perform CRC calculation with auxiliary function
     unsigned short crc1, crc2;
     crc1 = ((buffer[size-2]&255)<<8)|((buffer[size-1])&255);
     crc2 = 0x0000;
@@ -189,6 +195,7 @@ L1L2Interface::auxiliaryCalculationCRC(
     char data,              //Byte from PDU
     unsigned short crc)     //CRC history
 {
+    //Perform CRC calculation per Byte
     char i, bit;
     for(i=0x01;i;i<<=1){
         bit = (((crc&0x0001)?1:0)^((data&i)?1:0));
