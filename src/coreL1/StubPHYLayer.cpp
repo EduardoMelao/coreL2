@@ -318,7 +318,6 @@ CoreL1::receiveInterlayerMessage(){
 
     //Control message stream
     while(messageSize>0){
-
         //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING ONLY SubframeTx.Start messages
     	int subFrameStartSize = 18;
         for(int i=0;i<subFrameStartSize;i++)

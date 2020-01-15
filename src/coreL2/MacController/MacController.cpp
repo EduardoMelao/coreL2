@@ -193,7 +193,6 @@ MacController::sendPdu(
     
     //Add parameters
     subFrameStartMessage+=messageParameters;
-
     protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
     transmissionProtocol->sendPackageToL1(macPDU, macAddress);
     protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
