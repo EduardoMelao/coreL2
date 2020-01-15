@@ -151,7 +151,7 @@ void
 MacController::sendPdu(
     uint8_t macAddress)     //Destination MAC Address of TransmissionQueue in the Multiplexer
 {
-    //Declaration of PDU buffer
+    //Declaration of PDU buffers: data and control
     char bufferPdu[MAXIMUM_BUFFER_LENGTH];
     char bufferControl[MAXIMUM_BUFFER_LENGTH];
     bzero(bufferPdu, MAXIMUM_BUFFER_LENGTH);
@@ -178,6 +178,8 @@ MacController::sendPdu(
 
     if(flagBS){     //Create BSSubframeTx.Start message
     	BSSubframeTx_Start messageBS;	//Message parameters structure
+
+        //Fill the structure with information (static and dynamic)
     	messageBS.numUEs = staticParameters->numberUEs;
     	messageBS.numPDUs = 1;
         macConfigRequest->dynamicParameters->getFLUTMatrix(messageBS.fLutDL);
@@ -185,17 +187,27 @@ MacController::sendPdu(
     	messageBS.numerology = staticParameters->numerology[0];
     	messageBS.ofdm_gfdm = staticParameters->ofdm_gfdm[0];
     	messageBS.rxMetricPeriodicity = macConfigRequest->dynamicParameters->getRxMetricsPeriodicity(macAddress);
+
+        //Serialize struct
     	messageBS.serialize(messageParametersBytes);
+
+        //Copy structure bytes to message
     	for(uint i=0;i<messageParametersBytes.size();i++)
     		messageParameters+=messageParametersBytes[i];
     }
     else{       //Create UESubframeTx.Start message
         UESubframeTx_Start messageUE;	//Messages parameters structure
+
+        //Fill the structure with information (static and dynamic)
         messageUE.ulReservation = macConfigRequest->dynamicParameters->getUlReservation(currentMacAddress);
         messageUE.numerology = staticParameters->numerology[0];
         messageUE.ofdm_gfdm = staticParameters->ofdm_gfdm[0];
         messageUE.rxMetricPeriodicity = macConfigRequest->dynamicParameters->getRxMetricsPeriodicity(currentMacAddress);
+
+        //Serialize struct
         messageUE.serialize(messageParametersBytes);
+
+        //Copy struct bytes to message
         for(uint i=0;i<messageParametersBytes.size();i++)
             messageParameters+=messageParametersBytes[i];
     }
@@ -206,9 +218,10 @@ MacController::sendPdu(
     string subFrameEndMessage = flagBS? "BS":"UE";
     subFrameEndMessage += "SubframeTx.End";
     
-    //Add parameters
+    //Add parameters to original message
     subFrameStartMessage+=messageParameters;
 
+    //Send interlayer messages and the PDU
     protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
     transmissionProtocol->sendPackageToL1(macPDU, macAddress);
     protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
@@ -372,6 +385,7 @@ MacController::manager(){   //This thread executes only on BS
 				macConfigRequest->dynamicParameters->serialize(staticParameters->ulReservations[i].target_ue_id, dynamicParametersBytes);
 				protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), staticParameters->ulReservations[i].target_ue_id);
 			}
+            //Set modified counter to 1. If counter increases, new transmission is necessary.
 			macConfigRequest->dynamicParameters->setModified(1);
 		}
     }
@@ -379,12 +393,14 @@ MacController::manager(){   //This thread executes only on BS
 
 void 
 MacController::rxMetricsReport(){  //This thread executes only on UE
-    vector<uint8_t> rxMetricsBytes;
+    vector<uint8_t> rxMetricsBytes;     //Array of bytes where RX Metrics will be stored
 
+    //Serialize Rx Metrics
     rxMetrics->serialize(rxMetricsBytes);
     
     if(verbose) cout<<"[MacController] RxMetrics report with size "<<rxMetricsBytes.size()<<" enqueued to BS."<<endl;
 
+    //Enqueue MACC SDU
     protocolControl->enqueueControlSdus(&(rxMetricsBytes[0]), rxMetricsBytes.size(), 0);
 	
 }

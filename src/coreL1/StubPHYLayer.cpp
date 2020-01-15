@@ -347,14 +347,18 @@ CoreL1::receiveInterlayerMessage(){
 
     //Control message stream
     while(messageSize>0){
+        //PROVISIONAL: CONSIDERING ONLY SubframeTx.Start messages
 
-        //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING ONLY SubframeTx.Start messages
+        //Manually convert char* to string
     	int subFrameStartSize = 18;
         for(int i=0;i<subFrameStartSize;i++)
             message+=buffer[i];
 
-    	vector<uint8_t> messageParametersBytes;
+    	vector<uint8_t> messageParametersBytes; //Array of Bytes where serialized message parameters will be stored
+
+
         if(message=="BSSubframeTx.Start"){
+            //Treat BSSubframeTx.Start parameters and trigger encoding MAC PDU to UE procedure
         	BSSubframeTx_Start messageParametersBS;
         	for(int i=subFrameStartSize;i<messageSize;i++)
         		messageParametersBytes.push_back(message[i]);
@@ -363,6 +367,7 @@ CoreL1::receiveInterlayerMessage(){
 			encoding();
         }
         if(message=="UESubframeTx.Start"){
+            //Treat UESubframeTx.Start parameters and trigger encoding MAC PDU to BS procedure
 			UESubframeTx_Start messageParametersUE;
 			for(int i=subFrameStartSize;i<messageSize;i++)
 				messageParametersBytes.push_back(message[i]);
