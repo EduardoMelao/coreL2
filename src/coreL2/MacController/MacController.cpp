@@ -372,8 +372,8 @@ MacController::manager(){   //This thread executes only on BS
 				macConfigRequest->dynamicParameters->serialize(staticParameters->ulReservations[i].target_ue_id, dynamicParametersBytes);
 				protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), staticParameters->ulReservations[i].target_ue_id);
 			}
+			macConfigRequest->dynamicParameters->setModified(1);
 		}
-		macConfigRequest->dynamicParameters->setModified(1);
     }
 }
 

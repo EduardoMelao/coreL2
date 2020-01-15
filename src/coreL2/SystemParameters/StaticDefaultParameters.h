@@ -35,7 +35,7 @@ public:
 	uint8_t numberUEs;							//[4 bits] Number of UserEquipments attached (ignore in case of UEs);
 	vector<uint8_t> numerology;					//[3 bits] Numerology identification
 	vector<uint8_t> ofdm_gfdm;					//[1 bit] Flag to indicate data transmission technique. 0=OFDM/1=GFDM
-	vector<uint8_t> mtu;						//[16 bits] Maximum transmission unity of the system
+	vector<uint16_t> mtu;						//[16 bits] Maximum transmission unity of the system
 	vector<uint16_t> ipTimeout;					//[16 bits] IP Timeout time (milliseconds)
 	vector<uint8_t> ssreportWaitTimeout;		//[4 bits] Spectrum Sensing Report Wait Timeout time(milliseconds)
 	vector<uint8_t> ackWaitTimeout;				//[4 bits] Acknowledgement Wait Timeout time(milliseconds)

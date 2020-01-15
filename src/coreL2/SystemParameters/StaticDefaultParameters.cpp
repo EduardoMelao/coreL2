@@ -140,7 +140,7 @@ StaticDefaultParameters::StaticDefaultParameters(
 
 		//Gets Maximum Transmission Unity in Bytes
 		getline(defaultConfigurationsFile, readBuffer);
-		mtu[i] = stoi(readBuffer);
+		mtu[i] = stol(readBuffer);
 		readBuffer.clear();
 
 		//Gets IP Timeout
