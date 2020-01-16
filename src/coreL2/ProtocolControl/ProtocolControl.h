@@ -67,7 +67,7 @@ public:
      * @brief Perform reception of Interlayer Control Messages from PHY and decides what to do
      * @param currentMacMode Actual MAC Mode to control enqueueing while system is in another modes, e.g. RECONFIG_MODE or STOP_MODE
      */
-    void receiveInterlayerMessages(atomic<MacModes> & curentMacMode);
+    void receiveInterlayerMessages(atomic<MacModes> & currentMacMode);
 };
 
 

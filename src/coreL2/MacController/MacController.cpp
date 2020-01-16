@@ -83,13 +83,16 @@ MacController::manager(){
     while(1){
         switch(currentMacMode){
             case STANDBY_MODE:
+            {
                 //Provisional. Here, system waits for MacStartCommand
                 cout<<"[MacController] ___________ System in STANDBY mode. ___________ \n Press any key to start functionalities (MacStartCommand)..."<<endl;
                 cin.get();
                 currentMacMode = CONFIG_MODE;
+            }
             break;
 
             case CONFIG_MODE:
+            {
                 //All MAC Initial Configuration is made here
                 cout<<"[MacController] ___________ System in CONFIG mode. ___________"<<endl; 
 
@@ -167,18 +170,22 @@ MacController::manager(){
 
                 //Set MAC mode to start mode
                 currentMacMode = START_MODE;
+            }
             break;
 
             case START_MODE:
+            {
                 //Here, all system threads that don't execute only in IDLE_MODE are started.
                 cout<<"[MacController] ___________ System in START mode. ___________"<<endl;
                 startThreads();
 
                 //Set MAC mode to start mode
                 currentMacMode = IDLE_MODE;
+            }
             break;
 
             case IDLE_MODE:
+            {
                 //System will join idle threads (receiving from L1 or L3) and wait for other commands e.g MacConfigRequestCommand or MacStopCommand
                 cout<<"[MacController] ___________ System in IDLE mode. ___________"<<endl;
                 
@@ -198,9 +205,11 @@ MacController::manager(){
                     currentMacMode = RECONFIG_MODE;
                 else
                     currentMacMode = STOP_MODE;
+            }
             break;
 
             case RECONFIG_MODE:
+            {
                 cout<<"[MacController] ___________ System in RECONFIG mode. ___________"<<endl;
 
                 //System will update static parameters
@@ -222,9 +231,11 @@ MacController::manager(){
 
                 //Set MAC mode back to idle mode
                 currentMacMode = IDLE_MODE;
+            }
             break;
 
             case STOP_MODE:
+            {
                 cout<<"[MacController] ___________ System in STOP mode. ___________"<<endl;
 
                 //Destroy all System environment variables
@@ -232,10 +243,13 @@ MacController::manager(){
 
                 //System will stand in STANDBY mode until it is started again
                 currentMacMode = STANDBY_MODE;
+            }
             break;
 
             default:
+            {
                 if(verbose) cout<<"[MacController] ___________Unknown mode ___________"<<endl;
+            }
             break;
         }
     }

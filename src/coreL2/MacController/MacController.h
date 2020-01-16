@@ -14,6 +14,8 @@
 #include <condition_variable>   //std::condition_variable
 #include <atomic>               //std::atomic 
 
+enum MacModes {STANDBY_MODE, CONFIG_MODE, START_MODE, IDLE_MODE, RECONFIG_MODE, STOP_MODE};
+
 #include "../ProtocolData/MacHighQueue.h"
 #include "../ProtocolPackage/ProtocolPackage.h"
 #include "../Multiplexer/MacAddressTable/MacAddressTable.h"
@@ -37,7 +39,6 @@ using namespace std;
 #define DST_OFFSET 16                   //IP packet destination address offset in bytes
 #define TIMEOUT_DYNAMIC_PARAMETERS 5    //Timeout(seconds) to check for dynamic parameters alterations
 
-enum MacModes {STANDBY_MODE, CONFIG_MODE, START_MODE, IDLE_MODE, RECONFIG_MODE, STOP_MODE};
 
 //Initializing classes that will be defined in other .h files
 class ProtocolData;		
