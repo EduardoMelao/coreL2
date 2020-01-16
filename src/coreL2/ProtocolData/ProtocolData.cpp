@@ -7,7 +7,7 @@
 @Arquive name : ProtocolData.cpp
 @Classification : Protocol Data
 @
-@Last alteration : January 8th, 2020
+@Last alteration : January 16th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -37,13 +37,15 @@ ProtocolData::ProtocolData(
 ProtocolData::~ProtocolData() {}
 
 void 
-ProtocolData::enqueueDataSdus(){
+ProtocolData::enqueueDataSdus(
+    atomic<MacModes> & currentMacMode)      //Current MAC execution mode.
+{
     int macSendingPDU;                      //This auxiliary variable will store MAC Address if queue is full of SDUs
     char bufferData[MAXIMUM_BUFFER_LENGTH]; //Buffer to store Data Bytes
     ssize_t numberBytesRead = 0;            //Size of MACD SDU read in Bytes
     
     //Infinite loop
-    while(1){
+    while(currentMacMode.load()==IDLE_MODE){
 
         //Test if MacHigh Queue is not empty, i.e. there are SDUs to enqueue
         if(macHigh->getNumberPackets()){
@@ -88,6 +90,7 @@ ProtocolData::enqueueDataSdus(){
             macController->mux->addSdu(bufferData,numberBytesRead);
         }
     }
+    if(verbose) cout<<"[ProtocolData] Exiting IDLE mode."<<endl;
 }
 
 void

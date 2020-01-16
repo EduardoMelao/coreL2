@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : January 14th, 2019
+@Last alteration : January 16th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -96,10 +96,6 @@ ProtocolControl::decodeControlSdus(
             //Compare Strings
             if(receivedString=="ACK"){
                 if(verbose) cout<<"[ProtocolControl] Received ACK from UE."<<endl;
-                if(macController->macConfigRequest->dynamicParameters->getModified()==1){
-                    macController->macConfigRequest->dynamicParameters->setModified(0);
-                }
-                else if(verbose) cout<<"[ProtocolControl] There were values changed before receiving ACK."<<endl;
             }
         }
         else{   //RxMetrics
@@ -130,6 +126,7 @@ ProtocolControl::decodeControlSdus(
     else{    //UE needs to set its Dynamic Parameters and return ACK to BS
         macController->managerDynamicParameters((uint8_t*) buffer, numberDecodingBytes);
         if(verbose) cout<<"[ProtocolControl] UE Configured correctly. Returning ACK to BS..."<<endl;
+
         // ACK
         if(macController->mux->emptyPdu(0))
         	macController->queueConditionVariables[0].notify_all();     //index 0: UE has only BS as equipment
@@ -157,17 +154,19 @@ ProtocolControl::sendInterlayerMessages(
 }
 
 void
-ProtocolControl::receiveInterlayerMessages(){
+ProtocolControl::receiveInterlayerMessages(
+    atomic<MacModes> & currentMacMode)
+{
     char buffer[MAXIMUM_BUFFER_LENGTH]; //Buffer where message will be stored
     string message;                     //String containing message converted from char*
     uint8_t cqi;                        //Channel Quality information based on SINR measurement from PHY
     uint8_t sourceMacAddress;           //Source MAC Address
 
-    //Receive Control message
-    ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
 
     //Control message stream
-    while(messageSize>0){
+    while(currentMacMode.load()==IDLE_MODE){
+        //Receive Control message
+        ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
         
         //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING ONLY SubframeRx.Start messages
     	int subFrameStartSize = 18;
@@ -223,4 +222,5 @@ ProtocolControl::receiveInterlayerMessages(){
         message.clear();
         messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
     }
+    if(verbose) cout<<"[ProtocolControl] Exiting IDLE_MODE."<<endl;
 }

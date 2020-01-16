@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : January 14th, 2020
+@Last alteration : January 16th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -28,78 +28,13 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 MacController::MacController(
     const char* _deviceNameTun,     			//TUN device name
-    MacAddressTable* _ipMacTable,   			//MAC address - IP address table
-    StaticDefaultParameters* _staticParameters,	//All parameters loaded from file
     bool _verbose)                  			//Verbosity flag
 {    
-    //Load static parameters from file
-    staticParameters = _staticParameters;
-
     //Assign verbosity flag
     verbose = _verbose;
 
-    //Assign IP <-> MAC table
-    ipMacTable = _ipMacTable;
-
-    //Gets BaseStation flag and current MacAddress from static parameters
-    flagBS = staticParameters->flagBS;
-    currentMacAddress = flagBS? 0:_staticParameters->ulReservations[0].target_ue_id;
-    
-    //Create condition variables
-    queueConditionVariables = new condition_variable[staticParameters->numberUEs];
-    
-    //Create Tun Interface and allocate it
-    tunInterface = new TunInterface(_deviceNameTun, _verbose);
-    if(!(tunInterface->allocTunInterface())){
-        if(verbose) cout << "[MacController] Error allocating tun interface." << endl;
-        exit(1);
-    }
-    
-    //Create L1L2Interface
-    l1l2Interface = new L1L2Interface(verbose);
-
-    //Create reception and transmission protocols
-    receptionProtocol = new ReceptionProtocol(l1l2Interface, tunInterface, verbose);
-    transmissionProtocol = new TransmissionProtocol(l1l2Interface,tunInterface, verbose);
-
-    //Create MACHigh queue to store IP packets received from TUN
-    macHigh = new MacHighQueue(receptionProtocol, _verbose);
-
-    //Threads definition
-    /** Threads order:
-     * 0 .. attachedEquipments-1    ---> Timeout control threads
-     * attachedEquipments           ---> ProtocolData MACD SDU enqueueing
-     * attachedEquipments+1         ---> Data SDU enqueueing from TUN interface in MacHighQueue
-     * attachedEquipments+2         ---> Reading control messages from PHY
-     * attachedEquipments+3         ---> (BS Only) Send DynamicParameters to UE when changed
-     */
-    threads = new thread[4+staticParameters->numberUEs];
-
-    //Create Multiplexer and set its TransmissionQueues
-    mux = new Multiplexer(_staticParameters->mtu[0], currentMacAddress, ipMacTable, MAXSDUS, flagBS, verbose);     //PROVISIONAL UNIVERSAL MTU
-    if(flagBS){
-    	for(int i=0;i<staticParameters->numberUEs;i++)
-    		mux->setTransmissionQueue(staticParameters->ulReservations[i].target_ue_id);
-    }
-    else mux->setTransmissionQueue(0);      //UE needs a single Transmission Queue to BS
-
-    //Create ProtocolData to deal with MACD SDUs
-    protocolData = new ProtocolData(this,macHigh, verbose);
-
-    //Create ProtocolControl to deal with MACC SDUs
-    protocolControl = new ProtocolControl(this, verbose);
-
-    //Initialize Dynamic Parameters class
-    macConfigRequest = new MacConfigRequest(verbose);
-
-    //Fill dynamic Parameters with static parameters (stating system)
-    staticParameters->loadDynamicParametersDefaultInformation(macConfigRequest->dynamicParameters);
-
-    //Create a RxMetrics array
-    rxMetrics = new RxMetrics[staticParameters->numberUEs];
-
-    //Set subframe counter to zero
-    subframeCounter = 0;
+    //Assign TUN device name
+    deviceNameTun = _deviceNameTun;
 }
 
 MacController::~MacController(){
@@ -116,6 +51,194 @@ MacController::~MacController(){
     delete l1l2Interface;
     delete [] threads;
     delete [] queueConditionVariables;
+    delete ipMacTable;
+    delete staticParameters;
+}
+
+void
+MacController::initialize(){
+    currentMacMode = STANDBY_MODE;      //Initializes MAC in STANDBY_MODE 
+    manager();
+}
+
+void
+MacController::recordDynamicParameters(){
+    //PROVISIONAL IMPLEMENTATION, considering only one UE
+    //Copy values from Dynamic Parameters to Static Parameters
+    macConfigRequest->dynamicParameters->getUlReservations(staticParameters->ulReservations);
+    if(flagBS) staticParameters->mcsDownlink[0] = macConfigRequest->dynamicParameters->getMcsDownlink(staticParameters->ulReservations[0].target_ue_id);
+    staticParameters->mcsUplink[0] = macConfigRequest->dynamicParameters->getMcsUplink(staticParameters->ulReservations[0].target_ue_id);
+    staticParameters->mimoConf[0]=macConfigRequest->dynamicParameters->getMimoConf(staticParameters->ulReservations[0].target_ue_id);
+    staticParameters->mimoDiversityMultiplexing[0]=macConfigRequest->dynamicParameters->getMimoDiversityMultiplexing(staticParameters->ulReservations[0].target_ue_id);
+    staticParameters->mimoAntenna[0]=macConfigRequest->dynamicParameters->getMimoAntenna(staticParameters->ulReservations[0].target_ue_id);
+    staticParameters->mimoOpenLoopClosedLoop[0]=macConfigRequest->dynamicParameters->getMimoOpenLoopClosedLoop(staticParameters->ulReservations[0].target_ue_id);
+    staticParameters->mimoPrecoding[0]=macConfigRequest->dynamicParameters->getMimoPrecoding(staticParameters->ulReservations[0].target_ue_id);
+    staticParameters->transmissionPowerControl[0] = macConfigRequest->dynamicParameters->getTPC(staticParameters->ulReservations[0].target_ue_id);
+    staticParameters->rxMetricPeriodicity[0] = macConfigRequest->dynamicParameters->getRxMetricsPeriodicity(staticParameters->ulReservations[0].target_ue_id);
+}
+
+void
+MacController::manager(){
+    //Infinite loop
+    while(1){
+        switch(currentMacMode){
+            case STANDBY_MODE:
+                //Provisional. Here, system waits for MacStartCommand
+                cout<<"[MacController] ___________ System in STANDBY mode. ___________ \n Press any key to start functionalities (MacStartCommand)..."<<endl;
+                cin.get();
+                currentMacMode = CONFIG_MODE;
+            break;
+
+            case CONFIG_MODE:
+                //All MAC Initial Configuration is made here
+                cout<<"[MacController] ___________ System in CONFIG mode. ___________"<<endl; 
+
+                //Read txt static and default parameters and initialize flagBS and currentMacAddress values
+                staticParameters = new StaticDefaultParameters(verbose);
+                staticParameters->readTxtStaticParameters();
+                flagBS = staticParameters->flagBS;
+                currentMacAddress = flagBS? 0:staticParameters->ulReservations[0].target_ue_id;
+                
+                //Define IP-MAC correlation table creating and initializing a MacAddressTable with static informations (HARDCODE)
+                ipMacTable = new MacAddressTable(verbose);
+                uint8_t addressEntry0[4] = {10,0,0,10};
+                uint8_t addressEntry1[4] = {10,0,0,11};
+                uint8_t addressEntry2[4] = {10,0,0,12};
+                ipMacTable->addEntry(addressEntry0, 0, true);
+                ipMacTable->addEntry(addressEntry1, 1, false);
+                ipMacTable->addEntry(addressEntry2, 2, false);
+
+                //Create condition variables
+                queueConditionVariables = new condition_variable[staticParameters->numberUEs];
+                
+                //Create Tun Interface and allocate it
+                tunInterface = new TunInterface(deviceNameTun, verbose);
+                if(!(tunInterface->allocTunInterface())){
+                    if(verbose) cout << "[MacController] Error allocating tun interface." << endl;
+                    exit(1);
+                }
+
+                //Create L1L2Interface
+                l1l2Interface = new L1L2Interface(verbose);
+
+                //Create reception and transmission protocols
+                receptionProtocol = new ReceptionProtocol(l1l2Interface, tunInterface, verbose);
+                transmissionProtocol = new TransmissionProtocol(l1l2Interface,tunInterface, verbose);
+
+                //Create MACHigh queue to store IP packets received from TUN
+                macHigh = new MacHighQueue(receptionProtocol, verbose);
+
+                //Threads definition
+                /** Threads order:
+                 * 0 .. numberEquipments-1    ---> Timeout control threads
+                 * numberEquipments           ---> ProtocolData MACD SDU enqueueing (From L3)
+                 * numberEquipments+1         ---> Data SDU enqueueing from TUN interface in MacHighQueue
+                 * numberEquipments+2         ---> Reading control messages from PHY
+                 */
+                threads = new thread[3+staticParameters->numberUEs];
+
+                //Create Multiplexer and set its TransmissionQueues
+                mux = new Multiplexer(staticParameters->mtu[0], currentMacAddress, ipMacTable, MAXSDUS, flagBS, verbose);     //PROVISIONAL UNIVERSAL MTU
+                if(flagBS){
+                    for(int i=0;i<staticParameters->numberUEs;i++)
+                        mux->setTransmissionQueue(staticParameters->ulReservations[i].target_ue_id);
+                }
+                else mux->setTransmissionQueue(0);      //UE needs a single Transmission Queue to BS
+
+                //Create ProtocolData to deal with MACD SDUs
+                protocolData = new ProtocolData(this, macHigh, verbose);
+
+                //Create ProtocolControl to deal with MACC SDUs
+                protocolControl = new ProtocolControl(this, verbose);
+
+                //Initialize Dynamic Parameters class
+                macConfigRequest = new MacConfigRequest(verbose);
+
+                //Fill dynamic Parameters with default parameters (stating system)
+                staticParameters->loadDynamicParametersDefaultInformation(macConfigRequest->dynamicParameters);
+
+                //Create a RxMetrics array
+                rxMetrics = new RxMetrics[staticParameters->numberUEs];
+
+                //Set subframe counter to zero
+                subframeCounter = 0;
+
+                //---------------PROVISIONAL: NEED TO SEND PHYConfig.Request here!--------------------------
+
+                //Set MAC mode to start mode
+                currentMacMode = START_MODE;
+            break;
+
+            case START_MODE:
+                //Here, all system threads that don't execute only in IDLE_MODE are started.
+                cout<<"[MacController] ___________ System in START mode. ___________"<<endl;
+                startThreads();
+
+                //Set MAC mode to start mode
+                currentMacMode = IDLE_MODE;
+            break;
+
+            case IDLE_MODE:
+                //System will join idle threads (receiving from L1 or L3) and wait for other commands e.g MacConfigRequestCommand or MacStopCommand
+                cout<<"[MacController] ___________ System in IDLE mode. ___________"<<endl;
+                
+                //Join idle threads
+                threads[staticParameters->numberUEs].join();    //ProtocolData MACD SDU enqueueing (From L3) thread
+                threads[staticParameters->numberUEs+2].join();  //Reading control messages from PHY thread (From L1)
+
+                //PROVISIONAL: query user to change state to RECONFIG_MODE or STOP_MODE
+                cout<<"[MacController] Enter '%' for ConfigRequest or '*' for Stop."<<endl;
+                char caracter;  //Caracter received from user
+                cin>>caracter;
+                while(caracter!='%'&&caracter!='*'){
+                    cin>>caracter;
+                }
+
+                if(caracter=='%')
+                    currentMacMode = RECONFIG_MODE;
+                else
+                    currentMacMode = STOP_MODE;
+            break;
+
+            case RECONFIG_MODE:
+                cout<<"[MacController] ___________ System in RECONFIG mode. ___________"<<endl;
+
+                //System will update static parameters
+                recordDynamicParameters();
+
+                //Then, if it is BS, it will send Dynamic Parameters to UE via MACC SDU for reconfiguration
+                if(flagBS){
+                    vector<uint8_t> dynamicParametersBytes;
+
+                    //Send a MACC SDU to each UE attached
+                    for(int i=0;i<staticParameters->numberUEs;i++){
+                        dynamicParametersBytes.clear();
+                        macConfigRequest->dynamicParameters->serialize(staticParameters->ulReservations[i].target_ue_id, dynamicParametersBytes);
+                        protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), staticParameters->ulReservations[i].target_ue_id);
+			        }
+
+                    currentMacMode = IDLE_MODE;
+                }
+
+                //Set MAC mode back to idle mode
+                currentMacMode = IDLE_MODE;
+            break;
+
+            case STOP_MODE:
+                cout<<"[MacController] ___________ System in STOP mode. ___________"<<endl;
+
+                //Destroy all System environment variables
+                this->~MacController();
+
+                //System will stand in STANDBY mode until it is started again
+                currentMacMode = STANDBY_MODE;
+            break;
+
+            default:
+                if(verbose) cout<<"[MacController] ___________Unknown mode ___________"<<endl;
+            break;
+        }
+    }
 }
 
 void 
@@ -128,23 +251,22 @@ MacController::startThreads(){
         threads[i] = thread(&MacController::timeoutController, this, i);
     }
 
-    //TUN queue control thread
-    threads[i] = thread(&ProtocolData::enqueueDataSdus, protocolData);
+    //TUN queue control thread (only IDLE mode)
+    threads[i] = thread(&ProtocolData::enqueueDataSdus, protocolData, ref(currentMacMode));
 
     //TUN reading and enqueueing thread
     threads[i+1] = thread(&MacHighQueue::reading, macHigh);
 
-    //Control messages from PHY reading
-    threads[i+2] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl);
-
-    //(Only BS) Manager threads: Send MACC SDUs when Dynamic Parameters are changed
-    if(flagBS)
-    	threads[i+3] = thread(&MacController::manager, this);
+    //Control messages from PHY reading (only IDLE mode)
+    threads[i+2] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl, ref(currentMacMode));
 
     //Join all threads
-    int numberThreads = flagBS? 4+staticParameters->numberUEs:3+staticParameters->numberUEs;
-    for(i=0;i<numberThreads;i++)
-        threads[i].join();
+    int numberThreads = 3+staticParameters->numberUEs;
+    for(i=0;i<numberThreads;i++){
+        //Join all threads that don't execute only in IDLE mode
+        if(i!=staticParameters->numberUEs&&i!=staticParameters->numberUEs+2)    
+            threads[i].join();
+    }
 }
 
 void 
@@ -179,14 +301,15 @@ MacController::sendPdu(
     if(flagBS){     //Create BSSubframeTx.Start message
     	BSSubframeTx_Start messageBS;	//Message parameters structure
 
-        //Fill the structure with information (static and dynamic)
+        //Fill the structure with information
     	messageBS.numUEs = staticParameters->numberUEs;
     	messageBS.numPDUs = 1;
-        macConfigRequest->dynamicParameters->getFLUTMatrix(messageBS.fLutDL);
-    	macConfigRequest->dynamicParameters->getUlReservations(messageBS.ulReservations);
+    	for(int i=0;i<17;i++)
+    		messageBS.fLutDL[i] = staticParameters->fLutMatrix[i];
+    	messageBS.ulReservations = staticParameters->ulReservations;
     	messageBS.numerology = staticParameters->numerology[0];
     	messageBS.ofdm_gfdm = staticParameters->ofdm_gfdm[0];
-    	messageBS.rxMetricPeriodicity = macConfigRequest->dynamicParameters->getRxMetricsPeriodicity(macAddress);
+    	messageBS.rxMetricPeriodicity = staticParameters->rxMetricPeriodicity[0];
 
         //Serialize struct
     	messageBS.serialize(messageParametersBytes);
@@ -198,11 +321,11 @@ MacController::sendPdu(
     else{       //Create UESubframeTx.Start message
         UESubframeTx_Start messageUE;	//Messages parameters structure
 
-        //Fill the structure with information (static and dynamic)
-        messageUE.ulReservation = macConfigRequest->dynamicParameters->getUlReservation(currentMacAddress);
+        //Fill the structure with information
+        messageUE.ulReservation = staticParameters->ulReservations[0];
         messageUE.numerology = staticParameters->numerology[0];
         messageUE.ofdm_gfdm = staticParameters->ofdm_gfdm[0];
-        messageUE.rxMetricPeriodicity = macConfigRequest->dynamicParameters->getRxMetricsPeriodicity(currentMacAddress);
+        messageUE.rxMetricPeriodicity = staticParameters->rxMetricPeriodicity[0];
 
         //Serialize struct
         messageUE.serialize(messageParametersBytes);
@@ -368,27 +491,9 @@ MacController::managerDynamicParameters(
     macConfigRequest->dynamicParameters->deserialize(serializedBytes);
 
     if(verbose) cout<<"[MacController] Dynamic Parameters were managed successfully."<<endl;
-}
 
-void
-MacController::manager(){   //This thread executes only on BS
-    vector<uint8_t> dynamicParametersBytes;
-    //Infinite loop
-    while(1){
-        //Wait for TIMEOUT_DYNAMIC_PARAMETERS seconds
-        this_thread::sleep_for(chrono::seconds(TIMEOUT_DYNAMIC_PARAMETERS));
-
-        if(macConfigRequest->dynamicParameters->getModified()>0){
-			//Send a MACC SDU to each UE attached
-			for(int i=0;i<staticParameters->numberUEs;i++){
-				dynamicParametersBytes.clear();
-				macConfigRequest->dynamicParameters->serialize(staticParameters->ulReservations[i].target_ue_id, dynamicParametersBytes);
-				protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), staticParameters->ulReservations[i].target_ue_id);
-			}
-            //Set modified counter to 1. If counter increases, new transmission is necessary.
-			macConfigRequest->dynamicParameters->setModified(1);
-		}
-    }
+    //Now, turn MAC into RECONFIG_MODE to reconfigure static parameters
+    currentMacMode = RECONFIG_MODE;
 }
 
 void 

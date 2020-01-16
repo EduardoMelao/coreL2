@@ -25,8 +25,6 @@ using namespace lib5grange;
 class DynamicParameters{
 private:
     //Dynamic information as informed on spreadsheet L1-L2_InterfaceDefinition.xlsx
-	uint8_t modified;                         	//Counter to indicate state of alterations: 0: no alterations; greater than 0: there are alterations
-												//While waiting for UE ACK, modified = 1; If its value increases, changes have to be sent again
 	uint8_t fLutMatrix[17];						//[132 bits] BitMap from Fusion Spectrum Analysis
 	vector<allocation_cfg_t> ulReservation;	    //[24 bits each] Spectrum allocation for Uplink
 	vector<uint8_t> mcsDownlink;				//[4 bit each] Modulation and Coding Scheme for Downlink
@@ -38,7 +36,6 @@ private:
 	vector<uint8_t> mimoPrecoding;				//[4 bits each] MIMO codeblock configuration for DL and UL
 	vector<uint8_t> transmissionPowerControl;	//[6 bits each] Transmission Power Control
 	vector<uint8_t> rxMetricPeriodicity;		//[4 bits each] CSI period for CQI, PMI and SSM provided by PHY
-	mutex dynamicParametersMutex;				//Mutex to control access and alterations on dynamic parameters
 	bool verbose;								//Verbosity flag
 
 public:
@@ -151,19 +148,7 @@ public:
 	 */
 	void setRxMetricPeriodicity(uint8_t macAddress, uint8_t _rxMetricPeriodicity);
 
-	/**
-	 * @brief Sets modified counter to an especific value
-	 * @param _modified New modified counter value
-	 */
-	void setModified(uint8_t _modified);
-
     //GETTERS
-    /**
-	 * @brief Test if there are paremeters to transmit
-	 * @returns Greater than 0 if there are modified parameters sent. 0 otherwise
-	 */
-	uint8_t getModified();
-
     /**
      * @brief Gets index referent to macAddress on all class arrays
      * @param macAddress MAC Address 

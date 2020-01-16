@@ -12,6 +12,7 @@
 #include <chrono>               //std::chrono::milliseconds
 #include <mutex>                //std::mutex
 #include <condition_variable>   //std::condition_variable
+#include <atomic>               //std::atomic 
 
 #include "../ProtocolData/MacHighQueue.h"
 #include "../ProtocolPackage/ProtocolPackage.h"
@@ -36,6 +37,8 @@ using namespace std;
 #define DST_OFFSET 16                   //IP packet destination address offset in bytes
 #define TIMEOUT_DYNAMIC_PARAMETERS 5    //Timeout(seconds) to check for dynamic parameters alterations
 
+enum MacModes {STANDBY_MODE, CONFIG_MODE, START_MODE, IDLE_MODE, RECONFIG_MODE, STOP_MODE};
+
 //Initializing classes that will be defined in other .h files
 class ProtocolData;		
 class ProtocolControl;
@@ -45,7 +48,9 @@ class ProtocolControl;
  */
 class MacController{
 private:
+    atomic<MacModes> currentMacMode;    //Current execution mode of MAC
     uint8_t currentMacAddress;          //MAC Address of current equipment
+    const char* deviceNameTun;          //TUN device name
     TunInterface* tunInterface;         //TunInterface object to perform L3 packet capture
     MacHighQueue* macHigh;              //Queue to receive and enqueue L3 packets
     MacAddressTable* ipMacTable;        //Table to associate IP addresses to 5G-RANGE domain MAC addresses
@@ -71,16 +76,29 @@ public:
     /**
      * @brief Initializes a MacController object to manage all 5G RANGE MAC Operations
      * @param _deviceNameTun Customized name for TUN Interface
-     * @param _ipMacTable Static table to link IP addresses to 5G-RANGE MAC addresses
-     * @param _staticParameters Structure containing all static parameters loaded from file
      * @param _verbose Verbosity flag
      */
-    MacController(const char* _deviceNameTun, MacAddressTable* _ipMacTable, StaticDefaultParameters* _staticParameters, bool _verbose);
+    MacController(const char* _deviceNameTun, bool _verbose);
     
     /**
      * @brief Destructs MacController object
      */
     ~MacController();
+
+    /**
+     * @brief Initializes MAC System in STANDBY_MODE
+     */
+    void initialize();
+
+    /**
+     * @brief Main thread of MAC, controls all system modes
+     */
+    void manager();
+
+    /**
+     * @brief Called by RECONFIG_MODE, updates static parameters with dynamic parameters modified by CLI.
+     */
+    void recordDynamicParameters();
 
     /**
      * @brief Procedure that executes forever and controls Control SDUs entrance in Multiplexing queue
@@ -124,11 +142,6 @@ public:
      * @param size Number of bytes of serialized information
      */ 
     void managerDynamicParameters(uint8_t* bytesDynamicParameters, size_t numberBytes);
-
-    /**
-     * @brief (PROVISIONAL) Periodically checks for changes in Dynamic Parameters and sends them to UEs via MACC SDUs
-     */
-    void manager();
 
     /**
      * @brief (Only UE) Periodically sends RxMetrics Report to BS

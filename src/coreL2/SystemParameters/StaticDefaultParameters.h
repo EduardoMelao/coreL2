@@ -65,6 +65,11 @@ public:
 	~StaticDefaultParameters();
 
 	/**
+	 * @brief Reads TXT archive with static & default information and starts class variables
+	 */
+	void readTxtStaticParameters();
+
+	/**
 	 * @brief Loads a Dynamic Parameters Object with default information read from file
 	 * @param dynamicParameters DynamicParameters object with dynamic parameters to be filled
 	 */
