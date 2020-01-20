@@ -7,7 +7,7 @@
 @Arquive name : MacAddressTable.cpp
 @Classification : MAC Address Table
 @
-@Last alteration : November 28th, 2019
+@Last alteration : January 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -122,7 +122,6 @@ MacAddressTable::deleteEntry(
     }
 
     //Delete old arrays
-    delete[] ipAddresses[id];
     delete[] ipAddresses;
     delete[] macAddresses;
 

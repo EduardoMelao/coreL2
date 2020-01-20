@@ -43,8 +43,9 @@ public:
     /**
      * @brief Procedure that executes forever and controls TUN interface reading, adding SDUs from MAC High Queue to Multiplexer
      * @param currentMacMode Actual MAC Mode to control enqueueing while system is in another modes, e.g. RECONFIG_MODE or STOP_MODE
+     * @param currentMacTxMode Actual MAC Tx Mode to signal to system if it is in an active mode, e.g. DISABLED_MODE_TX
      */
-    void enqueueDataSdus(atomic<MacModes> & currentMacMode);
+    void enqueueDataSdus(MacModes & currentMacMode, MacTxModes & currentMacTxMode);
 
     /**
      * @brief Receives and treat Data SDUs on decoding

@@ -8,7 +8,7 @@
 @Arquive name : MacHighQueue.cpp
 @Classification : Protocol Package
 @
-@Last alteration : December 4th, 2019
+@Last alteration : January 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -43,16 +43,30 @@ MacHighQueue::~MacHighQueue(){
  }
 
 void 
-MacHighQueue::reading(){
+MacHighQueue::reading(
+    MacModes & currentMacMode,          //Current MAC execution mode
+    MacTunModes & currentMacTunMode)    //Current MAC execution Tun mode
+{
     char *buffer;
     ssize_t numberBytesRead = 0;
-    while(1){
+    
+    //Mark current MAC Tun mode as ENABLED for reading TUN interface and enqueueing Data SDUs.
+    currentMacTunMode = TUN_ENABLED;
+
+    //Loop will execute until STOP mode is activated
+    while(currentMacMode!=STOP_MODE){
         //Allocate buffer
         buffer = new char[MAXIMUM_BUFFER_LENGTH];
         bzero(buffer, MAXIMUM_BUFFER_LENGTH);
 
         //Read from TUN Interface
         numberBytesRead = reception->receivePackageFromL3(buffer, MAXIMUM_BUFFER_LENGTH);
+
+        //Check if there is actually information received
+        if(numberBytesRead<0)
+            continue;
+
+        else
         {
             //Lock to write in the queue
             lock_guard<mutex> lk(tunMutex);
@@ -91,6 +105,9 @@ MacHighQueue::reading(){
             if(verbose) cout<<"[MacHighQueue] SDU added to Queue. Num SDUs: "<<queue.size()<<endl;
         }
     }
+
+    //Mark current MAC Tun mode as DISABLED for reading TUN interface and enqueueing Data SDUs.
+    currentMacTunMode = TUN_DISABLED;
 }
 
 int 

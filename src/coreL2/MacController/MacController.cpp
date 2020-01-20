@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : January 16th, 2020
+@Last alteration : January 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -86,6 +86,10 @@ MacController::manager(){
             {
                 //Provisional. Here, system waits for MacStartCommand
                 cout<<"[MacController] ___________ System in STANDBY mode. ___________ \n Press any key to start functionalities (MacStartCommand)..."<<endl;
+                
+                //Clear cin buffer
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 cin.get();
                 currentMacMode = CONFIG_MODE;
             }
@@ -186,63 +190,79 @@ MacController::manager(){
 
             case IDLE_MODE:
             {
-                //System will join idle threads (receiving from L1 or L3) and wait for other commands e.g MacConfigRequestCommand or MacStopCommand
+                //System will continue to execute idle threads (receiving from L1 or L3) and wait for other commands e.g MacConfigRequestCommand or MacStopCommand
                 cout<<"[MacController] ___________ System in IDLE mode. ___________"<<endl;
-                
-                //Join idle threads
-                threads[staticParameters->numberUEs].join();    //ProtocolData MACD SDU enqueueing (From L3) thread
-                threads[staticParameters->numberUEs+2].join();  //Reading control messages from PHY thread (From L1)
 
                 //PROVISIONAL: query user to change state to RECONFIG_MODE or STOP_MODE
-                cout<<"[MacController] Enter '%' for ConfigRequest or '*' for Stop."<<endl;
-                char caracter;  //Caracter received from user
-                cin>>caracter;
-                while(caracter!='%'&&caracter!='*'){
+                char caracter;  //Caracter received from user on BS
+                if(flagBS){
+                    cout<<"[MacController] Enter '%' for ConfigRequest or '*' for Stop."<<endl;
                     cin>>caracter;
-                }
+                    while(caracter!='%'&&caracter!='*'){
+                        cin>>caracter;
+                    }
 
-                if(caracter=='%')
-                    currentMacMode = RECONFIG_MODE;
-                else
-                    currentMacMode = STOP_MODE;
+                    if(caracter=='%')
+                        currentMacMode = RECONFIG_MODE;
+                    else
+                        currentMacMode = STOP_MODE;
+                }
             }
             break;
 
             case RECONFIG_MODE:
             {
-                cout<<"[MacController] ___________ System in RECONFIG mode. ___________"<<endl;
+                //To enter RECONFIG_MODE, TX and RX must be disabled
+                if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX){
+                    cout<<"[MacController] ___________ System in RECONFIG mode. ___________"<<endl;
 
-                //System will update static parameters
-                recordDynamicParameters();
+                    //Before alterations, send all PDUs currently enqueued, if they exist
+                    if(flagBS){     //If this is BS
+                        for(int i=0;i<staticParameters->numberUEs;i++){
+                            if(!(mux->emptyPdu(staticParameters->ulReservations[i].target_ue_id)))
+                                sendPdu(staticParameters->ulReservations[i].target_ue_id);
+                        }
+                    }
+                    else{       //If this is UE
+                        if(!(mux->emptyPdu(0)))
+                            sendPdu(0);
+                    }
 
-                //Then, if it is BS, it will send Dynamic Parameters to UE via MACC SDU for reconfiguration
-                if(flagBS){
-                    vector<uint8_t> dynamicParametersBytes;
+                    //System will update static parameters
+                    recordDynamicParameters();
 
-                    //Send a MACC SDU to each UE attached
-                    for(int i=0;i<staticParameters->numberUEs;i++){
-                        dynamicParametersBytes.clear();
-                        macConfigRequest->dynamicParameters->serialize(staticParameters->ulReservations[i].target_ue_id, dynamicParametersBytes);
-                        protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), staticParameters->ulReservations[i].target_ue_id);
-			        }
+                    //Then, if it is BS, it will send Dynamic Parameters to UE via MACC SDU for reconfiguration
+                    if(flagBS){
+                        vector<uint8_t> dynamicParametersBytes;
 
+                        //Send a MACC SDU to each UE attached
+                        for(int i=0;i<staticParameters->numberUEs;i++){
+                            dynamicParametersBytes.clear();
+                            macConfigRequest->dynamicParameters->serialize(staticParameters->ulReservations[i].target_ue_id, dynamicParametersBytes);
+                            protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), staticParameters->ulReservations[i].target_ue_id);
+                        }
+                    }
+
+                    //Set MAC mode back to idle mode
                     currentMacMode = IDLE_MODE;
                 }
-
-                //Set MAC mode back to idle mode
-                currentMacMode = IDLE_MODE;
+                else if(verbose) cout<<"[MacController] Waiting Tx and/or Rx modes to pause..."<<endl;
             }
             break;
 
             case STOP_MODE:
             {
-                cout<<"[MacController] ___________ System in STOP mode. ___________"<<endl;
+                //To enter RECONFIG_MODE, TX, RX and Tun modes must be disabled
+                if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX && currentMacTunMode==TUN_DISABLED){
+                    cout<<"[MacController] ___________ System in STOP mode. ___________"<<endl;
 
-                //Destroy all System environment variables
-                this->~MacController();
+                    //Destroy all System environment variables
+                    this->~MacController();
 
-                //System will stand in STANDBY mode until it is started again
-                currentMacMode = STANDBY_MODE;
+                    //System will stand in STANDBY mode until it is started again
+                    currentMacMode = STANDBY_MODE;
+                }
+                else if(verbose) cout<<"[MacController] Waiting Tx, Rx and/or Tun modes to finish..."<<endl;
             }
             break;
 
@@ -269,7 +289,7 @@ MacController::startThreads(){
     threads[i] = thread(&ProtocolData::enqueueDataSdus, protocolData, ref(currentMacMode));
 
     //TUN reading and enqueueing thread
-    threads[i+1] = thread(&MacHighQueue::reading, macHigh);
+    threads[i+1] = thread(&MacHighQueue::reading, macHigh, ref(currentMacTunMode));
 
     //Control messages from PHY reading (only IDLE mode)
     threads[i+2] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl, ref(currentMacMode));
@@ -277,9 +297,8 @@ MacController::startThreads(){
     //Join all threads
     int numberThreads = 3+staticParameters->numberUEs;
     for(i=0;i<numberThreads;i++){
-        //Join all threads that don't execute only in IDLE mode
-        if(i!=staticParameters->numberUEs&&i!=staticParameters->numberUEs+2)    
-            threads[i].join();
+        //Join all threads that don't execute only in IDLE mode 
+        threads[i].detach();
     }
 }
 
@@ -372,16 +391,19 @@ MacController::timeoutController(
     chrono::nanoseconds timeout = chrono::milliseconds(staticParameters->ipTimeout[index]);    //ms
 
     //Communication infinite loop
-    while(1){
+    while(currentMacMode!=STOP_MODE){
         //Lock mutex one time to read
         unique_lock<mutex> lk(queueMutex);
         
         //If there's no timeout OR the PDU is empty, no transmission is necessary
         if(queueConditionVariables[index].wait_for(lk, timeout)==cv_status::no_timeout || mux->emptyPdu(flagBS? staticParameters->ulReservations[index].target_ue_id:0)) 
             continue; 
-        //Else, perform PDU transmission
-        if(verbose) cout<<"[MacController] Timeout!"<<endl;
-        sendPdu(flagBS? staticParameters->ulReservations[index].target_ue_id : 0);
+
+        //Else, perform PDU transmission only in IDLE mode
+        if(currentMacMode==IDLE_MODE){
+            if(verbose) cout<<"[MacController] Timeout!"<<endl;
+            sendPdu(flagBS? staticParameters->ulReservations[index].target_ue_id : 0);
+        }
     }
 }
 

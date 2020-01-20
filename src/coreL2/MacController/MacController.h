@@ -12,9 +12,6 @@
 #include <chrono>               //std::chrono::milliseconds
 #include <mutex>                //std::mutex
 #include <condition_variable>   //std::condition_variable
-#include <atomic>               //std::atomic 
-
-enum MacModes {STANDBY_MODE, CONFIG_MODE, START_MODE, IDLE_MODE, RECONFIG_MODE, STOP_MODE};
 
 #include "../ProtocolData/MacHighQueue.h"
 #include "../ProtocolPackage/ProtocolPackage.h"
@@ -49,18 +46,23 @@ class ProtocolControl;
  */
 class MacController{
 private:
-    atomic<MacModes> currentMacMode;    //Current execution mode of MAC
-    uint8_t currentMacAddress;          //MAC Address of current equipment
-    const char* deviceNameTun;          //TUN device name
-    TunInterface* tunInterface;         //TunInterface object to perform L3 packet capture
-    MacHighQueue* macHigh;              //Queue to receive and enqueue L3 packets
-    MacAddressTable* ipMacTable;        //Table to associate IP addresses to 5G-RANGE domain MAC addresses
-	ProtocolData* protocolData;         //Object to deal with enqueueing DATA SDUS
-    ProtocolControl* protocolControl;   //Object to deal with enqueueing CONTROL SDUS
-	thread *threads;                    //Threads array
-    MacPDU macPDU;                      //Object MacPDU containing all information that will be sent to PHY
-    unsigned int subframeCounter;       //Subframe counter used for RxMetrics reporting to BS.
-    bool verbose;                       //Verbosity flag
+    //Control Variables
+    MacModes currentMacMode;        //Current execution mode of MAC
+    MacTxModes currentMacTxMode;    //Current execution Tx mode of MAC
+    MacRxModes currentMacRxMode;    //Current execution Rx mode of MAC
+    MacTunModes currentMacTunMode;  //Current execution Tun mode of MAC
+
+    uint8_t currentMacAddress;              //MAC Address of current equipment
+    const char* deviceNameTun;              //TUN device name
+    TunInterface* tunInterface;             //TunInterface object to perform L3 packet capture
+    MacHighQueue* macHigh;                  //Queue to receive and enqueue L3 packets
+    MacAddressTable* ipMacTable;            //Table to associate IP addresses to 5G-RANGE domain MAC addresses
+	ProtocolData* protocolData;             //Object to deal with enqueueing DATA SDUS
+    ProtocolControl* protocolControl;       //Object to deal with enqueueing CONTROL SDUS
+	thread *threads;                        //Threads array
+    MacPDU macPDU;                          //Object MacPDU containing all information that will be sent to PHY
+    unsigned int subframeCounter;           //Subframe counter used for RxMetrics reporting to BS.
+    bool verbose;                           //Verbosity flag
 
 public:
     condition_variable* queueConditionVariables;    //Condition variables to manage access to Multiplexer Queues
@@ -100,11 +102,6 @@ public:
      * @brief Called by RECONFIG_MODE, updates static parameters with dynamic parameters modified by CLI.
      */
     void recordDynamicParameters();
-
-    /**
-     * @brief Procedure that executes forever and controls Control SDUs entrance in Multiplexing queue
-     */
-    void controlSduControl();
 
     /**
      * @brief Declares and starts all threads necessary for MacController

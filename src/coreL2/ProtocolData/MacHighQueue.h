@@ -10,6 +10,7 @@
 #include <vector>
 #include <mutex>
 #include "../ReceptionProtocol/ReceptionProtocol.h"
+#include "../../common/libMac5gRange/libMac5gRange.h"
 
 #define MAXIMUM_BUFFER_LENGTH 2048    //Maximum buffer size
 #define DST_OFFSET 16
@@ -41,9 +42,11 @@ public:
     ~MacHighQueue();
     
     /**
-     * @brief Proceeding that executes forever, receiving packets from L3 and storing them in the queue
+     * @brief Procedure that executes forever, receiving packets from L3 and storing them in the queue
+     * @param currentMacMode Actual MAC Mode to control enqueueing while system is in another modes, e.g. RECONFIG_MODE or STOP_MODE
+     * @param currentMacTunMode Actual MAC Tun Mode to signal to system if it is in an active mode, e.g. TUN_DISABLED
      */
-    void reading();
+    void reading(MacModes & currentMacMode, MacTunModes & currentMacTunMode);
     
     /**
      * @brief Gets number of packets that are currently enqueued

@@ -15,6 +15,12 @@
 using namespace std;
 using namespace lib5grange;
 
+enum MacModes {STANDBY_MODE, CONFIG_MODE, START_MODE, IDLE_MODE, RECONFIG_MODE, STOP_MODE};
+enum MacTxModes {ACTIVE_MODE_TX, DISABLED_MODE_TX};
+enum MacRxModes {ACTIVE_MODE_RX, DISABLED_MODE_RX};
+enum MacTunModes {TUN_ENABLED, TUN_DISABLED};
+
+
 /**
  * @brief Struct for BSSubframeTx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */

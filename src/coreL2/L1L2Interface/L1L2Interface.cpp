@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : December 13th, 2019
+@Last alteration : January 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -158,7 +158,7 @@ L1L2Interface::receiveControlMessage(
     char* buffer,               //Buffer where message will be stored
     size_t maximumLength)       //Maximum message length in Bytes
 {
-    return recv(socketControlMessagesFromL1, buffer, maximumLength, MSG_WAITALL);
+    return recv(socketControlMessagesFromL1, buffer, maximumLength, MSG_DONTWAIT);
 }
 
 void 

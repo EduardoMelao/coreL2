@@ -7,7 +7,7 @@
 @Arquive name : ProtocolData.cpp
 @Classification : Protocol Data
 @
-@Last alteration : January 16th, 2020
+@Last alteration : January 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -38,59 +38,74 @@ ProtocolData::~ProtocolData() {}
 
 void 
 ProtocolData::enqueueDataSdus(
-    atomic<MacModes> & currentMacMode)      //Current MAC execution mode.
+    MacModes & currentMacMode,          //Current MAC execution mode
+    MacTxModes & currentMacTxMode)      //Current MAC execution Tx mode 
 {
     int macSendingPDU;                      //This auxiliary variable will store MAC Address if queue is full of SDUs
     char bufferData[MAXIMUM_BUFFER_LENGTH]; //Buffer to store Data Bytes
     ssize_t numberBytesRead = 0;            //Size of MACD SDU read in Bytes
     
-    //Infinite loop
-    while(currentMacMode.load()==IDLE_MODE){
+    //Data SDUs stream
+    while(currentMacMode!=STOP_MODE){
 
-        //Test if MacHigh Queue is not empty, i.e. there are SDUs to enqueue
-        if(macHigh->getNumberPackets()){
+        if(currentMacMode==IDLE_MODE){
+            //Change system Tx mode to ACTIVE_MODE_TX
+            currentMacTxMode = ACTIVE_MODE_TX; 
 
-            //Fulfill bufferData with zeros 
-            bzero(bufferData, MAXIMUM_BUFFER_LENGTH);
+            //Test if MacHigh Queue is not empty, i.e. there are SDUs to enqueue
+            if(macHigh->getNumberPackets()){
 
-            //Gets next SDU from MACHigh Queue
-            numberBytesRead = macHigh->getNextSdu(bufferData);
+                //Fulfill bufferData with zeros 
+                bzero(bufferData, MAXIMUM_BUFFER_LENGTH);
 
-            //If multiplexer queue is empty, notify condition variable to trigger timeout timer
-            if(!macController->staticParameters->flagBS){    //If UE, test if its (unique) queue to BS is empty, then notify condition variables
-                if(macController->mux->emptyPdu(0))
-                    macController->queueConditionVariables[0].notify_all();
-            }
-            else{
-                for(int i=0;i<macController->staticParameters->numberUEs;i++){
-                    if(macController->staticParameters->ulReservations[i].target_ue_id==macController->mux->getMacAddress(bufferData)){
-                        if(macController->mux->emptyPdu(macController->staticParameters->ulReservations[i].target_ue_id)){
-                            macController->queueConditionVariables[i].notify_all();
+                //Gets next SDU from MACHigh Queue
+                numberBytesRead = macHigh->getNextSdu(bufferData);
+
+                //If multiplexer queue is empty, notify condition variable to trigger timeout timer
+                if(!macController->staticParameters->flagBS){    //If UE, test if its (unique) queue to BS is empty, then notify condition variables
+                    if(macController->mux->emptyPdu(0))
+                        macController->queueConditionVariables[0].notify_all();
+                }
+                else{
+                    for(int i=0;i<macController->staticParameters->numberUEs;i++){
+                        if(macController->staticParameters->ulReservations[i].target_ue_id==macController->mux->getMacAddress(bufferData)){
+                            if(macController->mux->emptyPdu(macController->staticParameters->ulReservations[i].target_ue_id)){
+                                macController->queueConditionVariables[i].notify_all();
+                            }
+                            else break;
                         }
-                        else break;
                     }
                 }
+
+                //Locks mutex to write in Multiplexer queue
+                lock_guard<mutex> lk(macController->queueMutex);
+                
+                //Adds SDU to multiplexer
+                macSendingPDU = macController->mux->addSdu(bufferData, numberBytesRead);
+
+                //If the SDU was added successfully, continues the loop
+                if(macSendingPDU==-1)
+                    continue;
+
+                //Else, macSendingPDU contains the Transmission Queue destination MAC to perform PDU sending. 
+                //So, perform PDU sending
+                macController->sendPdu(macSendingPDU);
+
+                //Now, it is possible to add SDU to queue
+                macController->mux->addSdu(bufferData,numberBytesRead);
             }
-
-            //Locks mutex to write in Multiplexer queue
-            lock_guard<mutex> lk(macController->queueMutex);
+        }
+        else{
+            if(verbose) cout<<"[ProtocolData] Exiting IDLE mode."<<endl;
             
-            //Adds SDU to multiplexer
-            macSendingPDU = macController->mux->addSdu(bufferData, numberBytesRead);
-
-            //If the SDU was added successfully, continues the loop
-            if(macSendingPDU==-1)
-                continue;
-
-            //Else, macSendingPDU contains the Transmission Queue destination MAC to perform PDU sending. 
-            //So, perform PDU sending
-            macController->sendPdu(macSendingPDU);
-
-            //Now, it is possible to add SDU to queue
-            macController->mux->addSdu(bufferData,numberBytesRead);
+            //Change MAC Tx Mode to DISABLED_MODE_TX
+            currentMacTxMode = DISABLED_MODE_TX;
         }
     }
-    if(verbose) cout<<"[ProtocolData] Exiting IDLE mode."<<endl;
+
+    if(verbose) cout<<"[ProtocolData] Entering STOP_MODE."<<endl;    
+    //Change MAC Tx Mode to DISABLED_MODE_TX before stopping System
+    currentMacTxMode = DISABLED_MODE_TX;
 }
 
 void

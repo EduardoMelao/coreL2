@@ -7,7 +7,7 @@
 @Arquive name : TunInterface.cpp
 @Classification : TUN Interface
 @
-@Last alteration : November 28th, 2019
+@Last alteration : January 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -76,6 +76,9 @@ TunInterface::allocTunInterface(){
     //Calls system in/out control to set interface active
     ioctl(fileDescriptor, TUNSETIFF, (void *) &interfaceRequirement);
     strncpy(deviceName,interfaceRequirement.ifr_name, IFNAMSIZ);
+
+    //Set interface to be inblockable for reading
+    fcntl(fileDescriptor, F_SETFL, O_NONBLOCK);
 
     //Forces interface to me initialized as "UP"
     char cmd[100];
