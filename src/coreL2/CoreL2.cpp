@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : January 14th, 2019
+@Last alteration : January 16th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -50,28 +50,9 @@ int main(int argc, char** argv){
         devname = argv[2];
     }
 
-    //Load static information on BS/UE and attributing value to numberEquipments
-    StaticDefaultParameters* staticParameters = new StaticDefaultParameters(verbose);
-    numberEquipments = staticParameters->numberUEs;
-    flagBS = staticParameters->flagBS;
-    if(!flagBS) staticParameters->numberUEs = 1;
-
-    //Creates and initializes a MacAddressTable with static informations (HARDCODE)
-    MacAddressTable* ipMacTable = new MacAddressTable(verbose);
-    uint8_t addressEntry0[4] = {10,0,0,10};
-    uint8_t addressEntry1[4] = {10,0,0,11};
-    uint8_t addressEntry2[4] = {10,0,0,12};
-    ipMacTable->addEntry(addressEntry0, 0, true);
-    ipMacTable->addEntry(addressEntry1, 1, false);
-    ipMacTable->addEntry(addressEntry2, 2, false);
-
     //Create a new MacController (main module) object
-    MacController equipment(devname, ipMacTable, staticParameters, verbose);
+    MacController equipment(devname, verbose);
 
     //Finally, start threads
-    equipment.startThreads();
-
-    delete ipMacTable;
-    delete [] macAddresses;
-    delete staticParameters;
+    equipment.initialize();
 }

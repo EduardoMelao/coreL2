@@ -36,6 +36,7 @@ using namespace std;
 #define DST_OFFSET 16                   //IP packet destination address offset in bytes
 #define TIMEOUT_DYNAMIC_PARAMETERS 5    //Timeout(seconds) to check for dynamic parameters alterations
 
+
 //Initializing classes that will be defined in other .h files
 class ProtocolData;		
 class ProtocolControl;
@@ -45,16 +46,23 @@ class ProtocolControl;
  */
 class MacController{
 private:
-    uint8_t currentMacAddress;          //MAC Address of current equipment
-    TunInterface* tunInterface;         //TunInterface object to perform L3 packet capture
-    MacHighQueue* macHigh;              //Queue to receive and enqueue L3 packets
-    MacAddressTable* ipMacTable;        //Table to associate IP addresses to 5G-RANGE domain MAC addresses
-	ProtocolData* protocolData;         //Object to deal with enqueueing DATA SDUS
-    ProtocolControl* protocolControl;   //Object to deal with enqueueing CONTROL SDUS
-	thread *threads;                    //Threads array
-    MacPDU macPDU;                      //Object MacPDU containing all information that will be sent to PHY
-    unsigned int subframeCounter;       //Subframe counter used for RxMetrics reporting to BS.
-    bool verbose;                       //Verbosity flag
+    //Control Variables
+    MacModes currentMacMode;        //Current execution mode of MAC
+    MacTxModes currentMacTxMode;    //Current execution Tx mode of MAC
+    MacRxModes currentMacRxMode;    //Current execution Rx mode of MAC
+    MacTunModes currentMacTunMode;  //Current execution Tun mode of MAC
+
+    uint8_t currentMacAddress;              //MAC Address of current equipment
+    const char* deviceNameTun;              //TUN device name
+    TunInterface* tunInterface;             //TunInterface object to perform L3 packet capture
+    MacHighQueue* macHigh;                  //Queue to receive and enqueue L3 packets
+    MacAddressTable* ipMacTable;            //Table to associate IP addresses to 5G-RANGE domain MAC addresses
+	ProtocolData* protocolData;             //Object to deal with enqueueing DATA SDUS
+    ProtocolControl* protocolControl;       //Object to deal with enqueueing CONTROL SDUS
+	thread *threads;                        //Threads array
+    MacPDU macPDU;                          //Object MacPDU containing all information that will be sent to PHY
+    unsigned int subframeCounter;           //Subframe counter used for RxMetrics reporting to BS.
+    bool verbose;                           //Verbosity flag
 
 public:
     condition_variable* queueConditionVariables;    //Condition variables to manage access to Multiplexer Queues
@@ -71,11 +79,9 @@ public:
     /**
      * @brief Initializes a MacController object to manage all 5G RANGE MAC Operations
      * @param _deviceNameTun Customized name for TUN Interface
-     * @param _ipMacTable Static table to link IP addresses to 5G-RANGE MAC addresses
-     * @param _staticParameters Structure containing all static parameters loaded from file
      * @param _verbose Verbosity flag
      */
-    MacController(const char* _deviceNameTun, MacAddressTable* _ipMacTable, StaticDefaultParameters* _staticParameters, bool _verbose);
+    MacController(const char* _deviceNameTun, bool _verbose);
     
     /**
      * @brief Destructs MacController object
@@ -83,9 +89,19 @@ public:
     ~MacController();
 
     /**
-     * @brief Procedure that executes forever and controls Control SDUs entrance in Multiplexing queue
+     * @brief Initializes MAC System in STANDBY_MODE
      */
-    void controlSduControl();
+    void initialize();
+
+    /**
+     * @brief Main thread of MAC, controls all system modes
+     */
+    void manager();
+
+    /**
+     * @brief Called by RECONFIG_MODE, updates static parameters with dynamic parameters modified by CLI.
+     */
+    void recordDynamicParameters();
 
     /**
      * @brief Declares and starts all threads necessary for MacController
@@ -124,11 +140,6 @@ public:
      * @param size Number of bytes of serialized information
      */ 
     void managerDynamicParameters(uint8_t* bytesDynamicParameters, size_t numberBytes);
-
-    /**
-     * @brief (PROVISIONAL) Periodically checks for changes in Dynamic Parameters and sends them to UEs via MACC SDUs
-     */
-    void manager();
 
     /**
      * @brief (Only UE) Periodically sends RxMetrics Report to BS

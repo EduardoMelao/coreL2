@@ -7,7 +7,7 @@
 @Arquive name : StaticDefaultParameters.cpp
 @Classification : System Parameters - Static and Default Parameters
 @
-@Last alteration : January 14th, 2019
+@Last alteration : January 16th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -29,10 +29,15 @@ StaticDefaultParameters::StaticDefaultParameters(
 		bool _verbose)		//Verbosity flag
 {
 	verbose = _verbose;
+}
 
+StaticDefaultParameters::~StaticDefaultParameters() {}
+
+void
+StaticDefaultParameters::readTxtStaticParameters(){
 	string readBuffer;		//Buffer that will be used to read file
 
-	defaultConfigurationsFile = fstream("Default.txt");
+	defaultConfigurationsFile.open("Default.txt");
 
 	//Gets FlagBS
 	getline(defaultConfigurationsFile, readBuffer);
@@ -166,8 +171,6 @@ StaticDefaultParameters::StaticDefaultParameters(
 
 	if(verbose) cout<<"[StaticDefaultParameters] Reading Default information from file successful."<<endl;
 }
-
-StaticDefaultParameters::~StaticDefaultParameters() {}
 
 void 
 StaticDefaultParameters::loadDynamicParametersDefaultInformation(

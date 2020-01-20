@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : January 14th, 2019
+@Last alteration : January 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -96,10 +96,6 @@ ProtocolControl::decodeControlSdus(
             //Compare Strings
             if(receivedString=="ACK"){
                 if(verbose) cout<<"[ProtocolControl] Received ACK from UE."<<endl;
-                if(macController->macConfigRequest->dynamicParameters->getModified()==1){
-                    macController->macConfigRequest->dynamicParameters->setModified(0);
-                }
-                else if(verbose) cout<<"[ProtocolControl] There were values changed before receiving ACK."<<endl;
             }
         }
         else{   //RxMetrics
@@ -130,6 +126,7 @@ ProtocolControl::decodeControlSdus(
     else{    //UE needs to set its Dynamic Parameters and return ACK to BS
         macController->managerDynamicParameters((uint8_t*) buffer, numberDecodingBytes);
         if(verbose) cout<<"[ProtocolControl] UE Configured correctly. Returning ACK to BS..."<<endl;
+
         // ACK
         if(macController->mux->emptyPdu(0))
         	macController->queueConditionVariables[0].notify_all();     //index 0: UE has only BS as equipment
@@ -157,70 +154,90 @@ ProtocolControl::sendInterlayerMessages(
 }
 
 void
-ProtocolControl::receiveInterlayerMessages(){
+ProtocolControl::receiveInterlayerMessages(
+    MacModes & currentMacMode,          //Current MAC execution mode
+    MacRxModes & currentMacRxMode)      //Current MAC execution Rx mode
+{
     char buffer[MAXIMUM_BUFFER_LENGTH]; //Buffer where message will be stored
     string message;                     //String containing message converted from char*
     uint8_t cqi;                        //Channel Quality information based on SINR measurement from PHY
     uint8_t sourceMacAddress;           //Source MAC Address
 
-    //Receive Control message
-    ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
-
     //Control message stream
-    while(messageSize>0){
-        
-        //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING ONLY SubframeRx.Start messages
-    	int subFrameStartSize = 18;
-        for(int i=0;i<subFrameStartSize;i++)
-            message+=buffer[i];
+    while(currentMacMode!=STOP_MODE){
 
-    	vector<uint8_t> messageParametersBytes;     //Bytes of serialized message parameters
+        if(currentMacMode==IDLE_MODE){
+            //Change system Rx mode to ACTIVE_MODE_RX
+            currentMacRxMode = ACTIVE_MODE_RX; 
 
-        if(message=="BSSubframeRx.Start"){
-        	BSSubframeRx_Start messageParametersBS;     //Define struct for BS paremeters
+            //Receive Control message
+            ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
 
-            //Copy buffer to vector
-        	for(int i=subFrameStartSize;i<messageSize;i++)
-        		messageParametersBytes.push_back(buffer[i]);
+            //If it returns 0 or less, no information was received
+            if(messageSize<=0)
+                continue;
             
-            //Deserialize message
-        	messageParametersBS.deserialize(messageParametersBytes);
+            //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING ONLY SubframeRx.Start messages
+            int subFrameStartSize = 18;
+            for(int i=0;i<subFrameStartSize;i++)
+                message+=buffer[i];
 
-        	if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start message. Receiving PDU from L1..."<<endl;
-            
-            //Perform channel quality information calculation and uplink MCS calculation
-            cqi = LinkAdaptation::getSinrConvertToCqi(messageParametersBS.sinr);
+            vector<uint8_t> messageParametersBytes;     //Bytes of serialized message parameters
 
-            //Receive source MAC Address from decoding function
-            sourceMacAddress = macController->decoding();
+            if(message=="BSSubframeRx.Start"){
+                BSSubframeRx_Start messageParametersBS;     //Define struct for BS paremeters
 
-            //Calculates new UL MCS and sets it
-            macController->macConfigRequest->dynamicParameters->setMcsUplink(sourceMacAddress, AdaptiveModulationCoding::getCqiConvertToMcs(cqi));
+                //Copy buffer to vector
+                for(int i=subFrameStartSize;i<messageSize;i++)
+                    messageParametersBytes.push_back(buffer[i]);
+                
+                //Deserialize message
+                messageParametersBS.deserialize(messageParametersBytes);
+
+                if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start message. Receiving PDU from L1..."<<endl;
+                
+                //Perform channel quality information calculation and uplink MCS calculation
+                cqi = LinkAdaptation::getSinrConvertToCqi(messageParametersBS.sinr);
+
+                //Receive source MAC Address from decoding function
+                sourceMacAddress = macController->decoding();
+
+                //Calculates new UL MCS and sets it
+                macController->macConfigRequest->dynamicParameters->setMcsUplink(sourceMacAddress, AdaptiveModulationCoding::getCqiConvertToMcs(cqi));
+            }
+            if(message=="UESubframeRx.Start"){
+                UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
+
+                //Copy buffer to vector
+                for(int i=subFrameStartSize;i<messageSize;i++)
+                    messageParametersBytes.push_back(buffer[i]);
+
+                //Deserialize message
+                messageParametersUE.deserialize(messageParametersBytes);
+                if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start message. Receiving PDU from L1..."<<endl;
+
+                //Perform RXMetrics calculation
+                macController->rxMetrics->accessControl.lock();     //Lock mutex to prevent access conflict
+                macController->rxMetrics->cqiReport = LinkAdaptation::getSinrConvertToCqi(messageParametersUE.sinr);    //SINR->CQI calculation
+                Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm, macController->rxMetrics->ssReport);     //SSM->SSReport calculation
+                macController->rxMetrics->pmi = messageParametersUE.pmi;
+                macController->rxMetrics->ri = messageParametersUE.ri;
+                macController->rxMetrics->accessControl.unlock();   //Unlock Mutex
+                macController->decoding();
+            }
+
+            //Clear buffer and message and receive next control message
+            bzero(buffer, MAXIMUM_BUFFER_LENGTH);
+            message.clear();
+            messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
         }
-        if(message=="UESubframeRx.Start"){
-			UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
-
-            //Copy buffer to vector
-			for(int i=subFrameStartSize;i<messageSize;i++)
-				messageParametersBytes.push_back(buffer[i]);
-
-            //Deserialize message
-			messageParametersUE.deserialize(messageParametersBytes);
-			if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start message. Receiving PDU from L1..."<<endl;
-
-            //Perform RXMetrics calculation
-            macController->rxMetrics->accessControl.lock();     //Lock mutex to prevent access conflict
-            macController->rxMetrics->cqiReport = LinkAdaptation::getSinrConvertToCqi(messageParametersUE.sinr);    //SINR->CQI calculation
-            Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm, macController->rxMetrics->ssReport);     //SSM->SSReport calculation
-            macController->rxMetrics->pmi = messageParametersUE.pmi;
-            macController->rxMetrics->ri = messageParametersUE.ri;
-            macController->rxMetrics->accessControl.unlock();   //Unlock Mutex
-            macController->decoding();
-		}
-
-        //Clear buffer and message and receive next control message
-        bzero(buffer, MAXIMUM_BUFFER_LENGTH);
-        message.clear();
-        messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
+        else{
+            //Change MAC Rx Mode to DISABLED_MODE_RX
+            currentMacRxMode = DISABLED_MODE_RX;
+        }
     }
+
+    if(verbose) cout<<"[ProtocolControl] Entering STOP_MODE."<<endl;    
+    //Change MAC Rx Mode to DISABLED_MODE_RX before stopping System
+    currentMacRxMode = DISABLED_MODE_RX;
 }

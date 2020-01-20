@@ -7,7 +7,7 @@
 @Arquive name : ReceptionProtocol.cpp
 @Classification : Reception Protocol
 @
-@Last alteration : December 3rd, 2019
+@Last alteration : January 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -42,7 +42,7 @@ ReceptionProtocol::receivePackageFromL1(
     int maximumSize,    //Maximum size of buffer in Bytes
     uint8_t macAddress) //Source MAC Address
 {
-    if(verbose) cout<<"[ReceptionProtocol] Waiting for packet from L1."<<endl;
+    if(verbose) cout<<"[ReceptionProtocol] Receiving packet from L1."<<endl;
     return l1l2Interface->receivePdu(buffer, maximumSize, macAddress);
 }
 
@@ -51,6 +51,5 @@ ReceptionProtocol::receivePackageFromL3(
     char* buffer,       //Buffer where packet will be stored
     int maximumSize)    //Maximum size of buffer in Bytes
 {
-    if(verbose) cout<<"[ReceptionProtocol] Waiting for packet from L3."<<endl;
     return tunInterface->readTunInterface(buffer, maximumSize);
 }
