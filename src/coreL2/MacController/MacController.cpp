@@ -40,7 +40,6 @@ MacController::MacController(
 MacController::~MacController(){
     delete [] rxMetrics;
     delete macConfigRequest;
-    delete staticParameters;
     delete protocolControl;
     delete protocolData;
     delete mux;
@@ -85,7 +84,7 @@ MacController::manager(){
             case STANDBY_MODE:
             {
                 //Provisional. Here, system waits for MacStartCommand
-                cout<<"[MacController] ___________ System in STANDBY mode. ___________ \n Press any key to start functionalities (MacStartCommand)..."<<endl;
+                cout<<"\n\n[MacController] ___________ System in STANDBY mode. ___________\n\n Press any key to start functionalities (MacStartCommand)..."<<endl;
                 
                 //Clear cin buffer
                 cin.clear();
@@ -98,7 +97,7 @@ MacController::manager(){
             case CONFIG_MODE:
             {
                 //All MAC Initial Configuration is made here
-                cout<<"[MacController] ___________ System in CONFIG mode. ___________"<<endl; 
+                cout<<"\n\n[MacController] ___________ System in CONFIG mode. ___________\n"<<endl;
 
                 //Read txt static and default parameters and initialize flagBS and currentMacAddress values
                 staticParameters = new StaticDefaultParameters(verbose);
@@ -180,7 +179,7 @@ MacController::manager(){
             case START_MODE:
             {
                 //Here, all system threads that don't execute only in IDLE_MODE are started.
-                cout<<"[MacController] ___________ System in START mode. ___________"<<endl;
+                cout<<"\n\n[MacController] ___________ System in START mode. ___________\n"<<endl;
                 startThreads();
 
                 //Set MAC mode to start mode
@@ -191,7 +190,7 @@ MacController::manager(){
             case IDLE_MODE:
             {
                 //System will continue to execute idle threads (receiving from L1 or L3) and wait for other commands e.g MacConfigRequestCommand or MacStopCommand
-                cout<<"[MacController] ___________ System in IDLE mode. ___________"<<endl;
+                cout<<"\n\n[MacController] ___________ System in IDLE mode. ___________\n"<<endl;
 
                 //PROVISIONAL: query user to change state to RECONFIG_MODE or STOP_MODE
                 char caracter;  //Caracter received from user on BS
@@ -214,7 +213,7 @@ MacController::manager(){
             {
                 //To enter RECONFIG_MODE, TX and RX must be disabled
                 if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX){
-                    cout<<"[MacController] ___________ System in RECONFIG mode. ___________"<<endl;
+                    cout<<"\n\n[MacController] ___________ System in RECONFIG mode. ___________\n"<<endl;
 
                     //Before alterations, send all PDUs currently enqueued, if they exist
                     if(flagBS){     //If this is BS
@@ -246,7 +245,6 @@ MacController::manager(){
                     //Set MAC mode back to idle mode
                     currentMacMode = IDLE_MODE;
                 }
-                else if(verbose) cout<<"[MacController] Waiting Tx and/or Rx modes to pause..."<<endl;
             }
             break;
 
@@ -254,7 +252,7 @@ MacController::manager(){
             {
                 //To enter RECONFIG_MODE, TX, RX and Tun modes must be disabled
                 if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX && currentMacTunMode==TUN_DISABLED){
-                    cout<<"[MacController] ___________ System in STOP mode. ___________"<<endl;
+                    cout<<"\n\n[MacController] ___________ System in STOP mode. ___________\n"<<endl;
 
                     //Destroy all System environment variables
                     this->~MacController();
@@ -262,13 +260,12 @@ MacController::manager(){
                     //System will stand in STANDBY mode until it is started again
                     currentMacMode = STANDBY_MODE;
                 }
-                else if(verbose) cout<<"[MacController] Waiting Tx, Rx and/or Tun modes to finish..."<<endl;
             }
             break;
 
             default:
             {
-                if(verbose) cout<<"[MacController] ___________Unknown mode ___________"<<endl;
+                if(verbose) cout<<"\n\n[MacController] ___________Unknown mode ___________\n"<<endl;
             }
             break;
         }
@@ -286,13 +283,13 @@ MacController::startThreads(){
     }
 
     //TUN queue control thread (only IDLE mode)
-    threads[i] = thread(&ProtocolData::enqueueDataSdus, protocolData, ref(currentMacMode));
+    threads[i] = thread(&ProtocolData::enqueueDataSdus, protocolData, ref(currentMacMode), ref(currentMacTxMode));
 
     //TUN reading and enqueueing thread
-    threads[i+1] = thread(&MacHighQueue::reading, macHigh, ref(currentMacTunMode));
+    threads[i+1] = thread(&MacHighQueue::reading, macHigh, ref(currentMacMode), ref(currentMacTunMode));
 
     //Control messages from PHY reading (only IDLE mode)
-    threads[i+2] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl, ref(currentMacMode));
+    threads[i+2] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl, ref(currentMacMode), ref(currentMacRxMode));
 
     //Join all threads
     int numberThreads = 3+staticParameters->numberUEs;
@@ -300,6 +297,8 @@ MacController::startThreads(){
         //Join all threads that don't execute only in IDLE mode 
         threads[i].detach();
     }
+
+    if(verbose) cout<<"[MacController] Threads started successfully."<<endl;
 }
 
 void 

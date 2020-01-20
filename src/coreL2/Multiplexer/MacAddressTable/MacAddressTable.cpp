@@ -110,25 +110,30 @@ MacAddressTable::deleteEntry(
     //Relocate arrays
     uint8_t** _ipAddresses = new uint8_t*[numberRegisters-1];
     uint8_t* _macAddresses = new uint8_t[numberRegisters-1];
+    bool* _flagsBS = new bool[numberRegisters-1];
 
     //Copy information
     for(int i=0;i<id;i++){
         _ipAddresses[i] = ipAddresses[i];
         _macAddresses[i] = macAddresses[i];
+        _flagsBS[i] = flagsBS[i];
     }
     for(int i=id;i<(numberRegisters-1);i++){
         _ipAddresses[i] = ipAddresses[i+1];
         _macAddresses[i] = macAddresses[i+1];
+        _flagsBS[i] = flagsBS[i+1];
     }
 
     //Delete old arrays
     delete[] ipAddresses;
     delete[] macAddresses;
+    delete[] flagsBS;
 
     //Renew class arrays
     this->ipAddresses = _ipAddresses;
     this->macAddresses = _macAddresses;
-    if(verbose) cout<<"[MacAddressTable] Entry successfully delete"<<endl;
+    this->flagsBS = _flagsBS;
+    if(verbose) cout<<"[MacAddressTable] Entry successfully deleted"<<endl;
 
     //Decrement number of registers
     numberRegisters--;

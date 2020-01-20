@@ -96,8 +96,6 @@ ProtocolData::enqueueDataSdus(
             }
         }
         else{
-            if(verbose) cout<<"[ProtocolData] Exiting IDLE mode."<<endl;
-            
             //Change MAC Tx Mode to DISABLED_MODE_TX
             currentMacTxMode = DISABLED_MODE_TX;
         }

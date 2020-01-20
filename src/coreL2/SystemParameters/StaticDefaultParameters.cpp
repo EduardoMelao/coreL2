@@ -37,7 +37,7 @@ void
 StaticDefaultParameters::readTxtStaticParameters(){
 	string readBuffer;		//Buffer that will be used to read file
 
-	defaultConfigurationsFile = fstream("Default.txt");
+	defaultConfigurationsFile.open("Default.txt");
 
 	//Gets FlagBS
 	getline(defaultConfigurationsFile, readBuffer);

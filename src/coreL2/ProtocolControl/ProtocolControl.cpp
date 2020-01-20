@@ -232,8 +232,6 @@ ProtocolControl::receiveInterlayerMessages(
             messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
         }
         else{
-            if(verbose) cout<<"[ProtocolControl] Exiting IDLE_MODE."<<endl;
-            
             //Change MAC Rx Mode to DISABLED_MODE_RX
             currentMacRxMode = DISABLED_MODE_RX;
         }

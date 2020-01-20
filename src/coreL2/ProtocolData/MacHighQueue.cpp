@@ -63,8 +63,10 @@ MacHighQueue::reading(
         numberBytesRead = reception->receivePackageFromL3(buffer, MAXIMUM_BUFFER_LENGTH);
 
         //Check if there is actually information received
-        if(numberBytesRead<0)
+        if(numberBytesRead<0){
+        	delete [] buffer;
             continue;
+        }
 
         else
         {
@@ -105,6 +107,8 @@ MacHighQueue::reading(
             if(verbose) cout<<"[MacHighQueue] SDU added to Queue. Num SDUs: "<<queue.size()<<endl;
         }
     }
+
+    if(verbose) cout<<"[MacHighQueue] Entering STOP_MODE."<<endl;
 
     //Mark current MAC Tun mode as DISABLED for reading TUN interface and enqueueing Data SDUs.
     currentMacTunMode = TUN_DISABLED;
