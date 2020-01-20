@@ -13,8 +13,8 @@
 #include <vector>
 #include <array>
 
-#define ALL_TERMINAL (0xFF)
-#define BS_TERMINAL  (0x00)
+#define ALL_TERMINAL (0xF)
+#define BS_TERMINAL  (0x0)
 
 #define LAST_RB (131)
 #define MAX_NUM_RB (132)
@@ -404,13 +404,9 @@ namespace lib5grange {
 
             // Data section
             vector<uint8_t> mac_data_ {};       /**< Uncoded information bits from MAC. **/
-            vector<uint8_t> coded_data_ {};     /**< Coded bits to be transmitted. **/
-            vector<complex<float>> symbols_ {}; /**< QAM symbols to be transmitted  **/
-            array<vector<complex<float>>,4> mimo_symbols_ {}; /**< MIMO encoded information symbols**/
 
             // DCI / UCI
             vector<uint8_t> control_data_ {};            /**< Coded control information bits to be transmitted **/
-            vector<complex<float>> control_symbols_ {};  /**< Control QAM symbols to be transmitted **/
 
             /** @brief Construct a empty new MacPDU object */
             MacPDU();

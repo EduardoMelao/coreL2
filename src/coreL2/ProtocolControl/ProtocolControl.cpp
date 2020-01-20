@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : December 9th, 2019
+@Last alteration : December 13th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -39,8 +39,8 @@ ProtocolControl::~ProtocolControl() {
 
 void
 ProtocolControl::enqueueControlSdus(){
-    int macSendingPDU;              //Auxiliary variable to store MAC Address if queue is full of SDUs to transmit
-    char bufControl[MAXIMUM_BUFFER_LENGTH];       //Buffer to store Control Bytes
+    int macSendingPDU;                      //Auxiliary variable to store MAC Address if queue is full of SDUs to transmit
+    char bufControl[MAXIMUM_BUFFER_LENGTH]; //Buffer to store Control Bytes
 
     ssize_t numberBytesRead = 0;    //Size of MACC SDU read in Bytes
 

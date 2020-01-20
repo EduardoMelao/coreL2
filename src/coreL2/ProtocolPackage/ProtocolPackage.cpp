@@ -7,7 +7,7 @@
 @Arquive name : ProtocolPackage.cpp
 @Classification : Protocol Package
 @
-@Last alteration : November 28th, 2019
+@Last alteration : November 13th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -36,8 +36,8 @@ ProtocolPackage::ProtocolPackage(
 }
 
 ProtocolPackage::ProtocolPackage(
-    uint8_t _sourceAddress,          //Source MAC Address
-    uint8_t _destinationAddress,     //Destination MAC Address
+    uint8_t _sourceAddress,         //Source MAC Address
+    uint8_t _destinationAddress,    //Destination MAC Address
     uint8_t _numberSDUs,            //Number of SDUs into PDU
     uint16_t* _sizes,               //Array of sizes for each SDU
     uint8_t* _flagsDataControl,     //Array of Data/Control flags for each SDU
@@ -79,7 +79,7 @@ ProtocolPackage::~ProtocolPackage(){
 
 void 
 ProtocolPackage::insertMacHeader(){
-    int i, j;       //Auxiliary variables
+    int i, j;   //Auxiliary variables
 
     //Allocate new buffer
     char* buffer2 = new char[PDUsize];
@@ -108,7 +108,7 @@ ProtocolPackage::insertMacHeader(){
 
 void 
 ProtocolPackage::removeMacHeader(){
-    int i;      //Auxiliary variable
+    int i;  //Auxiliary variable
 
     //Get information from first 2 slots
     sourceAddress = (uint8_t) (buffer[0]>>4);
