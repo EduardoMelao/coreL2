@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : January 20th, 2020
+@Last alteration : January 21st, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -51,7 +51,7 @@ MacController::~MacController(){
     delete [] threads;
     delete [] queueConditionVariables;
     delete ipMacTable;
-    delete staticParameters;
+    delete currentParameters;
 }
 
 void
@@ -64,16 +64,8 @@ void
 MacController::recordDynamicParameters(){
     //PROVISIONAL IMPLEMENTATION, considering only one UE
     //Copy values from Dynamic Parameters to Static Parameters
-    macConfigRequest->dynamicParameters->getUlReservations(staticParameters->ulReservations);
-    if(flagBS) staticParameters->mcsDownlink[0] = macConfigRequest->dynamicParameters->getMcsDownlink(staticParameters->ulReservations[0].target_ue_id);
-    staticParameters->mcsUplink[0] = macConfigRequest->dynamicParameters->getMcsUplink(staticParameters->ulReservations[0].target_ue_id);
-    staticParameters->mimoConf[0]=macConfigRequest->dynamicParameters->getMimoConf(staticParameters->ulReservations[0].target_ue_id);
-    staticParameters->mimoDiversityMultiplexing[0]=macConfigRequest->dynamicParameters->getMimoDiversityMultiplexing(staticParameters->ulReservations[0].target_ue_id);
-    staticParameters->mimoAntenna[0]=macConfigRequest->dynamicParameters->getMimoAntenna(staticParameters->ulReservations[0].target_ue_id);
-    staticParameters->mimoOpenLoopClosedLoop[0]=macConfigRequest->dynamicParameters->getMimoOpenLoopClosedLoop(staticParameters->ulReservations[0].target_ue_id);
-    staticParameters->mimoPrecoding[0]=macConfigRequest->dynamicParameters->getMimoPrecoding(staticParameters->ulReservations[0].target_ue_id);
-    staticParameters->transmissionPowerControl[0] = macConfigRequest->dynamicParameters->getTPC(staticParameters->ulReservations[0].target_ue_id);
-    staticParameters->rxMetricPeriodicity[0] = macConfigRequest->dynamicParameters->getRxMetricsPeriodicity(staticParameters->ulReservations[0].target_ue_id);
+    currentParameters->setSystemParameters(macConfigRequest->dynamicParameters);
+    currentParameters->setCLIParameters(macConfigRequest->dynamicParameters);
 }
 
 void
@@ -100,10 +92,10 @@ MacController::manager(){
                 cout<<"\n\n[MacController] ___________ System in CONFIG mode. ___________\n"<<endl;
 
                 //Read txt static and default parameters and initialize flagBS and currentMacAddress values
-                staticParameters = new StaticDefaultParameters(verbose);
-                staticParameters->readTxtStaticParameters();
-                flagBS = staticParameters->flagBS;
-                currentMacAddress = flagBS? 0:staticParameters->ulReservations[0].target_ue_id;
+                currentParameters = new CurrentParameters(verbose);
+                currentParameters->readTxtStaticParameters();
+                flagBS = currentParameters->isBaseStation();
+                currentMacAddress = currentParameters->getCurrentMacAddress();
                 
                 //Define IP-MAC correlation table creating and initializing a MacAddressTable with static informations (HARDCODE)
                 ipMacTable = new MacAddressTable(verbose);
@@ -115,7 +107,7 @@ MacController::manager(){
                 ipMacTable->addEntry(addressEntry2, 2, false);
 
                 //Create condition variables
-                queueConditionVariables = new condition_variable[staticParameters->numberUEs];
+                queueConditionVariables = new condition_variable[currentParameters->getNumberUEs()];
                 
                 //Create Tun Interface and allocate it
                 tunInterface = new TunInterface(deviceNameTun, verbose);
@@ -141,13 +133,13 @@ MacController::manager(){
                  * numberEquipments+1         ---> Data SDU enqueueing from TUN interface in MacHighQueue
                  * numberEquipments+2         ---> Reading control messages from PHY
                  */
-                threads = new thread[3+staticParameters->numberUEs];
+                threads = new thread[3+currentParameters->getNumberUEs()];
 
                 //Create Multiplexer and set its TransmissionQueues
-                mux = new Multiplexer(staticParameters->mtu[0], currentMacAddress, ipMacTable, MAXSDUS, flagBS, verbose);     //PROVISIONAL UNIVERSAL MTU
+                mux = new Multiplexer(currentParameters->getMTU(), currentMacAddress, ipMacTable, MAXSDUS, flagBS, verbose);     //PROVISIONAL UNIVERSAL MTU
                 if(flagBS){
-                    for(int i=0;i<staticParameters->numberUEs;i++)
-                        mux->setTransmissionQueue(staticParameters->ulReservations[i].target_ue_id);
+                    for(int i=0;i<currentParameters->getNumberUEs();i++)
+                        mux->setTransmissionQueue(currentParameters->getMacAddress(i));
                 }
                 else mux->setTransmissionQueue(0);      //UE needs a single Transmission Queue to BS
 
@@ -161,10 +153,10 @@ MacController::manager(){
                 macConfigRequest = new MacConfigRequest(verbose);
 
                 //Fill dynamic Parameters with default parameters (stating system)
-                staticParameters->loadDynamicParametersDefaultInformation(macConfigRequest->dynamicParameters);
+                currentParameters->loadDynamicParametersDefaultInformation(macConfigRequest->dynamicParameters);
 
                 //Create a RxMetrics array
-                rxMetrics = new RxMetrics[staticParameters->numberUEs];
+                rxMetrics = new RxMetrics[currentParameters->getNumberUEs()];
 
                 //Set subframe counter to zero
                 subframeCounter = 0;
@@ -217,9 +209,9 @@ MacController::manager(){
 
                     //Before alterations, send all PDUs currently enqueued, if they exist
                     if(flagBS){     //If this is BS
-                        for(int i=0;i<staticParameters->numberUEs;i++){
-                            if(!(mux->emptyPdu(staticParameters->ulReservations[i].target_ue_id)))
-                                sendPdu(staticParameters->ulReservations[i].target_ue_id);
+                        for(int i=0;i<currentParameters->getNumberUEs();i++){
+                            if(!(mux->emptyPdu(currentParameters->getMacAddress(i))))
+                                sendPdu(currentParameters->getMacAddress(i));
                         }
                     }
                     else{       //If this is UE
@@ -235,10 +227,10 @@ MacController::manager(){
                         vector<uint8_t> dynamicParametersBytes;
 
                         //Send a MACC SDU to each UE attached
-                        for(int i=0;i<staticParameters->numberUEs;i++){
+                        for(int i=0;i<currentParameters->getNumberUEs();i++){
                             dynamicParametersBytes.clear();
-                            macConfigRequest->dynamicParameters->serialize(staticParameters->ulReservations[i].target_ue_id, dynamicParametersBytes);
-                            protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), staticParameters->ulReservations[i].target_ue_id);
+                            macConfigRequest->dynamicParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
+                            protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), currentParameters->getMacAddress(i));
                         }
                     }
 
@@ -277,7 +269,7 @@ MacController::startThreads(){
     int i;   	//Auxiliary variable for loops
 
     //For each equipment
-    for(i=0;i<staticParameters->numberUEs;i++){
+    for(i=0;i<currentParameters->getNumberUEs();i++){
         //timeoutController threads - threads[0 .. attachedEquipments-1]
         threads[i] = thread(&MacController::timeoutController, this, i);
     }
@@ -292,7 +284,7 @@ MacController::startThreads(){
     threads[i+2] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl, ref(currentMacMode), ref(currentMacRxMode));
 
     //Join all threads
-    int numberThreads = 3+staticParameters->numberUEs;
+    int numberThreads = 3+currentParameters->getNumberUEs();
     for(i=0;i<numberThreads;i++){
         //Join all threads that don't execute only in IDLE mode 
         threads[i].detach();
@@ -334,14 +326,13 @@ MacController::sendPdu(
     	BSSubframeTx_Start messageBS;	//Message parameters structure
 
         //Fill the structure with information
-    	messageBS.numUEs = staticParameters->numberUEs;
+    	messageBS.numUEs = currentParameters->getNumberUEs();
     	messageBS.numPDUs = 1;
-    	for(int i=0;i<17;i++)
-    		messageBS.fLutDL[i] = staticParameters->fLutMatrix[i];
-    	messageBS.ulReservations = staticParameters->ulReservations;
-    	messageBS.numerology = staticParameters->numerology[0];
-    	messageBS.ofdm_gfdm = staticParameters->ofdm_gfdm[0];
-    	messageBS.rxMetricPeriodicity = staticParameters->rxMetricPeriodicity[0];
+        currentParameters->getFLUTMatrix(messageBS.fLutDL);
+        currentParameters->getUlReservations(messageBS.ulReservations);
+    	messageBS.numerology = currentParameters->getNumerology();
+    	messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
+    	messageBS.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
 
         //Serialize struct
     	messageBS.serialize(messageParametersBytes);
@@ -354,10 +345,10 @@ MacController::sendPdu(
         UESubframeTx_Start messageUE;	//Messages parameters structure
 
         //Fill the structure with information
-        messageUE.ulReservation = staticParameters->ulReservations[0];
-        messageUE.numerology = staticParameters->numerology[0];
-        messageUE.ofdm_gfdm = staticParameters->ofdm_gfdm[0];
-        messageUE.rxMetricPeriodicity = staticParameters->rxMetricPeriodicity[0];
+        messageUE.ulReservation = currentParameters->getUlReservation(currentParameters->getMacAddress(0));
+        messageUE.numerology = currentParameters->getNumerology();
+    	messageUE.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
+        messageUE.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
 
         //Serialize struct
         messageUE.serialize(messageParametersBytes);
@@ -387,7 +378,7 @@ MacController::timeoutController(
     int index)      //Index that identifies the condition variable and destination MAC Address of a queue 
 {
     //Timeout declaration: static
-    chrono::nanoseconds timeout = chrono::milliseconds(staticParameters->ipTimeout[index]);    //ms
+    chrono::nanoseconds timeout = chrono::milliseconds(currentParameters->getIpTimeout());    //ms
 
     //Communication infinite loop
     while(currentMacMode!=STOP_MODE){
@@ -395,13 +386,13 @@ MacController::timeoutController(
         unique_lock<mutex> lk(queueMutex);
         
         //If there's no timeout OR the PDU is empty, no transmission is necessary
-        if(queueConditionVariables[index].wait_for(lk, timeout)==cv_status::no_timeout || mux->emptyPdu(flagBS? staticParameters->ulReservations[index].target_ue_id:0)) 
+        if(queueConditionVariables[index].wait_for(lk, timeout)==cv_status::no_timeout || mux->emptyPdu(flagBS? currentParameters->getMacAddress(index):0)) 
             continue; 
 
         //Else, perform PDU transmission only in IDLE mode
         if(currentMacMode==IDLE_MODE){
             if(verbose) cout<<"[MacController] Timeout!"<<endl;
-            sendPdu(flagBS? staticParameters->ulReservations[index].target_ue_id : 0);
+            sendPdu(flagBS? currentParameters->getMacAddress(index) : 0);
         }
     }
 }
@@ -459,7 +450,7 @@ MacController::decoding()
     //If it is UE, increase subframeCounter
     if(!flagBS){    
         subframeCounter++;
-        if(subframeCounter==macConfigRequest->dynamicParameters->getRxMetricsPeriodicity(currentMacAddress)){
+        if(subframeCounter==macConfigRequest->dynamicParameters->getRxMetricsPeriodicity()){
             rxMetricsReport();
             subframeCounter = 0;
         }
@@ -484,15 +475,15 @@ MacController::setMacPduStaticInformation(
     macphyctl_t macPhyControl;                  //MAC-PHY control structure
 
     //MIMO Configuration
-    mimoConfiguration.scheme = staticParameters->mimoConf[0]==0? NONE:(staticParameters->mimoDiversityMultiplexing[0]==0? DIVERSITY:MULTIPLEXING);
-    mimoConfiguration.num_tx_antenas = staticParameters->mimoAntenna[0]==0? 2:4;
-    mimoConfiguration.precoding_mtx = staticParameters->mimoPrecoding[0];
+    mimoConfiguration.scheme = currentParameters->getMimoConf(macAddress)==0? NONE:(currentParameters->getMimoDiversityMultiplexing(macAddress)==0? DIVERSITY:MULTIPLEXING);
+    mimoConfiguration.num_tx_antenas = currentParameters->getMimoAntenna(macAddress)==0? 2:4;
+    mimoConfiguration.precoding_mtx = currentParameters->getMimoPrecoding(macAddress);
 
     //MCS Configuration
-    mcsConfiguration.num_info_bytes = staticParameters->mtu[0];
-    mcsConfiguration.num_coded_bytes = staticParameters->mtu[0]/codeRate;
+    mcsConfiguration.num_info_bytes = currentParameters->getMTU();
+    mcsConfiguration.num_coded_bytes = currentParameters->getMTU()/codeRate;
     mcsConfiguration.modulation = QAM64;
-    mcsConfiguration.power_offset = staticParameters->transmissionPowerControl[0];
+    mcsConfiguration.power_offset = currentParameters->getTPC(macAddress);
 
     //Resource allocation configuration
     allocationConfiguration.first_rb = 0;
@@ -543,14 +534,4 @@ MacController::rxMetricsReport(){  //This thread executes only on UE
     //Enqueue MACC SDU
     protocolControl->enqueueControlSdus(&(rxMetricsBytes[0]), rxMetricsBytes.size(), 0);
 	
-}
-
-int
-MacController::getIndex(
-    uint8_t macAddress)
-{
-    for(int i=0;i<staticParameters->numberUEs;i++)
-        if(macAddress==staticParameters->ulReservations[i].target_ue_id)
-            return i;
-    return -1;
 }

@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : January 20th, 2020
+@Last alteration : January 21st, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -45,7 +45,7 @@ ProtocolControl::enqueueControlSdus(
     if(!macController->flagBS)      //If it is UE, then it only has BS "attached"
         index=0;
     else{
-        index = macController->getIndex(macAddress);
+        index = macController->currentParameters->getIndex(macAddress);
 
         if(index==-1){
             if(verbose) cout<<"[ProtocolControl] Did not find MAC Address to send MACC SDU."<<endl;
@@ -100,7 +100,7 @@ ProtocolControl::decodeControlSdus(
         }
         else{   //RxMetrics
             //Verify index
-            int index = macController->getIndex(macAddress);
+            int index = macController->currentParameters->getIndex(macAddress);
             if(index == -1){
                 if(verbose) cout<<"[ProtocolControl] Error decoding RxMetrics."<<endl;
                 exit(1);

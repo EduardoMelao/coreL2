@@ -24,6 +24,7 @@ using namespace lib5grange;
  */
 class DynamicParameters{
 private:
+protected:
     //Dynamic information as informed on spreadsheet L1-L2_InterfaceDefinition.xlsx
 	uint8_t fLutMatrix[17];						//[132 bits] BitMap from Fusion Spectrum Analysis
 	vector<allocation_cfg_t> ulReservation;	    //[24 bits each] Spectrum allocation for Uplink
@@ -35,11 +36,15 @@ private:
 	vector<uint8_t> mimoOpenLoopClosedLoop;		//[1 bit each] 0 = Open Loop; 1 = Closed Loop
 	vector<uint8_t> mimoPrecoding;				//[4 bits each] MIMO codeblock configuration for DL and UL
 	vector<uint8_t> transmissionPowerControl;	//[6 bits each] Transmission Power Control
-	vector<uint8_t> rxMetricPeriodicity;		//[4 bits each] CSI period for CQI, PMI and SSM provided by PHY
+	uint8_t rxMetricPeriodicity;				//[4 bits each] CSI period for CQI, PMI and SSM provided by PHY
 	bool verbose;								//Verbosity flag
 
 public:
-	
+	/**
+	 * @brief Default constructor
+	 */
+	DynamicParameters::DynamicParameters() { }
+
     /**
 	 *@brief Empty constructor for Dynamic Variables
 	 *@param _verbose Verbosity flag
@@ -66,7 +71,7 @@ public:
 	 * @param _rxMetricPeriodicity CSI period for CQI, PMI and SSM provided by PHY
 	 */
 	void fillDynamicVariables(uint8_t* _fLutMatrix, vector<allocation_cfg_t> _ulReservations, vector<uint8_t> _mcsDownlink, vector<uint8_t> _mcsUplink, vector<uint8_t> _mimoConf, vector<uint8_t> _mimoDiversityMultiplexing,
-						vector<uint8_t> _mimoAntenna, vector<uint8_t> _mimoOpenLoopClosedLoop, vector<uint8_t> _mimoPrecoding, vector<uint8_t> _transmissionPowerControl, vector<uint8_t> _rxMetricPeriodicity);
+						vector<uint8_t> _mimoAntenna, vector<uint8_t> _mimoOpenLoopClosedLoop, vector<uint8_t> _mimoPrecoding, vector<uint8_t> _transmissionPowerControl, uint8_t _rxMetricPeriodicity);
 
     /**
 	 * @brief Initialize all variables with dynamic information on UE
@@ -104,10 +109,10 @@ public:
 	void setFLutMatrix(uint8_t* _fLutMatrix);
 
 	/**
-	 * @brief Sets Uplink Reservations
-	 * @param _ulReservations Spectrum allocation for Uplink
+	 * @brief Sets Uplink Reservation
+	 * @param _ulReservation Spectrum allocation for Uplink
 	 */
-	void setUlReservation(allocation_cfg_t _ulReservations);
+	void setUlReservation(allocation_cfg_t _ulReservation);
 
 	/**
 	 * @brief Sets MCS for Downlink
@@ -143,10 +148,9 @@ public:
 
 	/**
 	 * @brief Sets RX Metrics Periodicity
-     * @param macAddress UE MAC Address
 	 * @param _rxMetricPeriodicity CSI period for CQI, PMI and SSM provided by PHY
 	 */
-	void setRxMetricPeriodicity(uint8_t macAddress, uint8_t _rxMetricPeriodicity);
+	void setRxMetricPeriodicity(uint8_t _rxMetricPeriodicity);
 
     //GETTERS
     /**
@@ -233,10 +237,9 @@ public:
 
     /**
      * @brief Getter for Rx Metrics Periodicity
-     * @param macAddress UE MAC Address
-     * @returns Rx Metrics Periodicity of UE identified as parameter
+     * @returns Rx Metrics Periodicity of System
      */
-    uint8_t getRxMetricsPeriodicity(uint8_t macAddress);
+    uint8_t getRxMetricsPeriodicity();
 
 };
 
