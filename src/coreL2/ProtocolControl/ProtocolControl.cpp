@@ -7,7 +7,11 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
+<<<<<<< HEAD
 @Last alteration : January 22nd, 2020
+=======
+@Last alteration : January 21st, 2020
+>>>>>>> First refactoring: Corrected universal/specific parameters; Changed from StaticDefaultParameters to CurrentParameters; Configured CurrentParameters with inheritance from DynamicParameters (DynamicParameters + static parameters = current parameters)
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -45,7 +49,7 @@ ProtocolControl::enqueueControlSdus(
     if(!macController->flagBS)      //If it is UE, then it only has BS "attached"
         index=0;
     else{
-        index = macController->getIndex(macAddress);
+        index = macController->currentParameters->getIndex(macAddress);
 
         if(index==-1){
             if(verbose) cout<<"[ProtocolControl] Did not find MAC Address to send MACC SDU."<<endl;
@@ -100,7 +104,7 @@ ProtocolControl::decodeControlSdus(
         }
         else{   //RxMetrics
             //Verify index
-            int index = macController->getIndex(macAddress);
+            int index = macController->currentParameters->getIndex(macAddress);
             if(index == -1){
                 if(verbose) cout<<"[ProtocolControl] Error decoding RxMetrics."<<endl;
                 exit(1);

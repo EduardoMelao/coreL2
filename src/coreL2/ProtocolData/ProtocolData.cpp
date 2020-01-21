@@ -7,7 +7,11 @@
 @Arquive name : ProtocolData.cpp
 @Classification : Protocol Data
 @
+<<<<<<< HEAD
 @Last alteration : January 22nd, 2020
+=======
+@Last alteration : January 21st, 2020
+>>>>>>> First refactoring: Corrected universal/specific parameters; Changed from StaticDefaultParameters to CurrentParameters; Configured CurrentParameters with inheritance from DynamicParameters (DynamicParameters + static parameters = current parameters)
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -62,15 +66,15 @@ ProtocolData::enqueueDataSdus(
                 numberBytesRead = macHigh->getNextSdu(bufferData);
 
                 //If multiplexer queue is empty, notify condition variable to trigger timeout timer
-                if(!macController->staticParameters->flagBS){    //If UE, test if its (unique) queue to BS is empty, then notify condition variables
+                if(!macController->currentParameters->isBaseStation()){    //If UE, test if its (unique) queue to BS is empty, then notify condition variables
                     if(macController->mux->emptyPdu(0))
                         macController->queueConditionVariables[0].notify_all();
                 }
                 else{
                     //If BS, find which Condition Variable corresponds to the UE MAC Address
-                    for(int i=0;i<macController->staticParameters->numberUEs;i++){
-                        if(macController->staticParameters->ulReservations[i].target_ue_id==macController->mux->getMacAddress(bufferData)){
-                            if(macController->mux->emptyPdu(macController->staticParameters->ulReservations[i].target_ue_id)){
+                    for(int i=0;i<macController->currentParameters->getNumberUEs;i++){
+                        if(macController->currentParameters->getMacAddress(i)==macController->mux->getMacAddress(bufferData)){
+                            if(macController->mux->emptyPdu(macController->currentParameters->getMacAddress(i))){
                                 macController->queueConditionVariables[i].notify_all();
                             }
                             else break;

@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : January 16th, 2019
+@Last alteration : January 21st, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -30,7 +30,7 @@ using namespace std;
 #include "ProtocolPackage/ProtocolPackage.h"
 #include "Multiplexer/MacAddressTable/MacAddressTable.h"
 #include "MacController/MacController.h"
-#include "SystemParameters/StaticDefaultParameters.h"
+#include "SystemParameters/CurrentParameters.h"
 
 int main(int argc, char** argv){
     uint8_t* macAddresses;          //Array of 5GR MAC Addresses of attached equipments

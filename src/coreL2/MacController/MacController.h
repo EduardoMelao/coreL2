@@ -25,7 +25,7 @@
 #include "../ProtocolControl/ProtocolControl.h"
 #include "../../common/lib5grange/lib5grange.h"
 #include "../../common/libMac5gRange/libMac5gRange.h"
-#include "../SystemParameters/StaticDefaultParameters.h"
+#include "../SystemParameters/CurrentParameters.h"
 #include "../MacConfigRequest/MacConfigRequest.h"
 
 using namespace std;
@@ -72,7 +72,7 @@ public:
     ReceptionProtocol* receptionProtocol;           //Object to receive packets from L1 and L3
     TransmissionProtocol* transmissionProtocol;     //Object to transmit packets to L1 and L3
     L1L2Interface* l1l2Interface;   //Object to manage interface with L1
-    StaticDefaultParameters* staticParameters;      //Object with static/default parameters read from a file
+    CurrentParameters* currentParameters;           //Object with static/default parameters read from a file
     MacConfigRequest* macConfigRequest;             //Object to configure dynamic parameters 
     RxMetrics* rxMetrics;                           //Array of Reception Metrics for each UE
     
@@ -145,11 +145,5 @@ public:
      * @brief (Only UE) Periodically sends RxMetrics Report to BS
      */
     void rxMetricsReport();
-
-    /**
-     * @brief Gets index referent to macAddress on all class arrays
-     * @param macAddress MAC Address 
-     */
-    int getIndex(uint8_t macAddress);
 };
 #endif  //INCLUDED_MAC_CONTROLLER_H
