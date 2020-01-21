@@ -1,6 +1,6 @@
 /* ***************************************/
 /* Copyright Notice                      */
-/* Copyright(c)2019 5G Range Consortium  */
+/* Copyright(c)2020 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
 
@@ -21,7 +21,6 @@ class ProtocolPackage;
  */
 class TransmissionQueue{
 private:
-    int maxNumberBytes;             //Maximum number of bytes
     char* buffer;                   //Buffer accumulates SDUs
     uint8_t sourceAddress;          //Source MAC address
     uint8_t destinationAddress;     //Destination MAC address
@@ -48,6 +47,7 @@ private:
     int currentBufferLength();     
 public:
     uint8_t numberSDUs;     //Number of SDUs multiplexed
+    int maxNumberBytes;             //Maximum number of bytes
     int maximumNumberSDUs;  //Maximum number of SDUs multiplexed
 
     /**
