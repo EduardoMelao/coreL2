@@ -289,6 +289,11 @@ CurrentParameters::isGFDM(){
 }
 
 uint16_t
+CurrentParameters::getMTU(){
+	return mtu;
+}
+
+uint16_t
 CurrentParameters::getIpTimeout(){
 	return ipTimeout;
 }
