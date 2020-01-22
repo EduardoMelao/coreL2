@@ -1,13 +1,13 @@
 /* ***************************************/
 /* Copyright Notice                      */
-/* Copyright(c)2019 5G Range Consortium  */
+/* Copyright(c)2020 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
 /**
 @Arquive name : ProtocolData.cpp
 @Classification : Protocol Data
 @
-@Last alteration : December 13th, 2019
+@Last alteration : January 22nd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -37,34 +37,47 @@ ProtocolData::ProtocolData(
 ProtocolData::~ProtocolData() {}
 
 void 
-ProtocolData::enqueueDataSdus(){
+ProtocolData::enqueueDataSdus(
+    MacModes & currentMacMode,          //Current MAC execution mode
+    MacTxModes & currentMacTxMode)      //Current MAC execution Tx mode 
+{
     int macSendingPDU;                      //This auxiliary variable will store MAC Address if queue is full of SDUs
     char bufferData[MAXIMUM_BUFFER_LENGTH]; //Buffer to store Data Bytes
     ssize_t numberBytesRead = 0;            //Size of MACD SDU read in Bytes
     
-    //Infinite loop
-    while(1){
+    //Data SDUs stream
+    while(currentMacMode!=STOP_MODE){
 
-        //Test if MacHigh Queue is not empty, i.e. there are SDUs to enqueue
-        if(macHigh->getNumberPackets()){
+        if(currentMacMode==IDLE_MODE){
+            //Change system Tx mode to ACTIVE_MODE_TX
+            currentMacTxMode = ACTIVE_MODE_TX; 
 
-            //Fulfill bufferData with zeros 
-            bzero(bufferData, MAXIMUM_BUFFER_LENGTH);
+            //Test if MacHigh Queue is not empty, i.e. there are SDUs to enqueue
+            if(macHigh->getNumberPackets()){
 
-            //Gets next SDU from MACHigh Queue
-            numberBytesRead = macHigh->getNextSdu(bufferData);
+                //Fulfill bufferData with zeros 
+                bzero(bufferData, MAXIMUM_BUFFER_LENGTH);
 
-            //If multiplexer queue is empty, notify condition variable to trigger timeout timer
-            for(int i=0;i<macController->attachedEquipments;i++){
-                if(macController->macAddressEquipments[i]==macController->mux->getMacAddress(bufferData)){
-                    if(macController->mux->emptyPdu(macController->macAddressEquipments[i])){
-                        macController->queueConditionVariables[i].notify_all();
-                    }
-                    else break;
+                //Gets next SDU from MACHigh Queue
+                numberBytesRead = macHigh->getNextSdu(bufferData);
+
+                //If multiplexer queue is empty, notify condition variable to trigger timeout timer
+                if(!macController->currentParameters->isBaseStation()){    //If UE, test if its (unique) queue to BS is empty, then notify condition variables
+                    if(macController->mux->emptyPdu(0))
+                        macController->queueConditionVariables[0].notify_all();
                 }
-            }
+                else{
+                    //If BS, find which Condition Variable corresponds to the UE MAC Address
+                    for(int i=0;i<macController->currentParameters->getNumberUEs;i++){
+                        if(macController->currentParameters->getMacAddress(i)==macController->mux->getMacAddress(bufferData)){
+                            if(macController->mux->emptyPdu(macController->currentParameters->getMacAddress(i))){
+                                macController->queueConditionVariables[i].notify_all();
+                            }
+                            else break;
+                        }
+                    }
+                }
 
-            {   
                 //Locks mutex to write in Multiplexer queue
                 lock_guard<mutex> lk(macController->queueMutex);
                 
@@ -83,7 +96,15 @@ ProtocolData::enqueueDataSdus(){
                 macController->mux->addSdu(bufferData,numberBytesRead);
             }
         }
+        else{
+            //Change MAC Tx Mode to DISABLED_MODE_TX
+            currentMacTxMode = DISABLED_MODE_TX;
+        }
     }
+
+    if(verbose) cout<<"[ProtocolData] Entering STOP_MODE."<<endl;    
+    //Change MAC Tx Mode to DISABLED_MODE_TX before stopping System
+    currentMacTxMode = DISABLED_MODE_TX;
 }
 
 void

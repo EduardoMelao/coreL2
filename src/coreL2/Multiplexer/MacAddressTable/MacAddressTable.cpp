@@ -1,13 +1,13 @@
 /* ***************************************/
 /* Copyright Notice                      */
-/* Copyright(c)2019 5G Range Consortium  */
+/* Copyright(c)2020 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
 /**
 @Arquive name : MacAddressTable.cpp
 @Classification : MAC Address Table
 @
-@Last alteration : November 28th, 2019
+@Last alteration : January 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -110,26 +110,30 @@ MacAddressTable::deleteEntry(
     //Relocate arrays
     uint8_t** _ipAddresses = new uint8_t*[numberRegisters-1];
     uint8_t* _macAddresses = new uint8_t[numberRegisters-1];
+    bool* _flagsBS = new bool[numberRegisters-1];
 
     //Copy information
     for(int i=0;i<id;i++){
         _ipAddresses[i] = ipAddresses[i];
         _macAddresses[i] = macAddresses[i];
+        _flagsBS[i] = flagsBS[i];
     }
     for(int i=id;i<(numberRegisters-1);i++){
         _ipAddresses[i] = ipAddresses[i+1];
         _macAddresses[i] = macAddresses[i+1];
+        _flagsBS[i] = flagsBS[i+1];
     }
 
     //Delete old arrays
-    delete[] ipAddresses[id];
     delete[] ipAddresses;
     delete[] macAddresses;
+    delete[] flagsBS;
 
     //Renew class arrays
     this->ipAddresses = _ipAddresses;
     this->macAddresses = _macAddresses;
-    if(verbose) cout<<"[MacAddressTable] Entry successfully delete"<<endl;
+    this->flagsBS = _flagsBS;
+    if(verbose) cout<<"[MacAddressTable] Entry successfully deleted"<<endl;
 
     //Decrement number of registers
     numberRegisters--;

@@ -1,7 +1,6 @@
- 
 /* ***************************************/
 /* Copyright Notice                      */
-/* Copyright(c)2019 5G Range Consortium  */
+/* Copyright(c)2020 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
 
@@ -11,9 +10,16 @@
 #include <cstdint>
 #include <vector>
 #include "../lib5grange/lib5grange.h"
+#include <mutex>
 
 using namespace std;
 using namespace lib5grange;
+
+enum MacModes {STANDBY_MODE, CONFIG_MODE, START_MODE, IDLE_MODE, RECONFIG_MODE, STOP_MODE};
+enum MacTxModes {ACTIVE_MODE_TX, DISABLED_MODE_TX};
+enum MacRxModes {ACTIVE_MODE_RX, DISABLED_MODE_RX};
+enum MacTunModes {TUN_ENABLED, TUN_DISABLED};
+
 
 /**
  * @brief Struct for BSSubframeTx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
@@ -33,7 +39,7 @@ typedef struct{
      * of the vector given as argument
      *
      * @param bytes: vector of bytes where the struct will be serialized
-     **/
+     */
     void serialize(vector<uint8_t> & bytes)
     {
         uint8_t auxiliary;
@@ -90,7 +96,7 @@ typedef struct{
      * of the vector given as argument
      *
      * @param bytes: vector of bytes where the struct will be serialized
-     **/
+     */
     void serialize(vector<uint8_t> & bytes)
     {
         ulReservation.serialize(bytes);
@@ -112,6 +118,119 @@ typedef struct{
     }
 }UESubframeTx_Start;
 
+/**
+ * @brief Struct for BSSubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
+ */
+typedef struct{
+    float sinr;         //Signal to Interference plus Noise Ratio //#TODO: define range. Is float enough?
+    
+    /**
+     * @brief Serialization method for the struct
+     * This method convert all menbers of the struct to a sequance of bytes and appends at the end
+     * of the vector given as argument
+     *
+     * @param bytes: vector of bytes where the struct will be serialized
+     */
+    void serialize(vector<uint8_t> & bytes)
+    {
+        push_bytes(bytes, sinr);
+    }
 
+    /** deserializatyion method for the struct (inverse order)**/
+    void deserialize(vector<uint8_t> & bytes)
+    {
+        pop_bytes(sinr, bytes);
+    }
+}BSSubframeRx_Start;
 
+/**
+ * @brief Struct for UESubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
+ */
+typedef struct{
+    float sinr;         //Signal to Interference plus Noise Ratio               //#TODO: define range
+    uint8_t ri;         //RI (Rank Indicator), part of RxMetrics.               //#TODO: define range
+    uint8_t pmi;        //PMI: Pre-Coding Matrix Indicator, part of RxMetrics.  //#TODO: define range
+    uint8_t ssm[17];    //SSM: Spectrum Sensing Measurement. Array of 132 bits
+    
+    /**
+     * @brief Serialization method for the struct
+     * This method convert all menbers of the struct to a sequance of bytes and appends at the end
+     * of the vector given as argument
+     *
+     * @param bytes: vector of bytes where the struct will be serialized
+     **/
+    void serialize(vector<uint8_t> & bytes)
+    {
+        uint8_t auxiliary;
+        push_bytes(bytes, sinr);
+        push_bytes(bytes, pmi);
+        for(int i=0;i<16;i++)
+            push_bytes(bytes, ssm[i]);
+        auxiliary = (ri<<4)|ssm[16];
+        push_bytes(bytes, auxiliary);
+    }
+
+    /** deserializatyion method for the struct (inverse order)**/
+    void deserialize(vector<uint8_t> & bytes)
+    {
+        uint8_t auxiliary;
+        pop_bytes(auxiliary, bytes);
+        ri = (auxiliary>>4)&15;
+        ssm[16] = auxiliary&15;
+        
+        for(int i=15;i>=0;i--)
+            pop_bytes(ssm[i],bytes);
+        
+        pop_bytes(pmi, bytes);
+
+        pop_bytes(sinr, bytes);
+    }
+}UESubframeRx_Start;
+
+/**
+ * @brief Struct for RxMetrics, as defined in L1-L2_InterfaceDefinition.xlsx
+ */
+typedef struct{
+    uint8_t cqiReport;      //Channel Quality information based on SINR report.     //#TODO: define range
+    uint8_t ri;             //RI (Rank Indicator), part of RxMetrics.               //#TODO: define range
+    uint8_t pmi;            //PMI: Pre-Coding Matrix Indicator, part of RxMetrics.  //#TODO: define range
+    uint8_t ssReport[17];   //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 132 bits
+    mutex accessControl;    //Mutex to control parameters access/alteration
+    
+    /**
+     * @brief Serialization method for the struct
+     * This method convert all menbers of the struct to a sequance of bytes and appends at the end
+     * of the vector given as argument
+     *
+     * @param bytes: vector of bytes where the struct will be serialized
+     **/
+    void serialize(vector<uint8_t> & bytes)
+    {
+        accessControl.lock();
+        uint8_t auxiliary;
+        push_bytes(bytes, cqiReport);
+        push_bytes(bytes, pmi);
+        for(int i=0;i<16;i++)
+            push_bytes(bytes, ssReport[i]);
+        auxiliary = (ri<<4)|ssReport[16];
+        push_bytes(bytes, auxiliary);
+        accessControl.unlock();
+    }
+
+    /** deserializatyion method for the struct (inverse order)**/
+    void deserialize(vector<uint8_t> & bytes)
+    {
+        uint8_t auxiliary;
+        pop_bytes(auxiliary, bytes);
+        ri = (auxiliary>>4)&15;
+        ssReport[16] = auxiliary&15;
+        
+        for(int i=15;i>=0;i--)
+            pop_bytes(ssReport[i],bytes);
+        
+        pop_bytes(pmi, bytes);
+
+        pop_bytes(cqiReport, bytes);
+    }
+}RxMetrics;
 #endif  //INCLUDED_LIB_MAC_5G_RANGE_H

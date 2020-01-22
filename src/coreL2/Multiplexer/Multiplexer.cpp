@@ -1,13 +1,13 @@
 /* ***************************************/
 /* Copyright Notice                      */
-/* Copyright(c)2019 5G Range Consortium  */
+/* Copyright(c)2020 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
 /**
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : December 13th, 2019
+@Last alteration : January 3rd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -133,7 +133,7 @@ Multiplexer::addSdu(
 
     //Test if there number of SDUs extrapolates maximum
     if(transmissionQueues[i]->numberSDUs+1 == transmissionQueues[i]->maximumNumberSDUs){
-        if(verbose) cout<<"[TransmissionQueue] Tried to multiplex more SDUs than supported."<<endl;
+        if(verbose) cout<<"[Multiplexer] Tried to multiplex more SDUs than supported."<<endl;
         return _destinationMac;
     }
 
@@ -205,3 +205,11 @@ Multiplexer::getNumberTransmissionQueues(){
     return numberTransmissionQueues;
 }
 
+void
+Multiplexer::setMaxNumberBytes(
+		uint16_t _maxNumberBytes)	//Maximum number of Bytes for each PDU
+{
+	maxNumberBytes = _maxNumberBytes;
+	for(int i=0;i<numberTransmissionQueues;i++)
+		transmissionQueues[i]->maxNumberBytes = _maxNumberBytes;
+}

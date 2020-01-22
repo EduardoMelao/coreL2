@@ -1,6 +1,6 @@
 /* ***************************************/
 /* Copyright Notice                      */
-/* Copyright(c)2019 5G Range Consortium  */
+/* Copyright(c)2020 5G Range Consortium  */
 /* All rights Reserved                   */
 /*****************************************/
 
@@ -11,10 +11,11 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "MacCQueue.h"
-
 #include "../Multiplexer/Multiplexer.h"
 #include "../MacController/MacController.h"
+#include "../LinkAdaptation/LinkAdaptation.h"
+#include "../AdaptiveModulationCoding/AdaptiveModulationCoding.h"
+#include "../Cosora/Cosora.h"
 
 class MacController;	//Initializing class that will be defined in other .h file
 
@@ -24,7 +25,6 @@ class MacController;	//Initializing class that will be defined in other .h file
 class ProtocolControl{
 private:
     MacController* macController;   //MAC Controller that instantiated this object and has all shared variables
-    MacCQueue* macControlqueue;     //Queue that generates Control SDUs for transmission
     bool verbose;                   //Verbosity flag
 
 public:
@@ -42,15 +42,19 @@ public:
     
     /**
      * @brief Procedure that executes forever and controls MACC SDUs generation, adding SDUs from MAC Control Queue to Multiplexer
+     * @param controlSdu MAC Control SDU Bytes
+     * @param numberBytes Size of MACC SDU in Bytes
+     * @param macAddress Destination MAC Address
      */
-    void enqueueControlSdus();
+    void enqueueControlSdus(uint8_t* controlSdu, size_t numberBytes, uint8_t macAddress);
 
     /**
      * @brief Receives and treat Control SDUs on decoding
      * @param buffer Buffer containing Control SDU
      * @param numberDecodingBytes Size of Control SDU in Bytes
+     * @param macAddress Source MAC Address
      */
-    void decodeControlSdus(char* buffer, size_t numberDecodingBytes);
+    void decodeControlSdus(char* buffer, size_t numberDecodingBytes, uint8_t macAddress);
 
     /**
      * @brief Perform transmission of Interlayer Control Messages to PHY
@@ -61,8 +65,10 @@ public:
 
     /**
      * @brief Perform reception of Interlayer Control Messages from PHY and decides what to do
+     * @param currentMacMode Actual MAC Mode to control enqueueing while system is in another modes, e.g. RECONFIG_MODE or STOP_MODE
+     * @param currentMacRxMode Actual MAC Rx Mode to signal to system if it is in an active mode, e.g. ACTIVE_MODE_RX
      */
-    void receiveInterlayerMessages();
+    void receiveInterlayerMessages(MacModes & currentMacMode, MacRxModes & currentMacRxMode);
 };
 
 
