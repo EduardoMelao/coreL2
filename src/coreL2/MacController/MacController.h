@@ -99,11 +99,6 @@ public:
     void manager();
 
     /**
-     * @brief Called by RECONFIG_MODE, updates static parameters with dynamic parameters modified by CLI.
-     */
-    void recordDynamicParameters();
-
-    /**
      * @brief Declares and starts all threads necessary for MacController
      */
     void startThreads();

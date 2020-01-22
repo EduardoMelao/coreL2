@@ -7,7 +7,7 @@
 @Arquive name : CurrentParameters.cpp
 @Classification : System Parameters - Current Parameters
 @
-@Last alteration : January 21st, 2019
+@Last alteration : January 22nd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -34,67 +34,80 @@ CurrentParameters::CurrentParameters(
 CurrentParameters::~CurrentParameters() {}
 
 void
-CurrentParameters::readTxtStaticParameters(){
+CurrentParameters::readTxtSystemParameters(
+	string fileName)	//Name of the file to be read
+{
 	string readBuffer;		//Buffer that will be used to read file
 
-	defaultConfigurationsFile.open("Default.txt");
+	ifstream readingConfigurationsFile;
+	readingConfigurationsFile.open(fileName);
 
 	//Gets FlagBS
-	getline(defaultConfigurationsFile, readBuffer);
+	getline(readingConfigurationsFile, readBuffer);
 	flagBS = (readBuffer[0]=='1');
 
 	//Gets Number of UEs (only BS)
 	if(flagBS){
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		numberUEs = stoi(readBuffer);
 		readBuffer.clear();
 	}
 	else numberUEs = 1;			//Consider UE has only one equipment: BS
 
 	//Gets numerology
-	getline(defaultConfigurationsFile, readBuffer);
+	getline(readingConfigurationsFile, readBuffer);
 	numerology = stoi(readBuffer);
 	readBuffer.clear();
 
 	//Gets OFDM GFDM option
-	getline(defaultConfigurationsFile, readBuffer);
+	getline(readingConfigurationsFile, readBuffer);
 	ofdm_gfdm = stoi(readBuffer);
 	readBuffer.clear();
 
 	//Gets FUSION LUT matrix default value (only BS)
 	if(flagBS){
-		uint8_t defaultValue;
-		getline(defaultConfigurationsFile, readBuffer);
-		defaultValue = stoi(readBuffer);
-		readBuffer.clear();
-		for(int i=0;i<17;i++)
-			fLutMatrix[i] = (defaultValue==0) ? 0:255;
+		int counter = 0;		//Counter to help Fusion LUT filling
+		string readLUTValue;	//String to store reading position for Fusion LUT
+		getline(readingConfigurationsFile, readBuffer);		//Reads line with all 17 values (positions), equivalent to 132 bits
+		
+		//Retrieve all 17 positions of array from line
+		for(int i=0;i<readBuffer.size();i++){
+			if(readBuffer[i]==' '){							//If there's a space, finish reading position;
+				fLutMatrix[counter] = stoi(readLUTValue);	//Store value;
+				readLUTValue.clear();						//Clear buffer; and
+				counter++;									//Increase counter.
+			}
+			else
+				readLUTValue+=readBuffer[i];				//If this is not a space, add to buffer
+		}
+		fLutMatrix[counter] = stoi(readLUTValue);			//Last position does not end with a space
+		readLUTValue.clear();
 	}
 
 	//Gets Reception Metrics Periodicity
-	getline(defaultConfigurationsFile, readBuffer);
+	getline(readingConfigurationsFile, readBuffer);
 	rxMetricPeriodicity = stoi(readBuffer);
 	readBuffer.clear();
 
 	//Gets Maximum Transmission Unity in Bytes
-	getline(defaultConfigurationsFile, readBuffer);
+	getline(readingConfigurationsFile, readBuffer);
 	mtu = stol(readBuffer);
 	readBuffer.clear();
 
 	//Gets IP Timeout
-	getline(defaultConfigurationsFile, readBuffer);
+	getline(readingConfigurationsFile, readBuffer);
 	ipTimeout = stoi(readBuffer);
 	readBuffer.clear();
 
 	//The following are only for BS
 	if(flagBS){
 		//Gets Spectrum Sensing Report waiting Timeout
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		ssreportWaitTimeout = stoi(readBuffer);
 		readBuffer.clear();
 
 		//Gets Acknowledgement waiting Timeout
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		ackWaitTimeout = stoi(readBuffer);
 		readBuffer.clear();
 	}
@@ -113,54 +126,133 @@ CurrentParameters::readTxtStaticParameters(){
 	//Loop to read the parameters numberUEs times
 	for(int i=0;i<numberUEs;i++){	
 		//Gets UPLinkReservations
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		ulReservation[i].target_ue_id = stoi(readBuffer);
 		readBuffer.clear();
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		ulReservation[i].first_rb = stoi(readBuffer);
 		readBuffer.clear();
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		ulReservation[i].number_of_rb = stoi(readBuffer);
 		readBuffer.clear();
 
 		//Gets MCS Downlink (only BS)
 		if(flagBS){
-			getline(defaultConfigurationsFile, readBuffer);
+			getline(readingConfigurationsFile, readBuffer);
 			mcsDownlink[i] = stoi(readBuffer);
 			readBuffer.clear();
 		}
 
 		//Gets MCS Uplink
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		mcsUplink[i] = stoi(readBuffer);
 		readBuffer.clear();
 
 		//Gets MIMO configuration
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		mimoConf[i] = stoi(readBuffer);
 		readBuffer.clear();
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		mimoDiversityMultiplexing[i] = stoi(readBuffer);
 		readBuffer.clear();
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		mimoAntenna[i] = stoi(readBuffer);
 		readBuffer.clear();
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		mimoOpenLoopClosedLoop[i] = stoi(readBuffer);
 		readBuffer.clear();
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		mimoPrecoding[i] = stoi(readBuffer);
 		readBuffer.clear();
 
 		//Gets Transmission Power Control Information
-		getline(defaultConfigurationsFile, readBuffer);
+		getline(readingConfigurationsFile, readBuffer);
 		transmissionPowerControl[i] = stoi(readBuffer);
 		readBuffer.clear();
 	}
 
-	defaultConfigurationsFile.close();
+	readingConfigurationsFile.close();
 
-	if(verbose) cout<<"[CurrentParameters] Reading Default information from file successful."<<endl;
+	if(verbose) cout<<"[CurrentParameters] Reading stored information from file successful."<<endl;
+}
+
+void
+CurrentParameters::recordTxtCurrentParameters(){
+	string writeBuffer;		//Buffer that will be used to write on file
+
+	ofstream writingConfigurationsFile;
+	writingConfigurationsFile.open("Current.txt", ofstream::out | ofstream::trunc);
+
+	//Writes FlagBS
+	writingConfigurationsFile << flagBS? '1':'0' <<'\n';
+
+	//Writes Number of UEs (only BS)
+	if(flagBS){
+		writingConfigurationsFile << to_string((int)numberUEs) << '\n';
+	}
+
+	//Writes numerology
+	writingConfigurationsFile << to_string((int)numerology) << '\n';
+
+	//Writes OFDM GFDM option
+	writingConfigurationsFile << to_string((int)ofdm_gfdm) << '\n';
+
+	//Writes FUSION LUT matrix values (only BS)
+	if(flagBS){
+		writingConfigurationsFile << to_string((int)fLutMatrix[0]);	//First position
+		for(int i=0;i<17;i++){
+			writingConfigurationsFile << ' ' << to_string((int)fLutMatrix[i]);
+		}
+		writingConfigurationsFile << '\n';	//Add line break at the end of this line
+	}
+
+	//Writes Reception Metrics Periodicity
+	writingConfigurationsFile << to_string((int)rxMetricPeriodicity) << '\n';
+
+	//Writes Maximum Transmission Unity in Bytes
+	writingConfigurationsFile << to_string((int)mtu) << '\n';
+
+	//Writes IP Timeout
+	writingConfigurationsFile << to_string((int)ipTimeout) << '\n';
+
+	//The following are only for BS
+	if(flagBS){
+		//Writes Spectrum Sensing Report waiting Timeout
+		writingConfigurationsFile << to_string((int)ssreportWaitTimeout) << '\n';
+
+		//Writes Acknowledgement waiting Timeout
+		writingConfigurationsFile << to_string((int)ofdm_gfdm) << '\n';
+	}
+
+	//Loop to write the parameters numberUEs times
+	for(int i=0;i<numberUEs;i++){	
+		//Writes UPLinkReservations
+		writingConfigurationsFile << to_string((int)ulReservation[i].target_ue_id) << '\n';
+		writingConfigurationsFile << to_string((int)ulReservation[i].first_rb) << '\n';
+		writingConfigurationsFile << to_string((int)ulReservation[i].number_of_rb) << '\n';
+
+		//Writes MCS Downlink (only BS)
+		if(flagBS){
+			writingConfigurationsFile << to_string((int)mcsDownlink[i]) << '\n';
+		}
+
+		//Writes MCS Uplink
+		writingConfigurationsFile << to_string((int)mcsUplink[i]) << '\n';
+
+		//Writes MIMO configuration
+		writingConfigurationsFile << to_string((int)mimoConf[i]) << '\n';
+		writingConfigurationsFile << to_string((int)mimoDiversityMultiplexing[i]) << '\n';
+		writingConfigurationsFile << to_string((int)mimoAntenna[i]) << '\n';
+		writingConfigurationsFile << to_string((int)mimoOpenLoopClosedLoop[i]) << '\n';
+		writingConfigurationsFile << to_string((int)mimoPrecoding[i]) << '\n';
+
+		//Gets Transmission Power Control Information
+		writingConfigurationsFile << to_string((int)transmissionPowerControl[i]) << '\n';
+	}
+
+	writingConfigurationsFile.close();
+
+	if(verbose) cout<<"[CurrentParameters] Writing Current information into file successful."<<endl;
 }
 
 void 
