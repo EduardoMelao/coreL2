@@ -7,11 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-<<<<<<< HEAD
 @Last alteration : January 22nd, 2020
-=======
-@Last alteration : January 21st, 2020
->>>>>>> First refactoring: Corrected universal/specific parameters; Changed from StaticDefaultParameters to CurrentParameters; Configured CurrentParameters with inheritance from DynamicParameters (DynamicParameters + static parameters = current parameters)
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015

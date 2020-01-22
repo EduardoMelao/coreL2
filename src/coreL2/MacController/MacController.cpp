@@ -70,17 +70,6 @@ MacController::initialize(){
 }
 
 void
-<<<<<<< HEAD
-MacController::recordDynamicParameters(){
-    //#TODO: consider more than one UE
-    //Copy values from Dynamic Parameters to Static Parameters
-    currentParameters->setSystemParameters(macConfigRequest->dynamicParameters);
-    currentParameters->setCLIParameters(macConfigRequest->dynamicParameters);
-}
-
-void
-=======
->>>>>>> Implemented persistence of Current System parameters
 MacController::manager(){
     //Infinite loop
     while(1){
@@ -393,7 +382,7 @@ MacController::timeoutController(
     int index)      //Index that identifies the condition variable and destination MAC Address of a queue 
 {
     //Timeout declaration: static
-    chrono::milliseconds timeout = chrono::milliseconds(staticParameters->ipTimeout[index]);    //ms
+    chrono::milliseconds timeout = chrono::milliseconds(currentParameters->getIpTimeout());    //ms
 
     //Communication infinite loop
     while(currentMacMode!=STOP_MODE){
