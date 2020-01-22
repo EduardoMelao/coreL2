@@ -32,7 +32,7 @@ using namespace std;
 #include "MacController/MacController.h"
 #include "SystemParameters/CurrentParameters.h"
 
-void stubCLI(MacController* macController){
+void stubCLI(MacController & macController){
     while(1){
         char caracter;
         cout<<"Press + for MacStart, / for MacStop and * for MacConfigRequest"<<endl;
@@ -44,17 +44,17 @@ void stubCLI(MacController* macController){
         switch(caracter){
             case '+':
             {
-                macController->cliL2Interface->macStartCommand();
+                macController.cliL2Interface->macStartCommand();
                 break;
             }
             case '/':
             {
-                macController->cliL2Interface->macStopCommand();
+                macController.cliL2Interface->macStopCommand();
                 break;
             }
             case '*':
             {
-                macController->cliL2Interface->macConfigRequestCommand();
+                macController.cliL2Interface->macConfigRequestCommand();
                 break;
             }
             default:
