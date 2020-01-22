@@ -45,7 +45,7 @@ ProtocolControl::enqueueControlSdus(
     if(!macController->flagBS)      //If it is UE, then it only has BS "attached"
         index=0;
     else{
-        index = macController->getIndex(macAddress);
+        index = macController->currentParameters->getIndex(macAddress);
 
         if(index==-1){
             if(verbose) cout<<"[ProtocolControl] Did not find MAC Address to send MACC SDU."<<endl;
@@ -100,7 +100,7 @@ ProtocolControl::decodeControlSdus(
         }
         else{   //RxMetrics
             //Verify index
-            int index = macController->getIndex(macAddress);
+            int index = macController->currentParameters->getIndex(macAddress);
             if(index == -1){
                 if(verbose) cout<<"[ProtocolControl] Error decoding RxMetrics."<<endl;
                 exit(1);

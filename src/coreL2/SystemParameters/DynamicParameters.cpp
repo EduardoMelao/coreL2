@@ -7,7 +7,7 @@
 @Arquive name : DynamicParameters.cpp
 @Classification : System Parameters - Dynamic Parameters
 @
-@Last alteration : January 16th, 2019
+@Last alteration : January 21st, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -44,7 +44,7 @@ DynamicParameters::fillDynamicVariables(
     vector<uint8_t> _mimoOpenLoopClosedLoop,    //Mimo OpenLoop/ClosedLoop flag
     vector<uint8_t> _mimoPrecoding,             //Mimo Precoding index
     vector<uint8_t> _transmissionPowerControl,  //Transmission Power Control
-    vector<uint8_t> _rxMetricPeriodicity)       //Rx Metrics Periodicity in number of subframes
+    uint8_t _rxMetricPeriodicity)               //Rx Metrics Periodicity in number of subframes
 {
     //Redefine vectors
     ulReservation = _ulReservations;
@@ -80,7 +80,7 @@ DynamicParameters::fillDynamicVariables(
     mimoOpenLoopClosedLoop.push_back(_mimoOpenLoopClosedLoop);
     mimoPrecoding.push_back(_mimoPrecoding);
     transmissionPowerControl.push_back(_transmissionPowerControl);
-    rxMetricPeriodicity.push_back(_rxMetricPeriodicity);
+    rxMetricPeriodicity = _rxMetricPeriodicity;
 }
 
 void 
@@ -100,7 +100,7 @@ DynamicParameters::serialize(
     }
 	//Least significant 4 bits: mcsUplink[index]
 	//Most significant 4 bits: rxMetrixPeriodicity
-	auxiliary = (mcsUplink[index]&15)|((rxMetricPeriodicity[index]&15)<<4);
+	auxiliary = (mcsUplink[index]&15)|((rxMetricPeriodicity&15)<<4);
 	push_bytes(bytes, auxiliary);
 
     push_bytes(bytes, ulReservation[index].target_ue_id);
@@ -137,8 +137,8 @@ DynamicParameters::deserialize(
     pop_bytes(ulReservation[0].target_ue_id, bytes);
 
     pop_bytes(auxiliary, bytes);
-    rxMetricPeriodicity.push_back((auxiliary>>4)&15);   //Last 4 bits
-    mcsUplink.push_back(auxiliary&15);                    //First 4 bits
+    rxMetricPeriodicity = ((auxiliary>>4)&15);  //Last 4 bits
+    mcsUplink.push_back(auxiliary&15);          //First 4 bits
 }
 
 void 
@@ -241,17 +241,10 @@ DynamicParameters::setTPC(
 
 void 
 DynamicParameters::setRxMetricPeriodicity(
-    uint8_t macAddress,                 //UE Mac Address
     uint8_t _rxMetricPeriodicity)       //Rx Metrics Periodicity in number of subframes
-{
-    int index = getIndex(macAddress);
-    if(index==-1){
-        cout<<"[DynamicParameters] Error setting RxMetricsPeriodicity: MAC Address not found."<<endl;
-        exit(1);
-    }
-    
-    if(rxMetricPeriodicity[index]!=_rxMetricPeriodicity){
-        rxMetricPeriodicity[index] = _rxMetricPeriodicity;     //Assign new values
+{    
+    if(rxMetricPeriodicity!=_rxMetricPeriodicity){
+        rxMetricPeriodicity = _rxMetricPeriodicity; //Assign new values
     }
 }
 
@@ -383,15 +376,8 @@ DynamicParameters::getTPC(
 }
 
 uint8_t 
-DynamicParameters::getRxMetricsPeriodicity(
-    uint8_t macAddress) //UE MAC Address
-{
-    int index = getIndex(macAddress);
-    if(index==-1){
-        cout<<"[DynamicParameters] Error getting RX Metrics Periodicity: macAddress not found."<<endl;
-        exit(1);
-    }
-    return rxMetricPeriodicity[index];
+DynamicParameters::getRxMetricsPeriodicity(){
+    return rxMetricPeriodicity;
 }
 
 int
