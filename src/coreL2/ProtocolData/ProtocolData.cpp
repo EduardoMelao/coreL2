@@ -7,7 +7,7 @@
 @Arquive name : ProtocolData.cpp
 @Classification : Protocol Data
 @
-@Last alteration : January 20th, 2020
+@Last alteration : January 22nd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -67,6 +67,7 @@ ProtocolData::enqueueDataSdus(
                         macController->queueConditionVariables[0].notify_all();
                 }
                 else{
+                    //If BS, find which Condition Variable corresponds to the UE MAC Address
                     for(int i=0;i<macController->staticParameters->numberUEs;i++){
                         if(macController->staticParameters->ulReservations[i].target_ue_id==macController->mux->getMacAddress(bufferData)){
                             if(macController->mux->emptyPdu(macController->staticParameters->ulReservations[i].target_ue_id)){

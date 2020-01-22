@@ -7,7 +7,7 @@
 @Arquive name : LinkAdaptation.cpp
 @Classification : Link Adaptation
 @
-@Last alteration : January 10th, 2019
+@Last alteration : January 22nd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -34,7 +34,7 @@ AdaptiveModulationCoding::getCqiConvertToMcs(
 {
     uint8_t mcs;  //Modulation and Coding Scheme
     
-    //PROVISIONAL: do some calculations here with cqi and returns
+    //#TODO: do some calculations here with cqi and returns
     mcs = 9;
     return mcs;
 }

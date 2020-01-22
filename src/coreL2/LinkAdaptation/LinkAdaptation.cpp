@@ -7,7 +7,7 @@
 @Arquive name : LinkAdaptation.cpp
 @Classification : Link Adaptation
 @
-@Last alteration : January 10th, 2019
+@Last alteration : January 22nd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -34,7 +34,7 @@ LinkAdaptation::getSinrConvertToCqi(
 {   
     uint8_t cqiUplink;      //Channel Quality Information
     
-    //PROVISIONAL: do some calculations/Look tables here
+    //#TODO: do some calculations/Look tables here
     cqiUplink = 10;
     return cqiUplink;
 }

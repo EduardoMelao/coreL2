@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : January 20th, 2020
+@Last alteration : January 22nd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -177,7 +177,7 @@ ProtocolControl::receiveInterlayerMessages(
             if(messageSize<=0)
                 continue;
             
-            //Manually convert char* to string ////////////////// PROVISIONAL: CONSIDERING ONLY SubframeRx.Start messages
+            //Manually convert char* to string //#TODO: CONSIDERING ONLY SubframeRx.Start messages! Implement other types of messages (necessary?)
             int subFrameStartSize = 18;
             for(int i=0;i<subFrameStartSize;i++)
                 message+=buffer[i];

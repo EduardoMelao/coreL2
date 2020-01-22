@@ -122,7 +122,7 @@ typedef struct{
  * @brief Struct for BSSubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    float sinr;         //Signal to Interference plus Noise Ratio //PROVISIONAL: range to be defined
+    float sinr;         //Signal to Interference plus Noise Ratio //#TODO: define range. Is float enough?
     
     /**
      * @brief Serialization method for the struct
@@ -147,9 +147,9 @@ typedef struct{
  * @brief Struct for UESubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    float sinr;         //Signal to Interference plus Noise Ratio               //PROVISIONAL: range to be defined
-    uint8_t ri;         //RI (Rank Indicator), part of RxMetrics.               //PROVOSIONAL: range to be defined
-    uint8_t pmi;        //PMI: Pre-Coding Matrix Indicator, part of RxMetrics.  //PROVISIONAL: range to be defined
+    float sinr;         //Signal to Interference plus Noise Ratio               //#TODO: define range
+    uint8_t ri;         //RI (Rank Indicator), part of RxMetrics.               //#TODO: define range
+    uint8_t pmi;        //PMI: Pre-Coding Matrix Indicator, part of RxMetrics.  //#TODO: define range
     uint8_t ssm[17];    //SSM: Spectrum Sensing Measurement. Array of 132 bits
     
     /**
@@ -191,9 +191,9 @@ typedef struct{
  * @brief Struct for RxMetrics, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    uint8_t cqiReport;      //Channel Quality information based on SINR report.     //PROVISIONAL: range to be defined
-    uint8_t ri;             //RI (Rank Indicator), part of RxMetrics.               //PROVOSIONAL: range to be defined
-    uint8_t pmi;            //PMI: Pre-Coding Matrix Indicator, part of RxMetrics.  //PROVISIONAL: range to be defined
+    uint8_t cqiReport;      //Channel Quality information based on SINR report.     //#TODO: define range
+    uint8_t ri;             //RI (Rank Indicator), part of RxMetrics.               //#TODO: define range
+    uint8_t pmi;            //PMI: Pre-Coding Matrix Indicator, part of RxMetrics.  //#TODO: define range
     uint8_t ssReport[17];   //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 132 bits
     mutex accessControl;    //Mutex to control parameters access/alteration
     

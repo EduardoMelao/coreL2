@@ -27,7 +27,7 @@ public:
 
     /**
      * @brief Performs calculation of Spectrum Sensing base on measurements from PHY
-     * @param spectrumSensingMeasurement (PROVISIONAL)Array of 132 bits with measurements from PHY
+     * @param spectrumSensingMeasurement (#TODO) Verify if it is an array of 132 bits with measurements from PHY
      * @param spectrumSensingReport Array of 132 bits with information about spectrum sensing
      */
     static void calculateSpectrumSensingValue(uint8_t* spectrumSensingMeasurement, uint8_t* spectrumSensingReport);

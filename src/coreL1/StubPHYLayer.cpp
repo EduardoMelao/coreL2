@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : January 9th, 2019
+@Last alteration : January 22nd, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -262,7 +262,7 @@ CoreL1::encoding(){
 	serializedMacPdu.assign(buffer, buffer+size);
 	MacPDU macPdu(serializedMacPdu);
 
-    //PROVISIONAL: Obtain MAC address form MAC header to identify port soon
+    //#TODO: Remove this part of code because PHY will not send MAC PDUs via sockets
 	macAddress = (((uint8_t)macPdu.mac_data_[0])&15);
 
     //Send PDU through correct port  
@@ -347,7 +347,7 @@ CoreL1::receiveInterlayerMessage(){
 
     //Control message stream
     while(messageSize>0){
-        //PROVISIONAL: CONSIDERING ONLY SubframeTx.Start messages
+        //#TODO: Implement other messages decoding because it is CONSIDERING ONLY SubframeTx.Start messages
 
         //Manually convert char* to string
     	int subFrameStartSize = 18;

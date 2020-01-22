@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : January 20th, 2020
+@Last alteration : January 22nd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -19,8 +19,9 @@ Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
 Direction : Diretoria de Operações (DO)
 UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
-@Description : This module creates and starts TUN Interface reading, Control 
-    SDUs creation, Sending timeout control, and decoding threads. Also, management of
+@Description : This module manages all System execution modes and their transitions. 
+    It creates and starts TUN Interface reading, Control SDUs creation, 
+    Sending timeout control, and decoding threads. Also, management of
     SDUs concatenation into PDU is made by this module.
 */
 
@@ -62,7 +63,7 @@ MacController::initialize(){
 
 void
 MacController::recordDynamicParameters(){
-    //PROVISIONAL IMPLEMENTATION, considering only one UE
+    //#TODO: consider more than one UE
     //Copy values from Dynamic Parameters to Static Parameters
     macConfigRequest->dynamicParameters->getUlReservations(staticParameters->ulReservations);
     if(flagBS) staticParameters->mcsDownlink[0] = macConfigRequest->dynamicParameters->getMcsDownlink(staticParameters->ulReservations[0].target_ue_id);
@@ -83,7 +84,7 @@ MacController::manager(){
         switch(currentMacMode){
             case STANDBY_MODE:
             {
-                //Provisional. Here, system waits for MacStartCommand
+                //System waits for MacStartCommand
                 cout<<"\n\n[MacController] ___________ System in STANDBY mode. ___________\n\n Press any key to start functionalities (MacStartCommand)..."<<endl;
                 
                 //Clear cin buffer
@@ -144,7 +145,7 @@ MacController::manager(){
                 threads = new thread[3+staticParameters->numberUEs];
 
                 //Create Multiplexer and set its TransmissionQueues
-                mux = new Multiplexer(staticParameters->mtu[0], currentMacAddress, ipMacTable, MAXSDUS, flagBS, verbose);     //PROVISIONAL UNIVERSAL MTU
+                mux = new Multiplexer(staticParameters->mtu[0], currentMacAddress, ipMacTable, MAXSDUS, flagBS, verbose);
                 if(flagBS){
                     for(int i=0;i<staticParameters->numberUEs;i++)
                         mux->setTransmissionQueue(staticParameters->ulReservations[i].target_ue_id);
@@ -169,7 +170,7 @@ MacController::manager(){
                 //Set subframe counter to zero
                 subframeCounter = 0;
 
-                //---------------PROVISIONAL: NEED TO SEND PHYConfig.Request here!--------------------------
+                //#TODO: Send PHYConfig.Request here!
 
                 //Set MAC mode to start mode
                 currentMacMode = START_MODE;
@@ -192,7 +193,7 @@ MacController::manager(){
                 //System will continue to execute idle threads (receiving from L1 or L3) and wait for other commands e.g MacConfigRequestCommand or MacStopCommand
                 cout<<"\n\n[MacController] ___________ System in IDLE mode. ___________\n"<<endl;
 
-                //PROVISIONAL: query user to change state to RECONFIG_MODE or STOP_MODE
+                //#TODO: query CLI to change state to RECONFIG_MODE or STOP_MODE 
                 char caracter;  //Caracter received from user on BS
                 if(flagBS){
                     cout<<"[MacController] Enter '%' for ConfigRequest or '*' for Stop."<<endl;
@@ -387,7 +388,7 @@ MacController::timeoutController(
     int index)      //Index that identifies the condition variable and destination MAC Address of a queue 
 {
     //Timeout declaration: static
-    chrono::nanoseconds timeout = chrono::milliseconds(staticParameters->ipTimeout[index]);    //ms
+    chrono::milliseconds timeout = chrono::milliseconds(staticParameters->ipTimeout[index]);    //ms
 
     //Communication infinite loop
     while(currentMacMode!=STOP_MODE){
