@@ -9,7 +9,6 @@
 
 #include <iostream>
 #include <fstream>		//File stream
-#include <mutex>		//Mutex semaphore
 #include <string.h>
 #include <vector>
 #include <cstdlib>
@@ -25,10 +24,8 @@ using namespace lib5grange;
  */
 class CurrentParameters : public DynamicParameters{
 private:
-	bool flagBS;								//Flag to indicate if current equipment is BS or UE
-	fstream defaultConfigurationsFile;		//File descriptor to default configuration
-	mutex staticParametersMutex;			//Semaphore to control class variables alteration and file writing
-	bool verbose;							//Verbosity flag
+	bool flagBS;					//Flag to indicate if current equipment is BS or UE
+	bool verbose;					//Verbosity flag
 
 	//Static(only) information as described on spreadsheet L1-L2_InterfaceDefinition.xlsx
 	uint8_t numberUEs;				//[4 bits] Number of UserEquipments attached (ignore in case of UEs);
@@ -53,9 +50,15 @@ public:
 	~CurrentParameters();
 
 	/**
-	 * @brief Reads TXT archive with static & default information and starts class variables
+	 * @brief Reads TXT archive with system parameters information and stores it in class variables
+	 * @param fileName Name of the file to be read
 	 */
-	void readTxtStaticParameters();
+	void readTxtSystemParameters(string fileName);
+
+	/**
+	 * @brief Writes into TXT archive all current System parameters
+	 */
+	void recordTxtCurrentParameters();
 
 	/**
 	 * @brief Loads a Dynamic Parameters Object with default information read from file

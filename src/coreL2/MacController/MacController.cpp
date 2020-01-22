@@ -36,6 +36,11 @@ MacController::MacController(
 
     //Assign TUN device name
     deviceNameTun = _deviceNameTun;
+
+    //Read default information from file and record to "Current.txt"
+    currentParameters = new CurrentParameters(verbose);
+    currentParameters->readTxtSystemParameters("Default.txt");
+    currentParameters->recordTxtCurrentParameters();
 }
 
 MacController::~MacController(){
@@ -52,7 +57,10 @@ MacController::~MacController(){
     delete [] threads;
     delete [] queueConditionVariables;
     delete ipMacTable;
-    delete currentParameters;
+
+    //Delete current system parameters only shutting down MAC
+    //In STOP_MODE, there's no need no destroy system parameters
+    if(currentMacMode!=STOP_MODE) delete currentParameters;
 }
 
 void
@@ -62,6 +70,7 @@ MacController::initialize(){
 }
 
 void
+<<<<<<< HEAD
 MacController::recordDynamicParameters(){
     //#TODO: consider more than one UE
     //Copy values from Dynamic Parameters to Static Parameters
@@ -70,6 +79,8 @@ MacController::recordDynamicParameters(){
 }
 
 void
+=======
+>>>>>>> Implemented persistence of Current System parameters
 MacController::manager(){
     //Infinite loop
     while(1){
@@ -92,9 +103,8 @@ MacController::manager(){
                 //All MAC Initial Configuration is made here
                 cout<<"\n\n[MacController] ___________ System in CONFIG mode. ___________\n"<<endl;
 
-                //Read txt static and default parameters and initialize flagBS and currentMacAddress values
-                currentParameters = new CurrentParameters(verbose);
-                currentParameters->readTxtStaticParameters();
+                //Read txt current parameters and initialize flagBS and currentMacAddress values
+                currentParameters->readTxtSystemParameters("Current.txt");
                 flagBS = currentParameters->isBaseStation();
                 currentMacAddress = currentParameters->getCurrentMacAddress();
                 
@@ -150,7 +160,7 @@ MacController::manager(){
                 //Create ProtocolControl to deal with MACC SDUs
                 protocolControl = new ProtocolControl(this, verbose);
 
-                //Initialize Dynamic Parameters class
+                //Initialize CLI-Interface class
                 macConfigRequest = new MacConfigRequest(verbose);
 
                 //Fill dynamic Parameters with default parameters (stating system)
@@ -220,8 +230,12 @@ MacController::manager(){
                             sendPdu(0);
                     }
 
-                    //System will update static parameters
-                    recordDynamicParameters();
+                    //System will update current parameters with cli-updated parameters
+                    //#TODO: configure 2 types of parameter update: cli update and system update. System will update ULMCS, DLMCS and FLUT -> setSystemParameters()
+                    currentParameters->setCLIParameters(macConfigRequest->dynamicParameters);
+
+                    //Record updated parameters
+                    currentParameters->recordTxtCurrentParameters();
 
                     //Then, if it is BS, it will send Dynamic Parameters to UE via MACC SDU for reconfiguration
                     if(flagBS){
