@@ -66,6 +66,7 @@ MacController::~MacController(){
 void
 MacController::initialize(){
     currentMacMode = STANDBY_MODE;      //Initializes MAC in STANDBY_MODE 
+    cout<<"\n\n[MacController] ___________ System entering STANDBY mode. ___________\n"<<endl;
     manager();
 }
 
@@ -77,20 +78,17 @@ MacController::manager(){
             case STANDBY_MODE:
             {
                 //System waits for MacStartCommand
-                cout<<"\n\n[MacController] ___________ System in STANDBY mode. ___________\n\n Press any key to start functionalities (MacStartCommand)..."<<endl;
-                
-                //Clear cin buffer
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cin.get();
-                currentMacMode = CONFIG_MODE;
+                if(cliL2Interface->getMacStartCommandFlag()){
+                    cliL2Interface->setMacStartCommandFlag(false);
+                    currentMacMode = CONFIG_MODE;
+                    cout<<"\n\n[MacController] ___________ System entering CONFIG mode. ___________\n"<<endl;
+                }
             }
             break;
 
             case CONFIG_MODE:
             {
                 //All MAC Initial Configuration is made here
-                cout<<"\n\n[MacController] ___________ System in CONFIG mode. ___________\n"<<endl;
 
                 //Read txt current parameters and initialize flagBS and currentMacAddress values
                 currentParameters->readTxtSystemParameters("Current.txt");
@@ -165,38 +163,51 @@ MacController::manager(){
 
                 //Set MAC mode to start mode
                 currentMacMode = START_MODE;
+
+                cout<<"\n\n[MacController] ___________ System entering START mode. ___________\n"<<endl;
             }
             break;
 
             case START_MODE:
             {
                 //Here, all system threads that don't execute only in IDLE_MODE are started.
-                cout<<"\n\n[MacController] ___________ System in START mode. ___________\n"<<endl;
                 startThreads();
 
                 //Set MAC mode to start mode
                 currentMacMode = IDLE_MODE;
+
+                cout<<"\n\n[MacController] ___________ System entering IDLE mode. ___________\n"<<endl;
             }
             break;
 
             case IDLE_MODE:
             {
                 //System will continue to execute idle threads (receiving from L1 or L3) and wait for other commands e.g MacConfigRequestCommand or MacStopCommand
-                cout<<"\n\n[MacController] ___________ System in IDLE mode. ___________\n"<<endl;
 
-                //#TODO: query CLI to change state to RECONFIG_MODE or STOP_MODE 
-                char caracter;  //Caracter received from user on BS
-                if(flagBS){
-                    cout<<"[MacController] Enter '%' for ConfigRequest or '*' for Stop."<<endl;
-                    cin>>caracter;
-                    while(caracter!='%'&&caracter!='*'){
-                        cin>>caracter;
+                //In BS, check for ConfigRequest or Stop commands. In UE, check onlu for Stop commands
+                if(flagBS){     //On BS
+                    if(cliL2Interface->getMacConfigRequestCommandFlag()){           //MacConfigRequest
+                        cliL2Interface->setMacConfigRequestCommandFlag(false);      //Reset flag
+                        currentMacMode = RECONFIG_MODE;                             //Change mode
+
+                        cout<<"\n\n[MacController] ___________ System entering RECONFIG mode. ___________\n"<<endl;
                     }
+                    else{ 
+                        if(cliL2Interface->getMacStopCommandFlag()){                //Mac Stop
+                            cliL2Interface->setMacStopCommandFlag(false);           //Reset flag
+                            currentMacMode = STOP_MODE;                             //Change mode
 
-                    if(caracter=='%')
-                        currentMacMode = RECONFIG_MODE;
-                    else
-                        currentMacMode = STOP_MODE;
+                            cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
+                        }
+                    }
+                }
+                else{       //On UE
+                    if(cliL2Interface->getMacStopCommandFlag()){                    //Mac Stop  
+                        cliL2Interface->setMacStopCommandFlag(false);               //Reset flag
+                        currentMacMode = STOP_MODE;                                 //Change mode
+
+                        cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
+                    }
                 }
             }
             break;
@@ -205,8 +216,6 @@ MacController::manager(){
             {
                 //To enter RECONFIG_MODE, TX and RX must be disabled
                 if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX){
-                    cout<<"\n\n[MacController] ___________ System in RECONFIG mode. ___________\n"<<endl;
-
                     //Before alterations, send all PDUs currently enqueued, if they exist
                     if(flagBS){     //If this is BS
                         for(int i=0;i<currentParameters->getNumberUEs();i++){
@@ -248,13 +257,13 @@ MacController::manager(){
             {
                 //To enter RECONFIG_MODE, TX, RX and Tun modes must be disabled
                 if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX && currentMacTunMode==TUN_DISABLED){
-                    cout<<"\n\n[MacController] ___________ System in STOP mode. ___________\n"<<endl;
-
                     //Destroy all System environment variables
                     this->~MacController();
 
                     //System will stand in STANDBY mode until it is started again
                     currentMacMode = STANDBY_MODE;
+
+                    cout<<"\n\n[MacController] ___________ System entering STANDBY mode. ___________\n"<<endl;
                 }
             }
             break;

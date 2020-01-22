@@ -32,6 +32,37 @@ using namespace std;
 #include "MacController/MacController.h"
 #include "SystemParameters/CurrentParameters.h"
 
+void stubCLI(MacController* macController){
+    while(1){
+        char caracter;
+        cout<<"Press + for MacStart, / for MacStop and * for MacConfigRequest"<<endl;
+        cin>>caracter;
+        while(caracter!='+'&&caracter!='/'&&caracter!='*'){
+            cin>>caracter;
+        }
+
+        switch(caracter){
+            case '+':
+            {
+                macController->cliL2Interface->macStartCommand();
+                break;
+            }
+            case '/':
+            {
+                macController->cliL2Interface->macStopCommand();
+                break;
+            }
+            case '*':
+            {
+                macController->cliL2Interface->macConfigRequestCommand();
+                break;
+            }
+            default:
+            break;
+        }
+    }
+}
+
 int main(int argc, char** argv){
     uint8_t* macAddresses;          //Array of 5GR MAC Addresses of attached equipments
     int numberEquipments;           //Number of attached equipments
@@ -52,6 +83,10 @@ int main(int argc, char** argv){
 
     //Create a new MacController (main module) object
     MacController equipment(devname, verbose);
+
+    //Start stub to replace CLI
+    thread t1(stubCLI, ref(equipment));
+    t1.detach();
 
     //Finally, start threads
     equipment.initialize();
