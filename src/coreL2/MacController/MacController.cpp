@@ -45,7 +45,7 @@ MacController::MacController(
 
 MacController::~MacController(){
     delete [] rxMetrics;
-    delete macConfigRequest;
+    delete cliL2Interface;
     delete protocolControl;
     delete protocolData;
     delete mux;
@@ -150,10 +150,10 @@ MacController::manager(){
                 protocolControl = new ProtocolControl(this, verbose);
 
                 //Initialize CLI-Interface class
-                macConfigRequest = new MacConfigRequest(verbose);
+                cliL2Interface = new CLIL2Interface(verbose);
 
                 //Fill dynamic Parameters with default parameters (stating system)
-                currentParameters->loadDynamicParametersDefaultInformation(macConfigRequest->dynamicParameters);
+                currentParameters->loadDynamicParametersDefaultInformation(cliL2Interface->dynamicParameters);
 
                 //Create a RxMetrics array
                 rxMetrics = new RxMetrics[currentParameters->getNumberUEs()];
@@ -221,7 +221,7 @@ MacController::manager(){
 
                     //System will update current parameters with cli-updated parameters
                     //#TODO: configure 2 types of parameter update: cli update and system update. System will update ULMCS, DLMCS and FLUT -> setSystemParameters()
-                    currentParameters->setCLIParameters(macConfigRequest->dynamicParameters);
+                    currentParameters->setCLIParameters(cliL2Interface->dynamicParameters);
 
                     //Record updated parameters
                     currentParameters->recordTxtCurrentParameters();
@@ -233,7 +233,7 @@ MacController::manager(){
                         //Send a MACC SDU to each UE attached
                         for(int i=0;i<currentParameters->getNumberUEs();i++){
                             dynamicParametersBytes.clear();
-                            macConfigRequest->dynamicParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
+                            cliL2Interface->dynamicParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
                             protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), currentParameters->getMacAddress(i));
                         }
                     }
@@ -454,7 +454,7 @@ MacController::decoding()
     //If it is UE, increase subframeCounter
     if(!flagBS){    
         subframeCounter++;
-        if(subframeCounter==macConfigRequest->dynamicParameters->getRxMetricsPeriodicity()){
+        if(subframeCounter==cliL2Interface->dynamicParameters->getRxMetricsPeriodicity()){
             rxMetricsReport();
             subframeCounter = 0;
         }
@@ -509,7 +509,7 @@ MacController::setMacPduStaticInformation(
 
 void 
 MacController::managerDynamicParameters(
-    uint8_t* bytesDynamicParameters,    //Serialized bytes from MacConfigRequest object
+    uint8_t* bytesDynamicParameters,    //Serialized bytes from CLIL2Interface object
     size_t numberBytes)                 //Number of bytes of serialized information
 {
     vector<uint8_t> serializedBytes;        //Vector to be used for deserialization
@@ -518,7 +518,7 @@ MacController::managerDynamicParameters(
         serializedBytes.push_back(bytesDynamicParameters[i]);   //Copy information form array to vector
 
     //Deserialize bytes
-    macConfigRequest->dynamicParameters->deserialize(serializedBytes);
+    cliL2Interface->dynamicParameters->deserialize(serializedBytes);
 
     if(verbose) cout<<"[MacController] Dynamic Parameters were managed successfully."<<endl;
 

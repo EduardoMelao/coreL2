@@ -26,7 +26,7 @@
 #include "../../common/lib5grange/lib5grange.h"
 #include "../../common/libMac5gRange/libMac5gRange.h"
 #include "../SystemParameters/CurrentParameters.h"
-#include "../MacConfigRequest/MacConfigRequest.h"
+#include "../CLIL2Interface/CLIL2Interface.h"
 
 using namespace std;
 
@@ -73,7 +73,7 @@ public:
     TransmissionProtocol* transmissionProtocol;     //Object to transmit packets to L1 and L3
     L1L2Interface* l1l2Interface;   //Object to manage interface with L1
     CurrentParameters* currentParameters;           //Object with static/default parameters read from a file
-    MacConfigRequest* macConfigRequest;             //Object to configure dynamic parameters 
+    CLIL2Interface* cliL2Interface;             //Object to configure dynamic parameters 
     RxMetrics* rxMetrics;                           //Array of Reception Metrics for each UE
     
     /**
@@ -131,7 +131,7 @@ public:
 
     /**
      * @brief [UE] Receives bytes referring to Dynamic Parameters coming by MACC SDU and updates class with new information
-     * @param bytesDynamicParameters Serialized bytes from MacConfigRequest object
+     * @param bytesDynamicParameters Serialized bytes from CLIL2Interface object
      * @param size Number of bytes of serialized information
      */ 
     void managerDynamicParameters(uint8_t* bytesDynamicParameters, size_t numberBytes);

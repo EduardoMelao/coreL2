@@ -112,7 +112,7 @@ DynamicParameters::serialize(
 
 	push_bytes(bytes, transmissionPowerControl[index]);
 
-	if(verbose) cout<<"[MacConfigRequest] Serialization successful with "<<bytes.size()<<" bytes of information."<<endl;
+	if(verbose) cout<<"[CLIL2Interface] Serialization successful with "<<bytes.size()<<" bytes of information."<<endl;
 }
 
 void
