@@ -388,6 +388,11 @@ int
 DynamicParameters::getIndex(
     uint8_t macAddress)     //UE MAC Address
 {
+	//Index of BS is always zero
+	if(macAddress==0)
+		return 0;
+
+	//Look for index
     for(int i=0;i<ulReservation.size();i++)
         if(macAddress==ulReservation[i].target_ue_id)
             return i;
