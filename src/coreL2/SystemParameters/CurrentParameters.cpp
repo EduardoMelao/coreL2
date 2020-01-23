@@ -45,6 +45,7 @@ CurrentParameters::readTxtSystemParameters(
 	//Gets FlagBS
 	getline(readingConfigurationsFile, readBuffer);
 	flagBS = (readBuffer[0]=='1');
+	readBuffer.clear();
 
 	//Gets Number of UEs (only BS)
 	if(flagBS){
@@ -184,7 +185,7 @@ CurrentParameters::recordTxtCurrentParameters(){
 	writingConfigurationsFile.open("Current.txt", ofstream::out | ofstream::trunc);
 
 	//Writes FlagBS
-	writingConfigurationsFile << flagBS? '1':'0' <<'\n';
+	writingConfigurationsFile << (int)(flagBS&1) <<'\n';
 
 	//Writes Number of UEs (only BS)
 	if(flagBS){
@@ -199,8 +200,8 @@ CurrentParameters::recordTxtCurrentParameters(){
 
 	//Writes FUSION LUT matrix values (only BS)
 	if(flagBS){
-		writingConfigurationsFile << to_string((int)fLutMatrix[0]);	//First position
-		for(int i=0;i<17;i++){
+		writingConfigurationsFile << to_string(fLutMatrix[0]);	//First position
+		for(int i=1;i<17;i++){
 			writingConfigurationsFile << ' ' << to_string((int)fLutMatrix[i]);
 		}
 		writingConfigurationsFile << '\n';	//Add line break at the end of this line
@@ -221,7 +222,7 @@ CurrentParameters::recordTxtCurrentParameters(){
 		writingConfigurationsFile << to_string((int)ssreportWaitTimeout) << '\n';
 
 		//Writes Acknowledgement waiting Timeout
-		writingConfigurationsFile << to_string((int)ofdm_gfdm) << '\n';
+		writingConfigurationsFile << to_string((int)ackWaitTimeout) << '\n';
 	}
 
 	//Loop to write the parameters numberUEs times
@@ -286,6 +287,11 @@ CurrentParameters::getNumerology(){
 bool 
 CurrentParameters::isGFDM(){
 	return (ofdm_gfdm==1);
+}
+
+uint16_t
+CurrentParameters::getMTU(){
+	return mtu;
 }
 
 uint16_t

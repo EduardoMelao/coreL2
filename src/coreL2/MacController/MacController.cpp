@@ -41,11 +41,16 @@ MacController::MacController(
     currentParameters = new CurrentParameters(verbose);
     currentParameters->readTxtSystemParameters("Default.txt");
     currentParameters->recordTxtCurrentParameters();
+
+    //Initialize CLI-Interface class
+	cliL2Interface = new CLIL2Interface(verbose);
+
+	//Fill dynamic Parameters with default parameters (stating system)
+	currentParameters->loadDynamicParametersDefaultInformation(cliL2Interface->dynamicParameters);
 }
 
 MacController::~MacController(){
     delete [] rxMetrics;
-    delete macConfigRequest;
     delete protocolControl;
     delete protocolData;
     delete mux;
@@ -59,13 +64,17 @@ MacController::~MacController(){
     delete ipMacTable;
 
     //Delete current system parameters only shutting down MAC
-    //In STOP_MODE, there's no need no destroy system parameters
-    if(currentMacMode!=STOP_MODE) delete currentParameters;
+    //In STOP_MODE, there's no need no destroy system parameters and CLI interface
+    if(currentMacMode!=STOP_MODE){
+    	delete cliL2Interface;
+    	delete currentParameters;
+    }
 }
 
 void
 MacController::initialize(){
     currentMacMode = STANDBY_MODE;      //Initializes MAC in STANDBY_MODE 
+    cout<<"\n\n[MacController] ___________ System entering STANDBY mode. ___________\n"<<endl;
     manager();
 }
 
@@ -77,26 +86,26 @@ MacController::manager(){
             case STANDBY_MODE:
             {
                 //System waits for MacStartCommand
-                cout<<"\n\n[MacController] ___________ System in STANDBY mode. ___________\n\n Press any key to start functionalities (MacStartCommand)..."<<endl;
-                
-                //Clear cin buffer
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cin.get();
-                currentMacMode = CONFIG_MODE;
+                if(cliL2Interface->getMacStartCommandFlag()){
+                    cliL2Interface->setMacStartCommandFlag(false);
+                    currentMacMode = CONFIG_MODE;
+                    cout<<"\n\n[MacController] ___________ System entering CONFIG mode. ___________\n"<<endl;
+                }
             }
             break;
 
             case CONFIG_MODE:
             {
                 //All MAC Initial Configuration is made here
-                cout<<"\n\n[MacController] ___________ System in CONFIG mode. ___________\n"<<endl;
 
                 //Read txt current parameters and initialize flagBS and currentMacAddress values
                 currentParameters->readTxtSystemParameters("Current.txt");
                 flagBS = currentParameters->isBaseStation();
                 currentMacAddress = currentParameters->getCurrentMacAddress();
                 
+            	//Fill dynamic Parameters with current parameters (updating system)
+            	currentParameters->loadDynamicParametersDefaultInformation(cliL2Interface->dynamicParameters);
+
                 //Define IP-MAC correlation table creating and initializing a MacAddressTable with static informations (HARDCODE)
                 ipMacTable = new MacAddressTable(verbose);
                 uint8_t addressEntry0[4] = {10,0,0,10};
@@ -149,12 +158,6 @@ MacController::manager(){
                 //Create ProtocolControl to deal with MACC SDUs
                 protocolControl = new ProtocolControl(this, verbose);
 
-                //Initialize CLI-Interface class
-                macConfigRequest = new MacConfigRequest(verbose);
-
-                //Fill dynamic Parameters with default parameters (stating system)
-                currentParameters->loadDynamicParametersDefaultInformation(macConfigRequest->dynamicParameters);
-
                 //Create a RxMetrics array
                 rxMetrics = new RxMetrics[currentParameters->getNumberUEs()];
 
@@ -165,38 +168,51 @@ MacController::manager(){
 
                 //Set MAC mode to start mode
                 currentMacMode = START_MODE;
+
+                cout<<"\n\n[MacController] ___________ System entering START mode. ___________\n"<<endl;
             }
             break;
 
             case START_MODE:
             {
                 //Here, all system threads that don't execute only in IDLE_MODE are started.
-                cout<<"\n\n[MacController] ___________ System in START mode. ___________\n"<<endl;
                 startThreads();
 
                 //Set MAC mode to start mode
                 currentMacMode = IDLE_MODE;
+
+                cout<<"\n\n[MacController] ___________ System entering IDLE mode. ___________\n"<<endl;
             }
             break;
 
             case IDLE_MODE:
             {
                 //System will continue to execute idle threads (receiving from L1 or L3) and wait for other commands e.g MacConfigRequestCommand or MacStopCommand
-                cout<<"\n\n[MacController] ___________ System in IDLE mode. ___________\n"<<endl;
 
-                //#TODO: query CLI to change state to RECONFIG_MODE or STOP_MODE 
-                char caracter;  //Caracter received from user on BS
-                if(flagBS){
-                    cout<<"[MacController] Enter '%' for ConfigRequest or '*' for Stop."<<endl;
-                    cin>>caracter;
-                    while(caracter!='%'&&caracter!='*'){
-                        cin>>caracter;
+                //In BS, check for ConfigRequest or Stop commands. In UE, check onlu for Stop commands
+                if(flagBS){     //On BS
+                    if(cliL2Interface->getMacConfigRequestCommandFlag()){           //MacConfigRequest
+                        cliL2Interface->setMacConfigRequestCommandFlag(false);      //Reset flag
+                        currentMacMode = RECONFIG_MODE;                             //Change mode
+
+                        cout<<"\n\n[MacController] ___________ System entering RECONFIG mode. ___________\n"<<endl;
                     }
+                    else{ 
+                        if(cliL2Interface->getMacStopCommandFlag()){                //Mac Stop
+                            cliL2Interface->setMacStopCommandFlag(false);           //Reset flag
+                            currentMacMode = STOP_MODE;                             //Change mode
 
-                    if(caracter=='%')
-                        currentMacMode = RECONFIG_MODE;
-                    else
-                        currentMacMode = STOP_MODE;
+                            cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
+                        }
+                    }
+                }
+                else{       //On UE
+                    if(cliL2Interface->getMacStopCommandFlag()){                    //Mac Stop  
+                        cliL2Interface->setMacStopCommandFlag(false);               //Reset flag
+                        currentMacMode = STOP_MODE;                                 //Change mode
+
+                        cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
+                    }
                 }
             }
             break;
@@ -205,8 +221,6 @@ MacController::manager(){
             {
                 //To enter RECONFIG_MODE, TX and RX must be disabled
                 if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX){
-                    cout<<"\n\n[MacController] ___________ System in RECONFIG mode. ___________\n"<<endl;
-
                     //Before alterations, send all PDUs currently enqueued, if they exist
                     if(flagBS){     //If this is BS
                         for(int i=0;i<currentParameters->getNumberUEs();i++){
@@ -221,7 +235,7 @@ MacController::manager(){
 
                     //System will update current parameters with cli-updated parameters
                     //#TODO: configure 2 types of parameter update: cli update and system update. System will update ULMCS, DLMCS and FLUT -> setSystemParameters()
-                    currentParameters->setCLIParameters(macConfigRequest->dynamicParameters);
+                    currentParameters->setCLIParameters(cliL2Interface->dynamicParameters);
 
                     //Record updated parameters
                     currentParameters->recordTxtCurrentParameters();
@@ -233,7 +247,7 @@ MacController::manager(){
                         //Send a MACC SDU to each UE attached
                         for(int i=0;i<currentParameters->getNumberUEs();i++){
                             dynamicParametersBytes.clear();
-                            macConfigRequest->dynamicParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
+                            cliL2Interface->dynamicParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
                             protocolControl->enqueueControlSdus(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), currentParameters->getMacAddress(i));
                         }
                     }
@@ -248,13 +262,13 @@ MacController::manager(){
             {
                 //To enter RECONFIG_MODE, TX, RX and Tun modes must be disabled
                 if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX && currentMacTunMode==TUN_DISABLED){
-                    cout<<"\n\n[MacController] ___________ System in STOP mode. ___________\n"<<endl;
-
                     //Destroy all System environment variables
                     this->~MacController();
 
                     //System will stand in STANDBY mode until it is started again
                     currentMacMode = STANDBY_MODE;
+
+                    cout<<"\n\n[MacController] ___________ System entering STANDBY mode. ___________\n"<<endl;
                 }
             }
             break;
@@ -454,7 +468,7 @@ MacController::decoding()
     //If it is UE, increase subframeCounter
     if(!flagBS){    
         subframeCounter++;
-        if(subframeCounter==macConfigRequest->dynamicParameters->getRxMetricsPeriodicity()){
+        if(subframeCounter==cliL2Interface->dynamicParameters->getRxMetricsPeriodicity()){
             rxMetricsReport();
             subframeCounter = 0;
         }
@@ -509,7 +523,7 @@ MacController::setMacPduStaticInformation(
 
 void 
 MacController::managerDynamicParameters(
-    uint8_t* bytesDynamicParameters,    //Serialized bytes from MacConfigRequest object
+    uint8_t* bytesDynamicParameters,    //Serialized bytes from CLIL2Interface object
     size_t numberBytes)                 //Number of bytes of serialized information
 {
     vector<uint8_t> serializedBytes;        //Vector to be used for deserialization
@@ -518,7 +532,7 @@ MacController::managerDynamicParameters(
         serializedBytes.push_back(bytesDynamicParameters[i]);   //Copy information form array to vector
 
     //Deserialize bytes
-    macConfigRequest->dynamicParameters->deserialize(serializedBytes);
+    cliL2Interface->dynamicParameters->deserialize(serializedBytes);
 
     if(verbose) cout<<"[MacController] Dynamic Parameters were managed successfully."<<endl;
 
