@@ -41,11 +41,16 @@ MacController::MacController(
     currentParameters = new CurrentParameters(verbose);
     currentParameters->readTxtSystemParameters("Default.txt");
     currentParameters->recordTxtCurrentParameters();
+
+    //Initialize CLI-Interface class
+	cliL2Interface = new CLIL2Interface(verbose);
+
+	//Fill dynamic Parameters with default parameters (stating system)
+	currentParameters->loadDynamicParametersDefaultInformation(cliL2Interface->dynamicParameters);
 }
 
 MacController::~MacController(){
     delete [] rxMetrics;
-    delete cliL2Interface;
     delete protocolControl;
     delete protocolData;
     delete mux;
@@ -59,8 +64,11 @@ MacController::~MacController(){
     delete ipMacTable;
 
     //Delete current system parameters only shutting down MAC
-    //In STOP_MODE, there's no need no destroy system parameters
-    if(currentMacMode!=STOP_MODE) delete currentParameters;
+    //In STOP_MODE, there's no need no destroy system parameters and CLI interface
+    if(currentMacMode!=STOP_MODE){
+    	delete cliL2Interface;
+    	delete currentParameters;
+    }
 }
 
 void
@@ -95,6 +103,9 @@ MacController::manager(){
                 flagBS = currentParameters->isBaseStation();
                 currentMacAddress = currentParameters->getCurrentMacAddress();
                 
+            	//Fill dynamic Parameters with current parameters (updating system)
+            	currentParameters->loadDynamicParametersDefaultInformation(cliL2Interface->dynamicParameters);
+
                 //Define IP-MAC correlation table creating and initializing a MacAddressTable with static informations (HARDCODE)
                 ipMacTable = new MacAddressTable(verbose);
                 uint8_t addressEntry0[4] = {10,0,0,10};
@@ -146,12 +157,6 @@ MacController::manager(){
 
                 //Create ProtocolControl to deal with MACC SDUs
                 protocolControl = new ProtocolControl(this, verbose);
-
-                //Initialize CLI-Interface class
-                cliL2Interface = new CLIL2Interface(verbose);
-
-                //Fill dynamic Parameters with default parameters (stating system)
-                currentParameters->loadDynamicParametersDefaultInformation(cliL2Interface->dynamicParameters);
 
                 //Create a RxMetrics array
                 rxMetrics = new RxMetrics[currentParameters->getNumberUEs()];

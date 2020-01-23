@@ -46,6 +46,10 @@ DynamicParameters::fillDynamicVariables(
     vector<uint8_t> _transmissionPowerControl,  //Transmission Power Control
     uint8_t _rxMetricPeriodicity)               //Rx Metrics Periodicity in number of subframes
 {
+	//Copy fLutMatrix
+	for(int i=0;i<17;i++)
+		fLutMatrix[i]=_fLutMatrix[i];
+
     //Redefine vectors
     ulReservation = _ulReservations;
     mcsDownlink = _mcsDownlink;
