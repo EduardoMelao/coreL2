@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : January 22nd, 2020
+@Last alteration : January 24th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -86,8 +86,8 @@ MacController::manager(){
             case STANDBY_MODE:
             {
                 //System waits for MacStartCommand
-                if(cliL2Interface->getMacStartCommandFlag()){
-                    cliL2Interface->setMacStartCommandFlag(false);
+                if(cliL2Interface->getMacStartCommandSignal()){
+                    cliL2Interface->setMacStartCommandSignal(false);
                     currentMacMode = CONFIG_MODE;
                     cout<<"\n\n[MacController] ___________ System entering CONFIG mode. ___________\n"<<endl;
                 }
@@ -191,25 +191,25 @@ MacController::manager(){
 
                 //In BS, check for ConfigRequest or Stop commands. In UE, check onlu for Stop commands
                 if(flagBS){     //On BS
-                    if(cliL2Interface->getMacConfigRequestCommandFlag()){           //MacConfigRequest
-                        cliL2Interface->setMacConfigRequestCommandFlag(false);      //Reset flag
-                        currentMacMode = RECONFIG_MODE;                             //Change mode
+                    if(cliL2Interface->getMacConfigRequestCommandSignal()){           //MacConfigRequest
+                        cliL2Interface->setMacConfigRequestCommandSignal(false);      //Reset flag
+                        currentMacMode = RECONFIG_MODE;                                 //Change mode
 
                         cout<<"\n\n[MacController] ___________ System entering RECONFIG mode. ___________\n"<<endl;
                     }
                     else{ 
-                        if(cliL2Interface->getMacStopCommandFlag()){                //Mac Stop
-                            cliL2Interface->setMacStopCommandFlag(false);           //Reset flag
-                            currentMacMode = STOP_MODE;                             //Change mode
+                        if(cliL2Interface->getMacStopCommandSignal()){                //Mac Stop
+                            cliL2Interface->setMacStopCommandSignal(false);           //Reset flag
+                            currentMacMode = STOP_MODE;                                 //Change mode
 
                             cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
                         }
                     }
                 }
                 else{       //On UE
-                    if(cliL2Interface->getMacStopCommandFlag()){                    //Mac Stop  
-                        cliL2Interface->setMacStopCommandFlag(false);               //Reset flag
-                        currentMacMode = STOP_MODE;                                 //Change mode
+                    if(cliL2Interface->getMacStopCommandSignal()){                    //Mac Stop  
+                        cliL2Interface->setMacStopCommandSignal(false);               //Reset flag
+                        currentMacMode = STOP_MODE;                                     //Change mode
 
                         cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
                     }

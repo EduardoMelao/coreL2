@@ -7,7 +7,7 @@
 @Arquive name : CLIL2Interface.cpp
 @Classification : CLI - L2 Interface
 @
-@Last alteration : January 22nd, 2019
+@Last alteration : January 24th, 2019
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -30,9 +30,9 @@ CLIL2Interface::CLIL2Interface(
     verbose = _verbose;
 
     //Initialize flags with FALSE
-    macStartCommandFlag = false;
-    macStopCommandFlag = false;
-    macConfigRequestCommandFlag = false;
+    macStartCommandSignal = false;
+    macStopCommandSignal = false;
+    macConfigRequestCommandSignal = false;
 
     //Initialize DynamicParameters object
     dynamicParameters = new DynamicParameters(verbose);
@@ -45,52 +45,52 @@ CLIL2Interface::~CLIL2Interface(){
 
 void
 CLIL2Interface::macStartCommand(){
-    setMacStartCommandFlag(true);
+    setMacStartCommandSignal(true);
 }
 
 void
 CLIL2Interface::macStopCommand(){
-    setMacStopCommandFlag(true);
+    setMacStopCommandSignal(true);
 }
 
 void
 CLIL2Interface::macConfigRequestCommand(){
-    setMacConfigRequestCommandFlag(true);
+    setMacConfigRequestCommandSignal(true);
 }
 
 void
-CLIL2Interface::setMacStartCommandFlag(
-    bool _macStartCommandFlag)          //New Flag balue
+CLIL2Interface::setMacStartCommandSignal(
+    bool _macStartCommandSignal)          //New Flag value
 {
-    macStartCommandFlag = _macStartCommandFlag;
+    macStartCommandSignal = _macStartCommandSignal;
 }
 
 void
-CLIL2Interface::setMacStopCommandFlag(
-    bool _macStopCommandFlag)           //New Flag balue
+CLIL2Interface::setMacStopCommandSignal(
+    bool _macStopCommandFlag)           //New Flag value
 {
-    macStopCommandFlag = _macStopCommandFlag;
+    macStopCommandSignal = _macStopCommandFlag;
 }
 
 void
-CLIL2Interface::setMacConfigRequestCommandFlag(
-    bool _macConfigRequestCommandFlag)  //New Flag balue
+CLIL2Interface::setMacConfigRequestCommandSignal(
+    bool _macConfigRequestCommandSignal)  //New Flag value
 {
-    macConfigRequestCommandFlag = _macConfigRequestCommandFlag;
+    macConfigRequestCommandSignal = _macConfigRequestCommandSignal;
 }
 
 bool
-CLIL2Interface::getMacStartCommandFlag(){
-   return macStartCommandFlag;
+CLIL2Interface::getMacStartCommandSignal(){
+   return macStartCommandSignal;
 }
 
 bool
-CLIL2Interface::getMacStopCommandFlag(){
-   return macStopCommandFlag;
+CLIL2Interface::getMacStopCommandSignal(){
+   return macStopCommandSignal;
 }
 
 bool
-CLIL2Interface::getMacConfigRequestCommandFlag(){
-   return macConfigRequestCommandFlag;
+CLIL2Interface::getMacConfigRequestCommandSignal(){
+   return macConfigRequestCommandSignal;
 }
 

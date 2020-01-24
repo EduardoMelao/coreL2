@@ -25,9 +25,9 @@ using namespace lib5grange;
  */
 class CLIL2Interface{
 private:
-	bool macStartCommandFlag;			//Flag to control CLI's request of MacStartCommand
-	bool macStopCommandFlag;			//Flag to control CLI's request of MacStopCommand
-	bool macConfigRequestCommandFlag;	//Flag to control CLI's request of MacConfigRequestCommand
+	bool macStartCommandSignal;			//Flag to control CLI's request of MacStartCommand
+	bool macStopCommandSignal;			//Flag to control CLI's request of MacStopCommand
+	bool macConfigRequestCommandSignal;	//Flag to control CLI's request of MacConfigRequestCommand
 	bool verbose;						//Verbosity flag
 
 public:
@@ -62,40 +62,40 @@ public:
 	//Flag Setters
 	/**
 	 * @brief Sets MacStartCommandFlag value
-	 * @param _macStartCommandFlag New flag value
+	 * @param _macStartCommandSignal New flag value
 	 */	
-	void setMacStartCommandFlag(bool _macStartCommandFlag);
+	void setMacStartCommandSignal(bool _macStartCommandSignal);
 
 	/**
 	 * @brief Sets MacStopCommandFlag value
-	 * @param _macStopCommandFlag New flag value
+	 * @param _macStopCommandSignal New flag value
 	 */	
-	void setMacStopCommandFlag(bool _macStopCommandFlag);
+	void setMacStopCommandSignal(bool _macStopCommandSignal);
 
 	/**
 	 * @brief Sets MacConfigRequestCommandFlag value
-	 * @param _macConfigRequestCommandFlag New flag value
+	 * @param _macConfigRequestCommandSignal New flag value
 	 */	
-	void setMacConfigRequestCommandFlag(bool _macConfigRequestCommandFlag);
+	void setMacConfigRequestCommandSignal(bool _macConfigRequestCommandSignal);
 
 	//Flag Getters
 	/**
 	 * @brief Gets MacStartCommandFlag current value
 	 * @returns Flag value
 	 */
-	bool getMacStartCommandFlag();
+	bool getMacStartCommandSignal();
 
 	/**
 	 * @brief Gets MacStopCommandFlag current value
 	 * @returns Flag value
 	 */
-	bool getMacStopCommandFlag();
+	bool getMacStopCommandSignal();
 
 	/**
 	 * @brief Gets MacConfigRequestCommandFlag current value
 	 * @returns Flag value
 	 */
-	bool getMacConfigRequestCommandFlag();
+	bool getMacConfigRequestCommandSignal();
 };
 
 #endif  //INCLUDED_MAC_CONFIG_REQUEST_H
