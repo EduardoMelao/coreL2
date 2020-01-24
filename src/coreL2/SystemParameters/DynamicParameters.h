@@ -43,7 +43,7 @@ public:
 	/**
 	 * @brief Default constructor
 	 */
-	DynamicParameters::DynamicParameters() { }
+	DynamicParameters() { }
 
     /**
 	 *@brief Empty constructor for Dynamic Variables

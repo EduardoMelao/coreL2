@@ -46,6 +46,10 @@ DynamicParameters::fillDynamicVariables(
     vector<uint8_t> _transmissionPowerControl,  //Transmission Power Control
     uint8_t _rxMetricPeriodicity)               //Rx Metrics Periodicity in number of subframes
 {
+	//Copy fLutMatrix
+	for(int i=0;i<17;i++)
+		fLutMatrix[i]=_fLutMatrix[i];
+
     //Redefine vectors
     ulReservation = _ulReservations;
     mcsDownlink = _mcsDownlink;
@@ -112,7 +116,7 @@ DynamicParameters::serialize(
 
 	push_bytes(bytes, transmissionPowerControl[index]);
 
-	if(verbose) cout<<"[MacConfigRequest] Serialization successful with "<<bytes.size()<<" bytes of information."<<endl;
+	if(verbose) cout<<"[CLIL2Interface] Serialization successful with "<<bytes.size()<<" bytes of information."<<endl;
 }
 
 void
@@ -384,6 +388,11 @@ int
 DynamicParameters::getIndex(
     uint8_t macAddress)     //UE MAC Address
 {
+	//Index of BS is always zero
+	if(macAddress==0)
+		return 0;
+
+	//Look for index
     for(int i=0;i<ulReservation.size();i++)
         if(macAddress==ulReservation[i].target_ue_id)
             return i;

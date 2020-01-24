@@ -68,7 +68,7 @@ ProtocolData::enqueueDataSdus(
                 }
                 else{
                     //If BS, find which Condition Variable corresponds to the UE MAC Address
-                    for(int i=0;i<macController->currentParameters->getNumberUEs;i++){
+                    for(int i=0;i<macController->currentParameters->getNumberUEs();i++){
                         if(macController->currentParameters->getMacAddress(i)==macController->mux->getMacAddress(bufferData)){
                             if(macController->mux->emptyPdu(macController->currentParameters->getMacAddress(i))){
                                 macController->queueConditionVariables[i].notify_all();

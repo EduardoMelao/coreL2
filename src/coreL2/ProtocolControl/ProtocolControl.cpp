@@ -115,7 +115,7 @@ ProtocolControl::decodeControlSdus(
             macController->rxMetrics[index].deserialize(rxMetricsBytes);
 
             //Calculate new DLMCS
-            macController->macConfigRequest->dynamicParameters->setMcsDownlink(macAddress,AdaptiveModulationCoding::getCqiConvertToMcs(macController->rxMetrics[index].cqiReport));
+            macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress,AdaptiveModulationCoding::getCqiConvertToMcs(macController->rxMetrics[index].cqiReport));
 
             if(verbose){
                 cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received.";
@@ -203,7 +203,7 @@ ProtocolControl::receiveInterlayerMessages(
                 sourceMacAddress = macController->decoding();
 
                 //Calculates new UL MCS and sets it
-                macController->macConfigRequest->dynamicParameters->setMcsUplink(sourceMacAddress, AdaptiveModulationCoding::getCqiConvertToMcs(cqi));
+                macController->cliL2Interface->dynamicParameters->setMcsUplink(sourceMacAddress, AdaptiveModulationCoding::getCqiConvertToMcs(cqi));
             }
             if(message=="UESubframeRx.Start"){
                 UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
