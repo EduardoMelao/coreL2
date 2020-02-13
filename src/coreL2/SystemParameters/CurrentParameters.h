@@ -37,6 +37,10 @@ private:
 	uint8_t ackWaitTimeout;			//[4 bits] Acknowledgement Wait Timeout time in number of subframes
 
 public:
+	/**
+	 * @brief Empty constructor
+	 */
+	CurrentParameters();
 
 	/**
 	 * @brief Constructs object and read file to initialize all variables with persisted information

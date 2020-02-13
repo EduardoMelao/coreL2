@@ -7,7 +7,7 @@
 @Arquive name : ProtocolData.cpp
 @Classification : Protocol Data
 @
-@Last alteration : January 22nd, 2020
+@Last alteration : February 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -88,7 +88,7 @@ ProtocolData::enqueueDataSdus(
                 if(macSendingPDU==-1)
                     continue;
 
-                //Else, macSendingPDU contains the Transmission Queue destination MAC to perform PDU sending. 
+                //Else, macSendingPDU contains the Aggregation  queue destination MAC to perform PDU sending. 
                 //So, perform PDU sending
                 macController->sendPdu(macSendingPDU);
 

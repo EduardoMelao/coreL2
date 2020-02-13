@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : January 22nd, 2020
+@Last alteration : February 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -33,50 +33,6 @@ ProtocolControl::ProtocolControl(
 }
 
 ProtocolControl::~ProtocolControl() { }
-
-void 
-ProtocolControl::enqueueControlSdus(
-    uint8_t* controlSdu,    //MAC Control SDU
-    size_t numberBytes,     //Size of MACC SDU in Bytes
-    uint8_t macAddress)     //Destination MAC Address
-{
-    //Find index to identify the queue referring to this UE
-    int index;  //Index of destination UE in queues
-    if(!macController->flagBS)      //If it is UE, then it only has BS "attached"
-        index=0;
-    else{
-        index = macController->currentParameters->getIndex(macAddress);
-
-        if(index==-1){
-            if(verbose) cout<<"[ProtocolControl] Did not find MAC Address to send MACC SDU."<<endl;
-            exit(1);
-        }
-    }
-
-    if(macController->mux->emptyPdu(macAddress))
-        	macController->queueConditionVariables[index].notify_all();     //index 0: UE has only BS as equipment
-
-    char sduBuffer[MAXIMUM_BUFFER_LENGTH];   //Buffer to store SDU for futher transmission
-
-    //Copy MACC SDU
-    for(int i=0;i<numberBytes;i++)
-        sduBuffer[i] = controlSdu[i];
-    
-    //Lock Mutex
-    lock_guard<mutex> lk(macController->queueMutex);
-
-    //Try to add SDU to sending queue
-    int macSendingPDU = macController->mux->addSdu(sduBuffer, numberBytes, 0, macAddress);
-
-    //If addSdu returns -1, SDU was added successfully
-    if(macSendingPDU==-1) return;
-
-    //Else, queue is full. Need to send PDU
-    macController->sendPdu(macSendingPDU);
-
-    //Then, adds Sdu
-    macController->mux->addSdu(sduBuffer, numberBytes, 0, macAddress);
-}
 
 void 
 ProtocolControl::decodeControlSdus(

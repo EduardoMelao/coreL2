@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : January 24th, 2020
+@Last alteration : February 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -144,13 +144,13 @@ MacController::manager(){
                  */
                 threads = new thread[3+currentParameters->getNumberUEs()];
 
-                //Create Multiplexer and set its TransmissionQueues
+                //Create Multiplexer and set its AggregationQueues
                 mux = new Multiplexer(currentParameters->getMTU(), currentMacAddress, ipMacTable, MAXSDUS, flagBS, verbose);     //PROVISIONAL UNIVERSAL MTU
                 if(flagBS){
                     for(int i=0;i<currentParameters->getNumberUEs();i++)
-                        mux->setTransmissionQueue(currentParameters->getMacAddress(i));
+                        mux->setAggregationQueue(currentParameters->getMacAddress(i));
                 }
-                else mux->setTransmissionQueue(0);      //UE needs a single Transmission Queue to BS
+                else mux->setAggregationQueue(0);      //UE needs a single Aggregation  queue to BS
 
                 //Create ProtocolData to deal with MACD SDUs
                 protocolData = new ProtocolData(this, macHigh, verbose);
@@ -313,7 +313,7 @@ MacController::startThreads(){
 
 void 
 MacController::sendPdu(
-    uint8_t macAddress)     //Destination MAC Address of TransmissionQueue in the Multiplexer
+    uint8_t macAddress)     //Destination MAC Address of AggregationQueue in the Multiplexer
 {
     //Declaration of PDU buffers: data and control
     char bufferPdu[MAXIMUM_BUFFER_LENGTH];
@@ -454,16 +454,16 @@ MacController::decoding()
     ProtocolPackage pdu(buffer, numberDecodingBytes , verbose);
     pdu.removeMacHeader();
 
-    //Create TransmissionQueue object to help unstacking SDUs contained in the PDU
-    TransmissionQueue *transmissionQueue = pdu.getMultiplexedSDUs();
-    while((numberDecodingBytes = transmissionQueue->getSDU(buffer))>0){
+    //Create AggregationQueue object to help unstacking SDUs contained in the PDU
+    AggregationQueue *aggregationQueue = pdu.getMultiplexedSDUs();
+    while((numberDecodingBytes = aggregationQueue->getSDU(buffer))>0){
         //Test if it is Control SDU
-        if(transmissionQueue->getCurrentDataControlFlag()==0)
+        if(aggregationQueue->getCurrentDataControlFlag()==0)
             protocolControl->decodeControlSdus(buffer, numberDecodingBytes, macAddress);
         else    //Data SDU
             protocolData->decodeDataSdus(buffer, numberDecodingBytes);
     }
-    delete transmissionQueue;
+    delete aggregationQueue;
 
     //If it is UE, increase subframeCounter
     if(!flagBS){    

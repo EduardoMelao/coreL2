@@ -7,7 +7,7 @@
 @Arquive name : ProtocolPackage.cpp
 @Classification : Protocol Package
 @
-@Last alteration : November 13th, 2019
+@Last alteration : February 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -137,9 +137,9 @@ ProtocolPackage::removeMacHeader(){
     
 }
 
-TransmissionQueue* 
+AggregationQueue* 
 ProtocolPackage::getMultiplexedSDUs(){
-    TransmissionQueue* tqueue = new TransmissionQueue(buffer, numberSDUs, sizes, flagsDataControl, verbose);
+    AggregationQueue* tqueue = new AggregationQueue(buffer, numberSDUs, sizes, flagsDataControl, verbose);
     return tqueue;
 }
 

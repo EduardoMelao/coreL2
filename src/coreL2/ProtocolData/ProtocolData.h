@@ -11,7 +11,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "MacHighQueue.h"
+#include "../SduBuffers/SduBuffers.h"
 #include "../Multiplexer/Multiplexer.h"
 #include "../MacController/MacController.h"
 

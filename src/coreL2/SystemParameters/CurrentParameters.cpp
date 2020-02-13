@@ -7,7 +7,7 @@
 @Arquive name : CurrentParameters.cpp
 @Classification : System Parameters - Current Parameters
 @
-@Last alteration : January 22nd, 2019
+@Last alteration : February 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -24,6 +24,8 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 */
 
 #include "CurrentParameters.h"
+
+CurrentParameters::CurrentParameters() { }
 
 CurrentParameters::CurrentParameters(
 		bool _verbose)		//Verbosity flag

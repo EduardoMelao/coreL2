@@ -13,10 +13,10 @@
 #include <mutex>                //std::mutex
 #include <condition_variable>   //std::condition_variable
 
-#include "../ProtocolData/MacHighQueue.h"
+#include "../SduBuffers/SduBuffers.h"
 #include "../ProtocolPackage/ProtocolPackage.h"
-#include "../Multiplexer/MacAddressTable/MacAddressTable.h"
-#include "../Multiplexer/TransmissionQueue.h"
+#include "../SduBuffers/MacAddressTable/MacAddressTable.h"
+#include "../Multiplexer/AggregationQueue.h"
 #include "../Multiplexer/Multiplexer.h"
 #include "../ReceptionProtocol/ReceptionProtocol.h"
 #include "../TransmissionProtocol/TransmissionProtocol.h"
@@ -66,7 +66,7 @@ private:
 
 public:
     condition_variable* queueConditionVariables;    //Condition variables to manage access to Multiplexer Queues
-    mutex queueMutex;               //Mutex to control access to Transmission Queue
+    mutex queueMutex;               //Mutex to control access to Aggregation  queue
 	Multiplexer* mux;               //Multiplexes various SDUs to multiple destinations
     bool flagBS;                    //BaseStation flag: 1 for BS; 0 for UE
     ReceptionProtocol* receptionProtocol;           //Object to receive packets from L1 and L3
