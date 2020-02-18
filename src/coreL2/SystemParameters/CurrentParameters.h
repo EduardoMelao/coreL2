@@ -145,6 +145,12 @@ public:
 	 * @param dynamicParameters Pointer to DynamicParameters object, which stores parameters modified
 	 */
 	void setCLIParameters(DynamicParameters* dynamicParameters);
+
+	/**
+	 * @brief [ONLY UE] Sets Current Parameters according to dynamic parameters sent by BS
+	 * @param dynamicParameters Pointer to DynamicParameters object, which stores parameters modified
+	 */
+	void setUEParameters(DynamicParameters* dynamicParameters);
 };
 
 

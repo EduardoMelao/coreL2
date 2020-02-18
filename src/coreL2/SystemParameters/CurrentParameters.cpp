@@ -7,7 +7,7 @@
 @Arquive name : CurrentParameters.cpp
 @Classification : System Parameters - Current Parameters
 @
-@Last alteration : February 13th, 2020
+@Last alteration : February 18th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -358,4 +358,14 @@ CurrentParameters::setCLIParameters(
 		mimoPrecoding[getIndex(ulReservation[i].target_ue_id)] = dynamicParameters->getMimoPrecoding(ulReservation[i].target_ue_id);
 		transmissionPowerControl[getIndex(ulReservation[i].target_ue_id)] = dynamicParameters->getTPC(ulReservation[i].target_ue_id);
 	}
+}
+
+void
+CurrentParameters::setUEParameters(
+	DynamicParameters* dynamicParameters)	//Pointer to DynamicParameters object, which stores parameters modified
+{
+	//The only diference from setCLIParameters is MCS Uplink
+	mcsUplink[0] = dynamicParameters->getMcsUplink(ulReservation[0].target_ue_id);
+
+	setCLIParameters(dynamicParameters);
 }

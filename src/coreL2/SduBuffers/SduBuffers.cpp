@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : February 13th, 2020
+@Last alteration : February 18th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -60,7 +60,7 @@ SduBuffers::~SduBuffers(){
 }
 
 void 
-SduBuffers::reading(
+SduBuffers::enqueueingDataSdus(
     MacModes & currentMacMode,          //Current MAC execution mode
     MacTunModes & currentMacTunMode)    //Current MAC execution Tun mode
 {
