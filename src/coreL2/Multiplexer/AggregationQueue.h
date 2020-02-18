@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "../ProtocolPackage/ProtocolPackage.h"
-#include "MacAddressTable/MacAddressTable.h"
 using namespace std;
 
 //Predefinition of class ProtocolPackage 

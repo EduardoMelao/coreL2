@@ -38,7 +38,8 @@ Multiplexer::Multiplexer(
     maxNumberBytesX = _maxNumberBytesX;
     verbose = _verbose;
 
-    //Alloc AggregationQueues for each destination
+    //Alloc array of number of Bytes aggregated and AggregationQueues for each destination
+    numberBytesAgrX = new uint16_t[numberDestinations];
     aggregationQueueX = new AggregationQueue*[numberDestinations];
     for(int i=0;i<numberDestinations;i++)
         aggregationQueueX[i] = new AggregationQueue(maxNumberBytesX[i], sourceMac, destinationMacX[i], verbose);
@@ -50,9 +51,8 @@ Multiplexer::~Multiplexer()
 {
     for(int i=0;i<numberDestinations;i++)
         delete aggregationQueueX[i];
-    delete[] destinationMacX;
+    delete[] aggregationQueueX;
     delete[] numberBytesAgrX;
-    delete[] maxNumberBytesX; 
 }
 
 void 
@@ -95,7 +95,7 @@ Multiplexer::getPdu(
     //Test if index is valid
     if(index==-1){
         if(verbose) cout<<"[Multiplexer] Bad MAC Address found trying to Get SDU from Aggregation Queue."<<endl;
-        return;
+        return -1;
     }
 
     //Test if there are bytes to return

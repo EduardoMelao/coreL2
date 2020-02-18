@@ -223,10 +223,15 @@ MacController::manager(){
                     //Record updated parameters
                     currentParameters->recordTxtCurrentParameters();
 
+                    //Set MacConfigRequestSignal to false
+                    cliL2Interface->setMacConfigRequestCommandSignal(false);
+
                     //Set MAC mode back to idle mode
                     currentMacMode = IDLE_MODE;
 
                     if(verbose) cout<<"[MacController] Current Parameters updated correctly."<<endl;
+
+                    cout<<"\n\n[MacController] ___________ System entering IDLE mode. ___________\n"<<endl;
                 }
             }
             break;
@@ -259,7 +264,7 @@ void
 MacController::startThreads(){
 
     //TUN queue control thread (only IDLE mode)
-    threads[0] = thread(&SduBuffers::enqueueingDataSdus, ref(currentMacMode), ref(currentMacTxMode));
+    threads[0] = thread(&SduBuffers::enqueueingDataSdus, sduBuffers,  ref(currentMacMode), ref(currentMacTunMode));
 
     //Control messages from PHY reading (only IDLE mode)
     threads[1] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl, ref(currentMacMode), ref(currentMacRxMode));
@@ -278,7 +283,7 @@ MacController::startThreads(){
 
 void
 MacController::provisionalScheduling(){
-    char bufferPdu[MAXIMUM_BUFFER_LENGTH];  //Buffer to store aggregated SDUs
+    char bufferSdu[MAXIMUM_BUFFER_LENGTH];  //Buffer to store aggregated SDUs
     ssize_t numberBytesRead = 0;            //Size of MAC SDU read in Bytes
     uint8_t macAddress;
     uint16_t maxNumberBytes = 1500;
@@ -290,15 +295,19 @@ MacController::provisionalScheduling(){
                 macAddress = currentParameters->getMacAddress(i);
                 if(sduBuffers->bufferStatusInformation(macAddress)){
                     //Fulfill bufferData with zeros 
-                    bzero(bufferPdu, MAXIMUM_BUFFER_LENGTH);
-
-                    //Gets next SDU from SduBuffers. Prority for MACC SDUs
-                    if(sduBuffers->getNumberControlSdus(macAddress))
-                        numberBytesRead = sduBuffers->getNextControlSdu(macAddress, bufferPdu);
-                    else
-                        numberBytesRead = sduBuffers->getNextDataSdu(macAddress, bufferPdu);
+                    bzero(bufferSdu, MAXIMUM_BUFFER_LENGTH);
 
                     Multiplexer* mux = new Multiplexer(1, currentMacAddress, &macAddress, &maxNumberBytes, verbose);
+
+                    //Gets next SDU from SduBuffers. Prority for MACC SDUs
+                    if(sduBuffers->getNumberControlSdus(macAddress)){
+                        numberBytesRead = sduBuffers->getNextControlSdu(macAddress, bufferSdu);
+                        mux->addSdu(bufferSdu, numberBytesRead, 0, macAddress);
+                    }
+                    else{
+                        numberBytesRead = sduBuffers->getNextDataSdu(macAddress, bufferSdu);
+                        mux->addSdu(bufferSdu, numberBytesRead, 1, macAddress);
+                    }
 
                     sendPdu(mux, macAddress);
                 }
@@ -401,7 +410,7 @@ MacController::decoding()
     bzero(buffer,sizeof(buffer));
 
     //Read packet from Socket
-    ssize_t numberDecodingBytes = receptionProtocol->receivePackageFromL1(buffer, MAXIMUM_BUFFER_LENGTH, macAddress);
+    ssize_t numberDecodingBytes = receptionProtocol->receivePackageFromL1(buffer, MAXIMUM_BUFFER_LENGTH);
 
     //Error checking
     if(numberDecodingBytes==-1 && verbose){ 

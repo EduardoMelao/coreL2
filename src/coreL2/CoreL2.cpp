@@ -64,12 +64,8 @@ void stubCLI(MacController & macController){
 }
 
 int main(int argc, char** argv){
-    uint8_t* macAddresses;          //Array of 5GR MAC Addresses of attached equipments
-    int numberEquipments;           //Number of attached equipments
-    int argumentsOffset;			//Arguments interpretation offset
     bool verbose = false;           //Verbosity flag
     char *devname = NULL;           //Tun interface name
-    bool flagBS;                    //Base Station flag: true if BS, false if UE
 
 	//Verify verbose
     if(argc==2){

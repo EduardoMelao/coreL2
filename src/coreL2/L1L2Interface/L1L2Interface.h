@@ -80,10 +80,9 @@ public:
      * @brief Received a PDU from PHY Layer
      * @param buffer Buffer where PDU is going to be store
      * @param maximumSize Maximum size of PDU
-     * @param macAddress Source MAC Address from which packet will be received
      * @returns Received PDU size in bytes
      */
-    ssize_t receivePdu(const char* buffer, size_t maximumSize, uint8_t macAddress);
+    ssize_t receivePdu(const char* buffer, size_t maximumSize);
 
     /**
      * @brief Sends Control Message to PHY

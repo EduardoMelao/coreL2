@@ -16,6 +16,10 @@
 #include "../AdaptiveModulationCoding/AdaptiveModulationCoding.h"
 #include "../Cosora/Cosora.h"
 
+
+//Initializing classes that will be defined in other .h files
+class MacController;
+
 /**
  * @brief Class to manage including MACC SDUs in Multiplexer and interlayer messages.
  */

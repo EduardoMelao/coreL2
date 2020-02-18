@@ -102,7 +102,7 @@ L1L2Interface::sendPdu(
 	MacPDU macPdu,          //MAC PDU structure
 	uint8_t macAddress)     //Destination MAC Address
 {
-    size_t numberSent;      //Number of Bytes sent to L1
+    ssize_t numberSent;      //Number of Bytes sent to L1
 
     //Perform CRC calculation
     size_t numberDataBytes = macPdu.mac_data_.size();   //Number of Data Bytes before inserting CRC
@@ -126,8 +126,7 @@ L1L2Interface::sendPdu(
 ssize_t
 L1L2Interface::receivePdu(
     const char* buffer,         //Buffer where PDU is going to be store
-    size_t maximumSize,         //Maximum PDU size
-    uint8_t macAddress)         //Port to identify socket to listen to
+    size_t maximumSize)         //Maximum PDU size
 {
     ssize_t returnValue;    //Value that will be returned at the end of this procedure
 

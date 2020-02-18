@@ -48,7 +48,7 @@ SduBuffers::SduBuffers(
 SduBuffers::~SduBuffers(){
     //Delete Dynamically allocated buffers for SDUs
     while(dataSduQueue.size()>0){
-        while(dataSduQueue[0].size>0){
+        while(dataSduQueue[0].size()>0){
             char* buffer1 = dataSduQueue[0].front();
             char* buffer2 = controlSduQueue[0].front();
             delete [] buffer1;
@@ -56,6 +56,7 @@ SduBuffers::~SduBuffers(){
             dataSduQueue[0].erase(dataSduQueue[0].begin());
             controlSduQueue[0].erase(controlSduQueue[0].begin());
         }
+        dataSduQueue.erase(dataSduQueue.begin());
     }
 }
 
@@ -160,7 +161,7 @@ SduBuffers::enqueueControlSdu(
     size_t numberBytes,
     uint8_t macAddress)
 {
-    lock_guard lk(controlMutex);
+    lock_guard<mutex> lk(controlMutex);
 
     //Dynamically allocate buffer for SDU
     char* buffer = new char[numberBytes];

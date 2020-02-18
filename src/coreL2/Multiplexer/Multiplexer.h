@@ -13,7 +13,6 @@
 
 #include "../Multiplexer/AggregationQueue.h"
 #include "../ProtocolPackage/ProtocolPackage.h"
-#include "MacAddressTable/MacAddressTable.h"
 
 #define MAX_BUFFERS 8       //Maximum number of SDU buffers (maximum destinations)
 using namespace std;
@@ -56,7 +55,7 @@ public:
      * @brief Gets the multiplexed PDU with MacHeader from AggregationQueue identified by MAC Address
      * @param buffer Buffer where PDU will be stored
      * @param macAddress Destination MAC Address of PDU
-     * @returns Size of the PDU
+     * @returns Size of the PDU; -1 for errors
      */    
     ssize_t getPdu(char* buffer, uint8_t macAddress);
     
