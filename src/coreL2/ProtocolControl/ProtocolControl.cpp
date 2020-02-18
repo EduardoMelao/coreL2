@@ -81,11 +81,13 @@ ProtocolControl::decodeControlSdus(
                 cout<<"RBS idle: "<<Cosora::spectrumSensingConvertToRBIdle(rxMetrics[index].ssReport)<<endl;
             }
 
-            //Changes current MAC mode to RECONFIG
-            currentMacMode = RECONFIG_MODE;
+            //If new MCS is different from old, enter RECONFIG mode
+            if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
+                //Changes current MAC mode to RECONFIG
+                currentMacMode = RECONFIG_MODE;
 
-            if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
-
+                if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+            }
         }   
     }
     else{    //UE needs to set its Dynamic Parameters and return ACK to BS
@@ -159,12 +161,17 @@ ProtocolControl::receiveInterlayerMessages(
 
                 //Calculates new UL MCS and sets it
                 macController->cliL2Interface->dynamicParameters->setMcsUplink(sourceMacAddress, AdaptiveModulationCoding::getCqiConvertToMcs(cqi));
+                
+                //If new MCS is different from old, enter RECONFIG mode
+                if(macController->cliL2Interface->dynamicParameters->getMcsUplink(sourceMacAddress)!=macController->currentParameters->getMcsUplink(sourceMacAddress)){
+                    //Changes current MAC mode to RECONFIG
+                    currentMacMode = RECONFIG_MODE;
 
-                //Changes current MAC mode to RECONFIG
-                currentMacMode = RECONFIG_MODE;
+                    //Set flag to indicate that UEs are out-of-date
+                    macController->currentParameters->setFlagUesOutdated(true);
 
-                if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
-
+                    if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+                }
             }
             if(message=="UESubframeRx.Start"){
                 UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters

@@ -30,6 +30,7 @@ CurrentParameters::CurrentParameters() { }
 CurrentParameters::CurrentParameters(
 		bool _verbose)		//Verbosity flag
 {
+	flagUesOutdated = false;
 	verbose = _verbose;
 }
 
@@ -323,6 +324,11 @@ CurrentParameters::getMacAddress(
 	return ulReservation[index].target_ue_id;
 }
 
+bool
+CurrentParameters::areUesOutdated(){
+	return flagUesOutdated;
+}
+
 void 
 CurrentParameters::setSystemParameters(
 	DynamicParameters* dynamicParameters)	//Pointer to DynamicParameters object, which stores parameters modified
@@ -368,4 +374,11 @@ CurrentParameters::setUEParameters(
 	mcsUplink[0] = dynamicParameters->getMcsUplink(ulReservation[0].target_ue_id);
 
 	setCLIParameters(dynamicParameters);
+}
+
+void
+CurrentParameters::setFlagUesOutdated(
+	bool _flagUesOutdated)	//New flag value
+{
+	flagUesOutdated = _flagUesOutdated;
 }

@@ -26,6 +26,7 @@ class CurrentParameters : public DynamicParameters{
 private:
 	bool flagBS;					//Flag to indicate if current equipment is BS or UE
 	bool verbose;					//Verbosity flag
+	bool flagUesOutdated;			//Flag to indicate if it is necessary to send current parameters to UE
 
 	//Static(only) information as described on spreadsheet L1-L2_InterfaceDefinition.xlsx
 	uint8_t numberUEs;				//[4 bits] Number of UserEquipments attached (ignore in case of UEs);
@@ -132,6 +133,11 @@ public:
 	 */
 	uint8_t getMacAddress(int index);
 
+	/**
+	 * @brief Gets flag to control if it is necessary to send information to UE
+	 */
+	bool areUesOutdated();
+
 	//SETTERS
 
 	/**
@@ -151,6 +157,12 @@ public:
 	 * @param dynamicParameters Pointer to DynamicParameters object, which stores parameters modified
 	 */
 	void setUEParameters(DynamicParameters* dynamicParameters);
+
+	/**
+	 * @brief [ONLY BS] Sets flag to send information to UEs
+	 * @param _flagUesOutdated New flag value
+	 */
+	void setFlagUesOutdated(bool _flagUesOutdated);
 };
 
 

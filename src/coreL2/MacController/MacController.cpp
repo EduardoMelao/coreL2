@@ -171,6 +171,9 @@ MacController::manager(){
                     if(cliL2Interface->getMacConfigRequestCommandSignal()){           //MacConfigRequest
                         currentMacMode = RECONFIG_MODE;                                 //Change mode
 
+                        //Set flag to indicate that UEs are out-of-date
+                        currentParameters->setFlagUesOutdated(true);
+
                         cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by CLI command. ___________\n"<<endl;
                     }
                     else{ 
@@ -208,15 +211,20 @@ MacController::manager(){
                             currentParameters->setCLIParameters(cliL2Interface->dynamicParameters);
                         else    //System parameters changed           
                            currentParameters->setSystemParameters(cliL2Interface->dynamicParameters);
+                        
+                        if(currentParameters->areUesOutdated()){
+                            //Perform MACC SDU construction to send to UE
+                            vector<uint8_t> dynamicParametersBytes;
 
-                        //Perform MACC SDU construction to send to UE
-                        vector<uint8_t> dynamicParametersBytes;
+                            //Send a MACC SDU to each UE attached
+                            for(int i=0;i<currentParameters->getNumberUEs();i++){
+                                dynamicParametersBytes.clear();
+                                cliL2Interface->dynamicParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
+                                sduBuffers->enqueueControlSdu(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), currentParameters->getMacAddress(i));
+                            }
 
-                        //Send a MACC SDU to each UE attached
-                        for(int i=0;i<currentParameters->getNumberUEs();i++){
-                            dynamicParametersBytes.clear();
-                            cliL2Interface->dynamicParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
-                            sduBuffers->enqueueControlSdu(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), currentParameters->getMacAddress(i));
+                            //Set 
+                            currentParameters->setFlagUesOutdated(false);
                         }
                     }
 
