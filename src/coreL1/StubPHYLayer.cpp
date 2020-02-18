@@ -183,7 +183,6 @@ CoreL1::sendPdu(
 
     //Verify if socket exists
     if(socketOut!=-1){
-
         //Send information in buffer to socket
         numberSent = sendto(socketsOut[socketOut], buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&(socketNames[socketOut])), sizeof(socketNames[socketOut]));
 

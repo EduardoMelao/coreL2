@@ -292,7 +292,7 @@ MacController::provisionalScheduling(){
         if(currentMacMode==IDLE_MODE){
             currentMacTxMode = ACTIVE_MODE_TX;
             for(int i=0;i<currentParameters->getNumberUEs();i++){
-                macAddress = currentParameters->getMacAddress(i);
+                macAddress = flagBS? currentParameters->getMacAddress(i) : 0;
                 if(sduBuffers->bufferStatusInformation(macAddress)){
                     //Fulfill bufferData with zeros 
                     bzero(bufferSdu, MAXIMUM_BUFFER_LENGTH);
