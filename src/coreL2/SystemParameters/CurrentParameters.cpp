@@ -69,9 +69,11 @@ CurrentParameters::readTxtSystemParameters(
 	readBuffer.clear();
 
 	//Gets Fusion LUT matrix default value (only BS)
-	getline(readingConfigurationsFile, readBuffer);
-	fLutMatrix = stoi(readBuffer);
-	readBuffer.clear();
+	if(flagBS){
+		getline(readingConfigurationsFile, readBuffer);
+		fLutMatrix = stoi(readBuffer);
+		readBuffer.clear();
+	}
 
 	//Gets Reception Metrics Periodicity
 	getline(readingConfigurationsFile, readBuffer);
