@@ -7,7 +7,7 @@
 @Arquive name : LinkAdaptation.cpp
 @Classification : Link Adaptation
 @
-@Last alteration : January 22nd, 2019
+@Last alteration : February 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -29,12 +29,12 @@ LinkAdaptation::LinkAdaptation() {}
 LinkAdaptation::~LinkAdaptation() {}
 
 uint8_t
-LinkAdaptation::getSinrConvertToCqi(
-    float sinr)     //Signal to Interference plus Noise Ratio informed by PHY
+LinkAdaptation::getSnrConvertToMcs(
+    float snr)  //Signal to Noise Ratio informed by PHY
 {   
-    uint8_t cqiUplink;      //Channel Quality Information
+    uint8_t mcs;    //Modulation and Coding Scheme
     
     //#TODO: do some calculations/Look tables here
-    cqiUplink = 10;
-    return cqiUplink;
+    mcs = 10;
+    return mcs;
 }

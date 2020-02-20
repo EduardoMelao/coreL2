@@ -53,7 +53,6 @@ private:
     ProtocolControl* protocolControl;       //Object to deal with enqueueing CONTROL SDUS
 	thread *threads;                        //Threads array
     MacPDU macPDU;                          //Object MacPDU containing all information that will be sent to PHY
-    unsigned int subframeCounter;           //Subframe counter used for RxMetrics reporting to BS.
     bool verbose;                           //Verbosity flag
 
 public:

@@ -7,7 +7,7 @@
 @Arquive name : CurrentParameters.cpp
 @Classification : System Parameters - Current Parameters
 @
-@Last alteration : February 18th, 2020
+@Last alteration : February 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -68,25 +68,10 @@ CurrentParameters::readTxtSystemParameters(
 	ofdm_gfdm = stoi(readBuffer);
 	readBuffer.clear();
 
-	//Gets FUSION LUT matrix default value (only BS)
-	if(flagBS){
-		int counter = 0;		//Counter to help Fusion LUT filling
-		string readLUTValue;	//String to store reading position for Fusion LUT
-		getline(readingConfigurationsFile, readBuffer);		//Reads line with all 17 values (positions), equivalent to 132 bits
-		
-		//Retrieve all 17 positions of array from line
-		for(int i=0;i<readBuffer.size();i++){
-			if(readBuffer[i]==' '){							//If there's a space, finish reading position;
-				fLutMatrix[counter] = stoi(readLUTValue);	//Store value;
-				readLUTValue.clear();						//Clear buffer; and
-				counter++;									//Increase counter.
-			}
-			else
-				readLUTValue+=readBuffer[i];				//If this is not a space, add to buffer
-		}
-		fLutMatrix[counter] = stoi(readLUTValue);			//Last position does not end with a space
-		readLUTValue.clear();
-	}
+	//Gets Fusion LUT matrix default value (only BS)
+	getline(readingConfigurationsFile, readBuffer);
+	fLutMatrix = stoi(readBuffer);
+	readBuffer.clear();
 
 	//Gets Reception Metrics Periodicity
 	getline(readingConfigurationsFile, readBuffer);
@@ -203,11 +188,7 @@ CurrentParameters::recordTxtCurrentParameters(){
 
 	//Writes FUSION LUT matrix values (only BS)
 	if(flagBS){
-		writingConfigurationsFile << to_string(fLutMatrix[0]);	//First position
-		for(int i=1;i<17;i++){
-			writingConfigurationsFile << ' ' << to_string((int)fLutMatrix[i]);
-		}
-		writingConfigurationsFile << '\n';	//Add line break at the end of this line
+		writingConfigurationsFile << to_string(fLutMatrix) << '\n';
 	}
 
 	//Writes Reception Metrics Periodicity
@@ -335,7 +316,7 @@ CurrentParameters::setSystemParameters(
 {
 	//(Only BS) Sets Fusion LookUp Table
 	if(flagBS){
-		dynamicParameters->getFLUTMatrix(fLutMatrix);
+		fLutMatrix = dynamicParameters->getFLUTMatrix();
 	}
 
 	//For each UE, loads MCS Downlink and Uplink

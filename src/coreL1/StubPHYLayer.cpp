@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : January 22nd, 2019
+@Last alteration : February 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -282,18 +282,17 @@ CoreL1::decoding(
 
     if(flagBS){     //Create BSSubframeRx.Start message
     	BSSubframeRx_Start messageBS;	//Message parameters structure
-    	messageBS.sinr = 10;    
+    	messageBS.snr = 10;    
     	messageBS.serialize(messageParametersBytes);
     	for(uint i=0;i<messageParametersBytes.size();i++)
     		messageParameters+=messageParametersBytes[i];
     }
     else{       //Create UESubframeRx.Start message
         UESubframeRx_Start messageUE;	//Messages parameters structure
-        messageUE.sinr = 11;
+        messageUE.snr = 11;
         messageUE.pmi = 1;
         messageUE.ri = 2;
-        for(int i=0;i<17;i++)
-            messageUE.ssm[i]=0;
+        messageUE.ssm = 3;
         messageUE.serialize(messageParametersBytes);
         for(uint i=0;i<messageParametersBytes.size();i++)
             messageParameters+=messageParametersBytes[i];

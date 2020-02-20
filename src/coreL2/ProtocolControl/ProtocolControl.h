@@ -13,7 +13,6 @@
 
 #include "../LinkAdaptation/LinkAdaptation.h"
 #include "../MacController/MacController.h"
-#include "../AdaptiveModulationCoding/AdaptiveModulationCoding.h"
 #include "../Cosora/Cosora.h"
 
 

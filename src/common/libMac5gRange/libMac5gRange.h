@@ -30,7 +30,7 @@ typedef struct{
     vector<allocation_cfg_t> ulReservations;   	//UpLinkReservations for each UE
     uint8_t numerology;                         //Numerology to be used in downlink
     uint8_t ofdm_gfdm;                          //Flag to indicate data transmission technique for Downlink (0=OFDM; 1=GFDM)
-    uint8_t fLutDL[17];                         //Fusion Spectrum Analysis LUT
+    uint8_t fLutDL;                             //Fusion Spectrum Analysis LUT
     uint8_t rxMetricPeriodicity;                //CSI periodicity for CQI, PMI, RI and SSM provided by PHY
     
     /**
@@ -47,9 +47,7 @@ typedef struct{
         push_bytes(bytes, numPDUs);
         for(int i=0;i<ulReservations.size();i++)
             ulReservations[i].serialize(bytes);
-        for(int i=0;i<16;i++)
-            push_bytes(bytes, fLutDL[i]);
-        auxiliary = (numerology<<4)|fLutDL[16];
+        auxiliary = (numerology<<4)|(fLutDL&15);
         push_bytes(bytes, auxiliary);
         auxiliary = (ofdm_gfdm<<7)|rxMetricPeriodicity;
         push_bytes(bytes, auxiliary);
@@ -65,10 +63,7 @@ typedef struct{
 
         pop_bytes(auxiliary, bytes);
         numerology = (auxiliary>>4)&15;
-        fLutDL[16] = auxiliary&15;
-        
-        for(int i=15;i>=0;i--)
-            pop_bytes(fLutDL[i],bytes);
+        fLutDL = auxiliary&15;
 
         int numberUEsAllocated = (bytes.size()-1)/sizeof(allocation_cfg_t);
         ulReservations.resize(numberUEsAllocated);
@@ -122,7 +117,7 @@ typedef struct{
  * @brief Struct for BSSubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    float sinr;         //Signal to Interference plus Noise Ratio //#TODO: define range. Is float enough?
+    float snr;         //Signal to Noise Ratio //#TODO: define range.
     
     /**
      * @brief Serialization method for the struct
@@ -133,13 +128,13 @@ typedef struct{
      */
     void serialize(vector<uint8_t> & bytes)
     {
-        push_bytes(bytes, sinr);
+        push_bytes(bytes, snr);
     }
 
     /** deserializatyion method for the struct (inverse order)**/
     void deserialize(vector<uint8_t> & bytes)
     {
-        pop_bytes(sinr, bytes);
+        pop_bytes(snr, bytes);
     }
 }BSSubframeRx_Start;
 
@@ -147,10 +142,10 @@ typedef struct{
  * @brief Struct for UESubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    float sinr;         //Signal to Interference plus Noise Ratio               //#TODO: define range
+    float snr;          //Signal to Noise Ratio                                 //#TODO: define range
     uint8_t ri;         //RI (Rank Indicator), part of RxMetrics.               //#TODO: define range
     uint8_t pmi;        //PMI: Pre-Coding Matrix Indicator, part of RxMetrics.  //#TODO: define range
-    uint8_t ssm[17];    //SSM: Spectrum Sensing Measurement. Array of 132 bits
+    uint8_t ssm;    //SSM: Spectrum Sensing Measurement. Array of 4 bits
     
     /**
      * @brief Serialization method for the struct
@@ -162,11 +157,9 @@ typedef struct{
     void serialize(vector<uint8_t> & bytes)
     {
         uint8_t auxiliary;
-        push_bytes(bytes, sinr);
+        push_bytes(bytes, snr);
         push_bytes(bytes, pmi);
-        for(int i=0;i<16;i++)
-            push_bytes(bytes, ssm[i]);
-        auxiliary = (ri<<4)|ssm[16];
+        auxiliary = (ri<<4)|(ssm&15);
         push_bytes(bytes, auxiliary);
     }
 
@@ -176,14 +169,11 @@ typedef struct{
         uint8_t auxiliary;
         pop_bytes(auxiliary, bytes);
         ri = (auxiliary>>4)&15;
-        ssm[16] = auxiliary&15;
-        
-        for(int i=15;i>=0;i--)
-            pop_bytes(ssm[i],bytes);
+        ssm = auxiliary&15;
         
         pop_bytes(pmi, bytes);
 
-        pop_bytes(sinr, bytes);
+        pop_bytes(snr, bytes);
     }
 }UESubframeRx_Start;
 
@@ -191,11 +181,10 @@ typedef struct{
  * @brief Struct for RxMetrics, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    uint8_t cqiReport;      //Channel Quality information based on SINR report.     //#TODO: define range
+    float snr;              //Channel Signal to Noise Ratio
     uint8_t ri;             //RI (Rank Indicator), part of RxMetrics.               //#TODO: define range
     uint8_t pmi;            //PMI: Pre-Coding Matrix Indicator, part of RxMetrics.  //#TODO: define range
-    uint8_t ssReport[17];   //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 132 bits
-    mutex accessControl;    //Mutex to control parameters access/alteration
+    uint8_t ssReport;       //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 4 bits
     
     /**
      * @brief Serialization method for the struct
@@ -206,15 +195,11 @@ typedef struct{
      **/
     void serialize(vector<uint8_t> & bytes)
     {
-        accessControl.lock();
         uint8_t auxiliary;
-        push_bytes(bytes, cqiReport);
+        push_bytes(bytes, snr);
         push_bytes(bytes, pmi);
-        for(int i=0;i<16;i++)
-            push_bytes(bytes, ssReport[i]);
-        auxiliary = (ri<<4)|ssReport[16];
+        auxiliary = (ri<<4)|(ssReport&15);
         push_bytes(bytes, auxiliary);
-        accessControl.unlock();
     }
 
     /** deserializatyion method for the struct (inverse order)**/
@@ -223,14 +208,11 @@ typedef struct{
         uint8_t auxiliary;
         pop_bytes(auxiliary, bytes);
         ri = (auxiliary>>4)&15;
-        ssReport[16] = auxiliary&15;
-        
-        for(int i=15;i>=0;i--)
-            pop_bytes(ssReport[i],bytes);
+        ssReport = auxiliary&15;
         
         pop_bytes(pmi, bytes);
 
-        pop_bytes(cqiReport, bytes);
+        pop_bytes(snr, bytes);
     }
 }RxMetrics;
 #endif  //INCLUDED_LIB_MAC_5G_RANGE_H

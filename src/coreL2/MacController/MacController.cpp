@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : February 18th, 2020
+@Last alteration : February 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -137,9 +137,6 @@ MacController::manager(){
 
                 //Create ProtocolControl to deal with MACC SDUs
                 protocolControl = new ProtocolControl(this, verbose);
-
-                //Set subframe counter to zero
-                subframeCounter = 0;
 
                 //#TODO: Send PHYConfig.Request here!
 
@@ -360,7 +357,7 @@ MacController::sendPdu(
         //Fill the structure with information
     	messageBS.numUEs = currentParameters->getNumberUEs();
     	messageBS.numPDUs = 1;
-        currentParameters->getFLUTMatrix(messageBS.fLutDL);
+        messageBS.fLutDL = currentParameters->getFLUTMatrix();
         currentParameters->getUlReservations(messageBS.ulReservations);
     	messageBS.numerology = currentParameters->getNumerology();
     	messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
@@ -459,15 +456,6 @@ MacController::decoding()
         }
     }
     delete aggregationQueue;
-
-    //If it is UE, increase subframeCounter
-    if(!flagBS){    
-        subframeCounter++;
-        if(subframeCounter==cliL2Interface->dynamicParameters->getRxMetricsPeriodicity()){
-            protocolControl->rxMetricsReport();
-            subframeCounter = 0;
-        }
-    }
     
     return macAddress;
 }

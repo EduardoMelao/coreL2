@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : February 18th, 2020
+@Last alteration : February 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -74,7 +74,7 @@ ProtocolControl::decodeControlSdus(
             rxMetrics[index].deserialize(rxMetricsBytes);
 
             //Calculate new DLMCS
-            macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress,AdaptiveModulationCoding::getCqiConvertToMcs(rxMetrics[index].cqiReport));
+            macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress,rxMetrics[index].snr);
 
             if(verbose){
                 cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received.";
@@ -117,7 +117,6 @@ ProtocolControl::receiveInterlayerMessages(
 {
     char buffer[MAXIMUM_BUFFER_LENGTH]; //Buffer where message will be stored
     string message;                     //String containing message converted from char*
-    uint8_t cqi;                        //Channel Quality information based on SINR measurement from PHY
     uint8_t sourceMacAddress;           //Source MAC Address
 
     //Control message stream
@@ -152,15 +151,12 @@ ProtocolControl::receiveInterlayerMessages(
                 messageParametersBS.deserialize(messageParametersBytes);
 
                 if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start message. Receiving PDU from L1..."<<endl;
-                
-                //Perform channel quality information calculation and uplink MCS calculation
-                cqi = LinkAdaptation::getSinrConvertToCqi(messageParametersBS.sinr);
 
                 //Receive source MAC Address from decoding function
                 sourceMacAddress = macController->decoding();
 
-                //Calculates new UL MCS and sets it
-                macController->cliL2Interface->dynamicParameters->setMcsUplink(sourceMacAddress, AdaptiveModulationCoding::getCqiConvertToMcs(cqi));
+                //Calculates new UL MCS and sets it based on SNR received
+                macController->cliL2Interface->dynamicParameters->setMcsUplink(sourceMacAddress, LinkAdaptation::getSnrConvertToMcs(messageParametersBS.snr));
                 
                 //If new MCS is different from old, enter RECONFIG mode
                 if(macController->cliL2Interface->dynamicParameters->getMcsUplink(sourceMacAddress)!=macController->currentParameters->getMcsUplink(sourceMacAddress)){
@@ -184,13 +180,22 @@ ProtocolControl::receiveInterlayerMessages(
                 messageParametersUE.deserialize(messageParametersBytes);
                 if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start message. Receiving PDU from L1..."<<endl;
 
-                //Perform RXMetrics calculation
-                rxMetrics->accessControl.lock();     //Lock mutex to prevent access conflict
-                rxMetrics->cqiReport = LinkAdaptation::getSinrConvertToCqi(messageParametersUE.sinr);    //SINR->CQI calculation
-                Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm, rxMetrics->ssReport);     //SSM->SSReport calculation
-                rxMetrics->pmi = messageParametersUE.pmi;
-                rxMetrics->ri = messageParametersUE.ri;
-                rxMetrics->accessControl.unlock();   //Unlock Mutex
+                //Perform Spctrum Sensing Report calculation
+                uint8_t ssReport = Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm);     //SSM->SSReport calculation
+
+                //Verify if RX metrics changed
+                bool rxMetricsOutdated = (rxMetrics->snr!=messageParametersUE.snr)||(rxMetrics->ssReport!=ssReport);
+                rxMetricsOutdated = rxMetricsOutdated||(rxMetrics->pmi!=messageParametersUE.pmi)||(rxMetrics->ri!=messageParametersUE.ri);
+
+                //Assign new values and enqueue a control SDU to BS with updated information
+                if(rxMetricsOutdated){
+                    rxMetrics->snr = messageParametersUE.snr;
+                    rxMetrics->ssReport = ssReport;
+                    rxMetrics->pmi = messageParametersUE.pmi;
+                    rxMetrics->ri = messageParametersUE.ri;
+
+                    rxMetricsReport();
+                }
                 macController->decoding();
             }
 
@@ -233,7 +238,7 @@ ProtocolControl::managerDynamicParameters(
 }
 
 void 
-ProtocolControl::rxMetricsReport(){  //This thread executes only on UE
+ProtocolControl::rxMetricsReport(){     //This procedure executes only on UE
     vector<uint8_t> rxMetricsBytes;     //Array of bytes where RX Metrics will be stored
 
     //Serialize Rx Metrics in the first position (because it is an UE)

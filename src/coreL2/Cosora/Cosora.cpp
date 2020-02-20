@@ -7,7 +7,7 @@
 @Arquive name : Cosora.cpp
 @Classification : Cosora
 @
-@Last alteration : January 22nd, 2019
+@Last alteration : February 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -28,19 +28,17 @@ Cosora::Cosora() {}
 
 Cosora::~Cosora() {}
 
-void 
+uint8_t 
 Cosora::calculateSpectrumSensingValue(
-    uint8_t* spectrumSensingMeasurement,        //Measurements from PHY
-    uint8_t* spectrumSensingReport)             //Report of RBs idleness 
+    uint8_t spectrumSensingMeasurement)     //Measurements from PHY #TODO: To Be Defined 
 {
     //#TODO: Implement Spectrum Sensing Value calculation.
-    for(int i=0;i<17;i++)
-        spectrumSensingReport[i] = spectrumSensingMeasurement[i];
+    return spectrumSensingMeasurement;
 }
 
 uint16_t
 Cosora::spectrumSensingConvertToRBIdle(
-    uint8_t* spectrumSensingReport)     //Spectrum Sensing Report calculated on UE
+    uint8_t spectrumSensingReport)  //Spectrum Sensing Report calculated on UE
 {
     //#TODO: Implement Conversion of SS to RBIdle
     return 130;

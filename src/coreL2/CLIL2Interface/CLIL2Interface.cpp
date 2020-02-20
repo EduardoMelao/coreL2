@@ -7,7 +7,7 @@
 @Arquive name : CLIL2Interface.cpp
 @Classification : CLI - L2 Interface
 @
-@Last alteration : January 24th, 2019
+@Last alteration : January 24th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
