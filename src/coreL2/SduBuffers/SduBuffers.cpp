@@ -65,7 +65,7 @@ SduBuffers::enqueueingDataSdus(
     MacModes & currentMacMode,          //Current MAC execution mode
     MacTunModes & currentMacTunMode)    //Current MAC execution Tun mode
 {
-    char *buffer;
+    char buffer[MAXIMUM_BUFFER_LENGTH];
     ssize_t numberBytesRead = 0;
     
     //Mark current MAC Tun mode as ENABLED for reading TUN interface and enqueueing Data SDUs.
@@ -74,7 +74,6 @@ SduBuffers::enqueueingDataSdus(
     //Loop will execute until STOP mode is activated
     while(currentMacMode!=STOP_MODE){
         //Allocate buffer
-        buffer = new char[MAXIMUM_BUFFER_LENGTH];
         bzero(buffer, MAXIMUM_BUFFER_LENGTH);
 
         //Read from TUN Interface
@@ -82,7 +81,6 @@ SduBuffers::enqueueingDataSdus(
 
         //Check if there is actually information received
         if(numberBytesRead<0){
-        	delete [] buffer;
             continue;
         }
 
@@ -94,38 +92,40 @@ SduBuffers::enqueueingDataSdus(
             //Check EOF
             if(numberBytesRead==0){
                 if(verbose) cout<<"[SduBuffers] End of Transmission."<<endl;
-                delete [] buffer;
             	break;
             }
 
             //Check ipv4
             if(((buffer[0]>>4)&15) != 4){
                 if(verbose) cout<<"[SduBuffers] Dropped non-ipv4 packet."<<endl;
-                delete [] buffer;
                 continue;
             }
 
             //Check broadcast
             if((buffer[DST_OFFSET]==255)&&(buffer[DST_OFFSET+1]==255)&&(buffer[DST_OFFSET+2]==255)&&(buffer[DST_OFFSET+3]==255)){
                 if(verbose) cout<<"[SduBuffers] Dropped broadcast packet."<<endl;
-                delete [] buffer;
                 continue;
             }
 
             //Check multicast
             if((buffer[DST_OFFSET]>=224)&&(buffer[DST_OFFSET]<=239)){
                 if(verbose) cout<<"[SduBuffers] Dropped multicast packet."<<endl;
-                delete [] buffer;
                 continue;
             }
             
             //Everything is ok, buffer can be added to queue
             //First, consult destination MAC address based on IP Address
             int index = currentParameters->getIndex(getMacAddress(buffer));
+
             
             //Test if index exists
             if(index!=-1){
-                dataSduQueue[index].push_back(buffer);
+                //Allocate new buffer and copy information
+                char* bufferDataSdu = new char[numberBytesRead];
+                for(int i=0;i<numberBytesRead;i++)
+                    bufferDataSdu[i]=buffer[i];
+                
+                dataSduQueue[index].push_back(bufferDataSdu);
                 dataSizes[index].push_back(numberBytesRead);
             }
             else
