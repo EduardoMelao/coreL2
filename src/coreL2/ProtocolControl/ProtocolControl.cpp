@@ -140,7 +140,7 @@ ProtocolControl::receiveInterlayerMessages(
 
             vector<uint8_t> messageParametersBytes;     //Bytes of serialized message parameters
 
-            if(message=="BSSubframeRx.Start"){
+            if(macController->flagBS){
                 BSSubframeRx_Start messageParametersBS;     //Define struct for BS paremeters
 
                 //Copy buffer to vector
@@ -169,7 +169,7 @@ ProtocolControl::receiveInterlayerMessages(
                     if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
                 }
             }
-            if(message=="UESubframeRx.Start"){
+            else{
                 UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
 
                 //Copy buffer to vector
