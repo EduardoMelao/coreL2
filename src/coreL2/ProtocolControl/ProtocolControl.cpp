@@ -168,11 +168,6 @@ ProtocolControl::receiveInterlayerMessages(
 
                     if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
                 }
-
-                //Clear buffer and message and receive next control message (SubframeRx.End)
-                bzero(buffer, MAXIMUM_BUFFER_LENGTH);
-                message.clear();
-                messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
             }
             if(message=="UESubframeRx.Start"){
                 UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
@@ -202,11 +197,6 @@ ProtocolControl::receiveInterlayerMessages(
                     rxMetricsReport();
                 }
                 macController->decoding();
-
-                //Clear buffer and message and receive next control message (SubframeRx.End)
-                bzero(buffer, MAXIMUM_BUFFER_LENGTH);
-                message.clear();
-                messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
             }
 
             //Clear buffer and message and receive next control message

@@ -301,8 +301,6 @@ CoreL1::decoding(
     //Downlink routine:
     string subFrameStartMessage = flagBS? "BS":"UE";    //SubframeRx.Start control message
     subFrameStartMessage+="SubframeRx.Start";
-    string subFrameEndMessage = flagBS? "BS":"UE";      //SubframeRx.End control message
-    subFrameEndMessage += "SubframeRx.End";
     
     //Add parameters
     subFrameStartMessage+=messageParameters;
@@ -319,8 +317,7 @@ CoreL1::decoding(
         //Send control messages and PDU to L2
         sendto(socketControlMessagesToL2, &(subFrameStartMessage[0]), subFrameStartMessage.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
         sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
-        sendto(socketControlMessagesToL2, &(subFrameEndMessage[0]), subFrameEndMessage.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
-
+        
         //Receive next PDU
         bzero(buffer, MAXIMUMSIZE);
         size = receivePdu(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
