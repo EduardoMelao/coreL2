@@ -183,7 +183,7 @@ ProtocolControl::receiveInterlayerMessages(
                 //Perform Spctrum Sensing Report calculation
                 uint8_t ssReport = Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm);     //SSM->SSReport calculation
 
-                //Verify if RX metrics changed
+                /*/Verify if RX metrics changed
                 bool rxMetricsOutdated = (rxMetrics->snr!=messageParametersUE.snr)||(rxMetrics->ssReport!=ssReport);
                 rxMetricsOutdated = rxMetricsOutdated||(rxMetrics->pmi!=messageParametersUE.pmi)||(rxMetrics->ri!=messageParametersUE.ri);
 
@@ -195,7 +195,7 @@ ProtocolControl::receiveInterlayerMessages(
                     rxMetrics->ri = messageParametersUE.ri;
 
                     rxMetricsReport();
-                }
+                }*///#TODO: come back with RX metrics later 
                 macController->decoding();
             }
 
