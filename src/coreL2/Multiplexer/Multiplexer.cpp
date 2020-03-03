@@ -41,9 +41,12 @@ Multiplexer::Multiplexer(
     //Alloc array of number of Bytes aggregated and AggregationQueues for each destination
     numberBytesAgrX = new uint16_t[numberDestinations];
     aggregationQueueX = new AggregationQueue*[numberDestinations];
-    for(int i=0;i<numberDestinations;i++)
-        aggregationQueueX[i] = new AggregationQueue(maxNumberBytesX[i], sourceMac, destinationMacX[i], verbose);
 
+    //Initialize each position of arrays
+    for(int i=0;i<numberDestinations;i++){
+    	numberBytesAgrX[i] = 0;
+        aggregationQueueX[i] = new AggregationQueue(maxNumberBytesX[i], sourceMac, destinationMacX[i], verbose);
+    }
     if(_verbose) cout<<"[Multiplexer] Created successfully."<<endl;
 }
 
