@@ -126,7 +126,9 @@ ProtocolControl::receiveInterlayerMessages(
             //Change system Rx mode to ACTIVE_MODE_RX
             currentMacRxMode = ACTIVE_MODE_RX; 
 
-            //Receive Control message
+            //Clear buffer and message and receive next control message
+            bzero(buffer, MAXIMUM_BUFFER_LENGTH);
+            message.clear();
             ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
 
             //If it returns 0 or less, no information was received
@@ -198,11 +200,6 @@ ProtocolControl::receiveInterlayerMessages(
                 }
                 macController->decoding();
             }
-
-            //Clear buffer and message and receive next control message
-            bzero(buffer, MAXIMUM_BUFFER_LENGTH);
-            message.clear();
-            messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
         }
         else{
             //Change MAC Rx Mode to DISABLED_MODE_RX
