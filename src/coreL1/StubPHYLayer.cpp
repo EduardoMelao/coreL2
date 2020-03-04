@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : January 22nd, 2019
+@Last alteration : February 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -183,7 +183,6 @@ CoreL1::sendPdu(
 
     //Verify if socket exists
     if(socketOut!=-1){
-
         //Send information in buffer to socket
         numberSent = sendto(socketsOut[socketOut], buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&(socketNames[socketOut])), sizeof(socketNames[socketOut]));
 
@@ -283,18 +282,17 @@ CoreL1::decoding(
 
     if(flagBS){     //Create BSSubframeRx.Start message
     	BSSubframeRx_Start messageBS;	//Message parameters structure
-    	messageBS.sinr = 10;    
+    	messageBS.snr = 10;    
     	messageBS.serialize(messageParametersBytes);
     	for(uint i=0;i<messageParametersBytes.size();i++)
     		messageParameters+=messageParametersBytes[i];
     }
     else{       //Create UESubframeRx.Start message
         UESubframeRx_Start messageUE;	//Messages parameters structure
-        messageUE.sinr = 11;
+        messageUE.snr = 11;
         messageUE.pmi = 1;
         messageUE.ri = 2;
-        for(int i=0;i<17;i++)
-            messageUE.ssm[i]=0;
+        messageUE.ssm = 3;
         messageUE.serialize(messageParametersBytes);
         for(uint i=0;i<messageParametersBytes.size();i++)
             messageParameters+=messageParametersBytes[i];
@@ -303,8 +301,6 @@ CoreL1::decoding(
     //Downlink routine:
     string subFrameStartMessage = flagBS? "BS":"UE";    //SubframeRx.Start control message
     subFrameStartMessage+="SubframeRx.Start";
-    string subFrameEndMessage = flagBS? "BS":"UE";      //SubframeRx.End control message
-    subFrameEndMessage += "SubframeRx.End";
     
     //Add parameters
     subFrameStartMessage+=messageParameters;
@@ -321,8 +317,7 @@ CoreL1::decoding(
         //Send control messages and PDU to L2
         sendto(socketControlMessagesToL2, &(subFrameStartMessage[0]), subFrameStartMessage.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
         sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
-        sendto(socketControlMessagesToL2, &(subFrameEndMessage[0]), subFrameEndMessage.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
-
+        
         //Receive next PDU
         bzero(buffer, MAXIMUMSIZE);
         size = receivePdu(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);

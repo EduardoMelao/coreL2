@@ -7,7 +7,7 @@
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : January 3rd, 2019
+@Last alteration : February 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -20,131 +20,71 @@ Direction : Diretoria de Operações (DO)
 UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 @Description : This module manages the queues of SDUs that will generate PDUs 
-    to send to destination. This module is used on Transmission only.
+    to send to destination.
 */
 
 #include "Multiplexer.h"
 
 Multiplexer::Multiplexer(
-        uint16_t _maxNumberBytes,       //Maximum number of Bytes in PDU
-        uint8_t _sourceMac,             //Source MAC Address
-        MacAddressTable* _ipMacTable,   //MAC - IP table   
-        int _maxSDUs,                   //Maximum number of SDUs in PDU
-        bool _flagBS,                   //Flag true if equipment is BS, otherwise it is UE
-        bool _verbose)                  //Verbosity flag
+    int _numberDestinations,        //Number of destinations with PDUs to aggregate
+    uint8_t _sourceMac,             //Source MAC Address
+    uint8_t* _destinationMacX,      //Destination MAC Addresses
+    uint16_t* _maxNumberBytesX,     //Maximum number of Bytes for each Buffer of PDUs
+    bool _verbose)                  //Verbosity flag
 {
-    transmissionQueues = new TransmissionQueue*[MAX_BUFFERS];
+    numberDestinations = _numberDestinations;
     sourceMac = _sourceMac;
-    destinationMac = new uint8_t[MAX_BUFFERS];
-    numberBytes = new uint16_t[MAX_BUFFERS];
-    maxNumberBytes = _maxNumberBytes;
-    numberTransmissionQueues = 0;
-    ipMacTable = _ipMacTable;
-    maxSDUs = _maxSDUs;
-    flagBS = _flagBS;
+    destinationMacX = _destinationMacX;
+    maxNumberBytesX = _maxNumberBytesX;
     verbose = _verbose;
+
+    //Alloc array of number of Bytes aggregated and AggregationQueues for each destination
+    numberBytesAgrX = new uint16_t[numberDestinations];
+    aggregationQueueX = new AggregationQueue*[numberDestinations];
+
+    //Initialize each position of arrays
+    for(int i=0;i<numberDestinations;i++){
+    	numberBytesAgrX[i] = 0;
+        aggregationQueueX[i] = new AggregationQueue(maxNumberBytesX[i], sourceMac, destinationMacX[i], verbose);
+    }
     if(_verbose) cout<<"[Multiplexer] Created successfully."<<endl;
 }
 
 Multiplexer::~Multiplexer()
 {
-    for(int i=0;i<numberTransmissionQueues;i++)
-        delete transmissionQueues[i];
-    delete[] transmissionQueues;
-    delete[] destinationMac;
-    delete[] numberBytes; 
-}
-
-uint8_t
-Multiplexer::getMacAddress(
-    char* dataSdu)          //SDU containg IP bytes
-{
-    uint8_t mac;            //MAC address of destination of the SDU
-    uint8_t ipAddress[4];   //Destination IP address encapsulated into SDU
-
-    //Gets IP Address from packet
-    for(int i=0;i<4;i++)
-        ipAddress[i] = (uint8_t) dataSdu[DST_OFFSET+i]; //Copying IP address
-    
-    //Search IP Address in MacAddressTable
-    mac = ipMacTable->getMacAddress(ipAddress);
+    for(int i=0;i<numberDestinations;i++)
+        delete aggregationQueueX[i];
+    delete[] aggregationQueueX;
+    delete[] numberBytesAgrX;
 }
 
 void 
-Multiplexer::setTransmissionQueue(
-    uint8_t _destinationMac)    //Destination MAC Address
-{
-    //Check if array is full
-    if(numberTransmissionQueues>MAX_BUFFERS && verbose){
-        cout<<"[Multiplexer] Trying to create more buffers than supported."<<endl;
-        exit(1);
-    }
-
-    //Allocate new TransmissionQueue and stores it in array
-    transmissionQueues[numberTransmissionQueues] = new TransmissionQueue(maxNumberBytes, sourceMac, _destinationMac, maxSDUs, verbose);
-    
-    //Initialize values of number of bytes and data/control flag
-    destinationMac[numberTransmissionQueues] = _destinationMac;
-    numberBytes[numberTransmissionQueues] = 0;
-
-    //Increment counter
-    numberTransmissionQueues++;
-}
-
-int 
-Multiplexer::addSdu(
-    char* sdu,          //Data SDU received from TUN
-    uint16_t size)      //Number of Bytes in SDU
-{
-    return addSdu(sdu, size, 1, getMacAddress(sdu));
-}
-
-int 
 Multiplexer::addSdu(
     char* sdu,                  //SDU buffer
     uint16_t size,              //Number of Bytes of SDU
     uint8_t flagDataControl,    //Data/Control flag
-    uint8_t _destinationMac)    //Destination MAC Address
+    uint8_t destinationMac)     //Destination MAC Address
 {
-    int i;
+    int index = getAggregationQueueIndex(destinationMac);
 
-    //Look for TransmissionQueue corresponding to Mac Address
-    for(i=0;i<numberTransmissionQueues;i++)
-        if(destinationMac[i]==_destinationMac)
-            break;
-
-    //TransmissionQueue not found
-    if(i==numberTransmissionQueues){
-        if(!flagBS){
-            if(verbose) cout<<"[Multiplexer] No TransmissionQueue found. Forwarding to BS..."<<endl;
-            i = 0;      //BS index of TransmissionQueues (only this TransmissionQueue)
-        }
-        else if(verbose){
-            cout<<"[Multiplexer] Error: no TransmissionQueue found."<<endl;
-            return -2;
-        }
+    //Test if index is valid
+    if(index==-1){
+        if(verbose) cout<<"[Multiplexer] Bad MAC Address found trying to Add SDU to Aggregation Queue."<<endl;
+        return;
     }
 
-    //Test if queue is full: if so, returns the MAC Address
-    if((size + 2 + transmissionQueues[i]->getNumberofBytes())>maxNumberBytes){
-        if(verbose) cout<<"[Multiplexer] Number of bytes exceed buffer max length. Returning MAC Address."<<endl;
-        return _destinationMac;
+    //Test if queue is full
+    if(aggregationQueueFull(destinationMac, size)){
+        if(verbose) cout<<"[Multiplexer] Number of bytes exceed buffer max length."<<endl;
+        return;
     }
 
-    //Test if there number of SDUs extrapolates maximum
-    if(transmissionQueues[i]->numberSDUs+1 == transmissionQueues[i]->maximumNumberSDUs){
-        if(verbose) cout<<"[Multiplexer] Tried to multiplex more SDUs than supported."<<endl;
-        return _destinationMac;
-    }
-
-    //Attempts to add SDU to TransmissionQueue
-    if(transmissionQueues[i]->addSDU(sdu, size, flagDataControl)){
-        numberBytes[i]+=size;
+    //Add SDU to AggregationQueue
+    if(aggregationQueueX[index]->addSDU(sdu, size, flagDataControl)){
+        numberBytesAgrX[index]+=size;
         if(verbose&&flagDataControl) cout<< "[Multiplexer] Data SDU added to queue!"<<endl;
         if(verbose&&!flagDataControl) cout<< "[Multiplexer] Control SDU added to queue!"<<endl;
-        return -1;
     }
-    return -2; 
 }
 
 ssize_t 
@@ -153,26 +93,22 @@ Multiplexer::getPdu(
     uint8_t macAddress) //Destination MAC Address of PDU
 {
     ssize_t size;   //Size of PDU
-    int index;      //Auxiliary variable for loop
+    int index = getAggregationQueueIndex(macAddress);
 
-    for(index=0;index<numberTransmissionQueues;index++){
-        if(destinationMac[index]==macAddress)
-            break;
-    }
-    //Test if macAddress was found
-    if(index==numberTransmissionQueues){
-        if(verbose) cout<<"[Multiplexer] Could not get PDU: MAC Address not found."<<endl;
+    //Test if index is valid
+    if(index==-1){
+        if(verbose) cout<<"[Multiplexer] Bad MAC Address found trying to Get SDU from Aggregation Queue."<<endl;
         return -1;
     }
 
     //Test if there are bytes to return
-    if(numberBytes[index] == 0){
+    if(numberBytesAgrX[index] == 0){
         if(verbose) cout<<"[Multiplexer] Could not get PDU: no Bytes to transfer."<<endl;
         return -1;
     }
 
     //Creates a ProtocolPackage to receive the PDU
-    ProtocolPackage* pdu = transmissionQueues[index]->getPDUPackage();
+    ProtocolPackage* pdu = aggregationQueueX[index]->getPDUPackage();
 
     if(verbose) cout<<"[Multiplexer] Inserting MAC Header."<<endl;
 
@@ -182,34 +118,43 @@ Multiplexer::getPdu(
     memcpy(buffer, pdu->buffer, size);
     delete pdu;
 
-    transmissionQueues[index]->clearBuffer();
-    numberBytes[index] = 0;
-
     return size;
 }
 
-bool 
-Multiplexer::emptyPdu(
-    uint8_t macAddress)      //Destination MAC Address of PDU
-{
-    for(int i=0;i<numberTransmissionQueues;i++){
-        if(destinationMac[i]==macAddress)
-            return numberBytes[i]==0;
-    }
-    if(verbose) cout<<"[Multiplexer] MAC address not found verifying empty PDU."<<endl;
-    return true;
-}
-
 int 
-Multiplexer::getNumberTransmissionQueues(){
-    return numberTransmissionQueues;
+Multiplexer::getNumberDestinations(){
+    return numberDestinations;
 }
 
-void
-Multiplexer::setMaxNumberBytes(
-		uint16_t _maxNumberBytes)	//Maximum number of Bytes for each PDU
+bool
+Multiplexer::aggregationQueueFull(
+    uint8_t macAddress,     //Destination MAC Address
+    uint16_t sduSize)       //Size of SDU to be enqueued
 {
-	maxNumberBytes = _maxNumberBytes;
-	for(int i=0;i<numberTransmissionQueues;i++)
-		transmissionQueues[i]->maxNumberBytes = _maxNumberBytes;
+    int index = getAggregationQueueIndex(macAddress);
+
+    //Verify bad macAddress
+    if(index==-1){
+        if(verbose) cout<<"[Multiplexer] MAC Address not found verifying if Aggregation Queue is full"<<endl;
+        exit(5); 
+    }
+
+    //Returns if size of:
+    //  -> sduSize: Size of SDU that wants to be added by Multiplexer
+    //  -> 2: CRC
+    //  -> 2: Header additions - Size (15bits) + Flag D/C (1 bit)
+    //  -> AggregationQueue::getNumberofBytes(): Size of SDUs aggregated + Header of them
+    //is bigger tham maximum number of bytes
+    return ((sduSize + 2 + 2 + aggregationQueueX[index]->getNumberofBytes())>maxNumberBytesX[index]);
+}
+
+int
+Multiplexer::getAggregationQueueIndex(
+    uint8_t macAddress)     //Destination MAC Address
+{
+    for(int i=0;i<numberDestinations;i++){
+        if(destinationMacX[i]==macAddress)
+            return i;
+    }
+    return -1;
 }

@@ -4,13 +4,13 @@
 /* All rights Reserved                   */
 /*****************************************/
 
-#ifndef INCLUDED_TRANSMISSION_QUEUE_H
-#define INCLUDED_TRANSMISSION_QUEUE_H
+#ifndef INCLUDED_AGGREGATION_QUEUE_H
+#define INCLUDED_AGGREGATION_QUEUE_H
 
 #include <iostream>
+#include <vector>
 
 #include "../ProtocolPackage/ProtocolPackage.h"
-#include "MacAddressTable/MacAddressTable.h"
 using namespace std;
 
 //Predefinition of class ProtocolPackage 
@@ -19,16 +19,18 @@ class ProtocolPackage;
 /**
  * @brief Queue used to store SDUs that will be transmitted to a specific destination
  */
-class TransmissionQueue{
+class AggregationQueue{
 private:
-    char* buffer;                   //Buffer accumulates SDUs
-    uint8_t sourceAddress;          //Source MAC address
-    uint8_t destinationAddress;     //Destination MAC address
-    int offset;                     //Offset for decoding
-    int controlOffset;              //Offset for encoding Control SDUs
-    uint16_t* sizesSDUs;            //Sizes of each SDU multiplexed
-    uint8_t* flagsDataControl;      //Data(1)/Control(0) flag
-    bool verbose;                   //Verbosity flag
+    uint8_t numberSDUs;                     //Number of SDUs multiplexed
+    int maxNumberBytes;                     //Maximum number of bytes
+    char* buffer;                           //Buffer accumulates SDUs
+    uint8_t sourceAddress;                  //Source MAC address
+    uint8_t destinationAddress;             //Destination MAC address
+    int offset;                             //Offset for decoding
+    int controlOffset;                      //Offset for encoding Control SDUs
+    vector<uint16_t> sizesSDUs;             //Sizes of each SDU multiplexed
+    vector<uint8_t> flagsDataControlSDUs;   //Data(1)/Control(0) flag
+    bool verbose;                           //Verbosity flag
     
     /**
      * @brief Adds SDU to specific position of the multiplexing queue
@@ -42,38 +44,34 @@ private:
     
     /**
      * @brief Returns the current queue buffer length considering the size of each SDU
-     * @returns Current TransmissionQueue buffer length in bytes
+     * @returns Current AggregationQueue buffer length in bytes
      */
     int currentBufferLength();     
 public:
-    uint8_t numberSDUs;     //Number of SDUs multiplexed
-    int maxNumberBytes;             //Maximum number of bytes
-    int maximumNumberSDUs;  //Maximum number of SDUs multiplexed
 
     /**
-     * @brief Constructs a new TransmissionQueue to accumulate SDUs for future transmission (encoding)
+     * @brief Constructs a new AggregationQueue to accumulate SDUs for future transmission (encoding)
      * @param maxNumberBytes Maximum number of bytes supported by a single PDU
      * @param sourceAddress Source MAC Address
      * @param destinationAddress Destination MAC Address
-     * @param _maximumNumberSDUs Maximum number of SDUs supported in one queue
      * @param _verbose Verbosity flag
      */
-    TransmissionQueue(int _maxNumberBytes, uint8_t sourceAddress, uint8_t destinationAddress, int _maximumNumberSDUs, bool _verbose);
+    AggregationQueue(int _maxNumberBytes, uint8_t sourceAddress, uint8_t destinationAddress, bool _verbose);
     
     /**
-     * @brief Constructs a TransmissionQueue to help decoding an incoming PDU, dequeueing SDUs contained in it
+     * @brief Constructs a AggregationQueue to help decoding an incoming PDU, dequeueing SDUs contained in it
      * @param _buffer Buffer containing PDU for decoding
      * @param _nSDUs Number of SDUs enqueued in PDU
      * @param _sizesSDUs Array with sizes of each SDU enqueued
-     * @param _flagsDataControl_SDUS Array with Data/Control flags of each SDU
+     * @param _flagsDataControlSDUS Array with Data/Control flags of each SDU
      * @param _verbose Verbosity flag
      */
-    TransmissionQueue(char* _buffer, uint8_t _nSDUs, uint16_t* _sizesSDUs, uint8_t* _flagsDataControl_SDUS, bool _verbose);
+    AggregationQueue(char* _buffer, uint8_t _nSDUs, uint16_t* _sizesSDUs, uint8_t* _flagsDataControlSDUS, bool _verbose);
     
     /**
-     * @brief Destroy a TransmissionQueue object
+     * @brief Destroy a AggregationQueue object
      */
-    ~TransmissionQueue();
+    ~AggregationQueue();
 
     /**
      * @brief Returns the total PDU length in bytes, considering extra overhead of 2 bytes (sourceAddress, destinationAddress, numSDUs)
@@ -99,14 +97,9 @@ public:
     /**
      * @brief Creates a new ProtocolPackage object based on information stored in class variables on encoding process
      * @returns ProtocolPackage for the SDUs multiplexed
-     * Requires clearing the buffer before using this TransmissionQueue again
+     * Requires clearing the buffer before using this AggregationQueue again
      */
     ProtocolPackage* getPDUPackage();
-    
-    /**
-     * @brief Clears the TransmissionQueue buffer; Make sure the PDU is sent before clearing the buffer
-     */   
-    void clearBuffer(); 
 
     /**
      * @brief Gets information of Data/Control flag of previous SDU to be used in decoding
@@ -115,9 +108,9 @@ public:
     uint8_t getCurrentDataControlFlag();
 
     /**
-     * @brief Gets destination MAC address of TransmissionQueue object
-     * @returns Destination MAC address
+     * @brief Gets destination MAC address of AggregationQueue object
+     * @returns Destination MAC address;
      */
     uint8_t getDestinationAddress();
 };
-#endif  //INCLUDED_TRANSMISSION_QUEUE_H
+#endif  //INCLUDED_AGGREGATION_QUEUE_H

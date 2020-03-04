@@ -11,101 +11,73 @@
 #include <list>
 #include <string.h>
 
-#include "../Multiplexer/TransmissionQueue.h"
+#include "../Multiplexer/AggregationQueue.h"
 #include "../ProtocolPackage/ProtocolPackage.h"
-#include "MacAddressTable/MacAddressTable.h"
 
 #define MAX_BUFFERS 8       //Maximum number of SDU buffers (maximum destinations)
-#define DST_OFFSET 16       //IP address offset in L3 packet
 using namespace std;
 
 class Multiplexer{
 private:
-    TransmissionQueue** transmissionQueues;     //Array of TransmissionQueues to manage SDU queues
+    int numberDestinations;                     //Number of destinations actually stored in Multiplexer
+    AggregationQueue** aggregationQueueX;     //Array of AggregationQueues to manage SDU queues
     uint8_t sourceMac;                          //Source MAC Address
-    uint8_t* destinationMac;                    //Destination MAC5GR for each TransmissionQueue
-    uint16_t* numberBytes;                      //Number of bytes for each IP Address
-    uint16_t maxNumberBytes;                    //Maximum number of bytes to fill PDU
-    int numberTransmissionQueues;               //Number of TransmissionQueues actually stored in Multiplexer
-    int maxSDUs;                                //Maximum number of SDUs multiplexed
-    MacAddressTable* ipMacTable;                //Table of correlation of IP Addresses and MAC5GR Addresses
-    bool flagBS;                                //Flag to know if equipment is BS or UE
+    uint8_t* destinationMacX;                   //Destination MAC5GR Address for each AggregationQueue
+    uint16_t* numberBytesAgrX;                  //Number of bytes for each UE
+    uint16_t* maxNumberBytesX;                  //Maximum number of bytes to fill PDUx
     bool verbose;                               //Verbosity flag
 public:
     /**
      * @brief Constructs a Multiplexer with information necessary to manage the queues
-     * @param _maxNumberBytes Maximum number of bytes supported in a single PDU
+     * @param _numberDestinations Number of destinations with PDUs to aggregate
      * @param _sourceMac Source MAC Address
-     * @param _ipMacTable Static declared MacAddressTable
-     * @param _maxSDUs Maximum number of SDUs supported in a single PDU
-     * @param _flagBS Flag that is true if equipment is BS
+     * @param _destinationMacX Destination MAC Addresses
+     * @param _maxNumberBytesX Maximum number of Bytes for each Buffer of PDUs
      * @param _verbose Verbosity flag
      */
-    Multiplexer(uint16_t _maxNumberBytes, uint8_t _sourceMac, MacAddressTable* _ipMacTable, int _maxSDUs, bool _flagBS, bool _verbose);
+    Multiplexer(int _numberDestinations, uint8_t _sourceMac, uint8_t* _destinationMacX, uint16_t* _maxNumberBytesX, bool _verbose);
     
     /**
      * @brief Destroys the Multiplexer object and unallocates memory
      */
     ~Multiplexer();
-
-    /**
-     * @brief Given the SDU, open it and look for its IP in Mac Address Table
-     * @param dataSDU SDU containing IP bytes
-     * @returns Destination MAC Address
-     */
-    uint8_t getMacAddress(char* dataSdu);
     
     /**
-     * @brief Defines a new TransmissionQueue to specific destination and adds
-     * it to array of TransmissionQueues in the Multiplexer.
-     * 
-     * @param _destinationMac Destination MAC Address
-     */
-    void setTransmissionQueue(uint8_t _destinationMac);
-    
-    /**
-     * @brief Adds a new DATA SDU to the TransmissionQueue that corresponds with IP Address of the L3 Packet
-     * @param sdu Data SDU received from TUN interface
-     * @param size Number of bytes in SDU
-     * @returns -1 if successful; MAC Address of queue to send data if queue is full for Tx; -2 for errors
-     */
-    int addSdu(char* sdu, uint16_t size);
-    
-    /**
-     * @brief Adds a new SDU to the TransmissionQueue that corresponds with MAC address passed as parameter
+     * @brief Adds a new SDU to the AggregationQueue that corresponds with MAC address passed as parameter
      * @param sdu SDU buffer
      * @param size Number of bytes of SDU
      * @param flagDataControl Data/Control Flag
-     * @param _destinationMac Destination MAC Address
-     * @returns -1 if successful; MAC Address of queue to send data if queue is full for Tx; -2 for errors
+     * @param destinationMac Destination MAC Address
      */    
-    int addSdu(char* sdu, uint16_t size, uint8_t flagDataControl, uint8_t _destinationMac);
+    void addSdu(char* sdu, uint16_t size, uint8_t flagDataControl, uint8_t destinationMac);
     
     /**
-     * @brief Gets the multiplexed PDU with MacHeader from TransmissionQueue identified by MAC Address
+     * @brief Gets the multiplexed PDU with MacHeader from AggregationQueue identified by MAC Address
      * @param buffer Buffer where PDU will be stored
      * @param macAddress Destination MAC Address of PDU
-     * @returns Size of the PDU
+     * @returns Size of the PDU; -1 for errors
      */    
     ssize_t getPdu(char* buffer, uint8_t macAddress);
     
     /**
-     * @brief Verifies if PDU is empty
-     * @param macAddress Destination MAC Address of PDU
-     * @returns true if empty; false otherwise
+     * @brief Gets the number of AggregationQueues allocated in the Multiplexer
+     * @returns Number of AggregationQueues
      */    
-    bool emptyPdu(uint8_t macAddress);
-    
-    /**
-     * @brief Gets the number of TransmissionQueues allocated in the Multiplexer
-     * @returns Number of TransmissionQueues
-     */    
-    int getNumberTransmissionQueues();
+    int getNumberDestinations();
 
     /**
-     * @brief Sets Maximum number of Bytes for each PDU on multiplexer and transmission queues
-     * @param _maxNumberBytes
+     * @brief Informs if SDU can be added to AggregationQueue to certain UE
+     * @param macAddress Destination MAC Address
+     * @param sduSize Size of SDU in Bytes
+     * @returns TRUE if queue is full; FALSE if SDU is supported
      */
-    void setMaxNumberBytes(uint16_t _maxNumberBytes);
+    bool aggregationQueueFull(uint8_t macAddress, uint16_t sduSize);
+
+    /**
+     * @brief Gets the index refering to destination MAC queue in Multiplexer
+     * @param macAddress Destination MAC address 
+     * @returns Index of AggregationQueue; -1 if macAddress not found
+     */
+    int getAggregationQueueIndex(uint8_t macAddress);
 };
 #endif  //INCLUDED_MULTIPLEXER_H

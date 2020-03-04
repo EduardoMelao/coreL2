@@ -7,7 +7,7 @@
 @Arquive name : DynamicParameters.cpp
 @Classification : System Parameters - Dynamic Parameters
 @
-@Last alteration : January 21st, 2019
+@Last alteration : Febrary 20th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -34,7 +34,7 @@ DynamicParameters::~DynamicParameters() {}
 
 void 
 DynamicParameters::fillDynamicVariables(
-    uint8_t* _fLutMatrix,                       //Fusion Lookup Table Matrix
+    uint8_t _fLutMatrix,                        //Fusion Lookup Table Matrix
     vector<allocation_cfg_t> _ulReservations,   //Uplink Reservations
     vector<uint8_t> _mcsDownlink,               //Modulation and Coding Scheme Downlink
     vector<uint8_t> _mcsUplink,                 //Modulation and Coding Scheme Uplink
@@ -47,8 +47,7 @@ DynamicParameters::fillDynamicVariables(
     uint8_t _rxMetricPeriodicity)               //Rx Metrics Periodicity in number of subframes
 {
 	//Copy fLutMatrix
-	for(int i=0;i<17;i++)
-		fLutMatrix[i]=_fLutMatrix[i];
+    fLutMatrix=_fLutMatrix;
 
     //Redefine vectors
     ulReservation = _ulReservations;
@@ -147,10 +146,9 @@ DynamicParameters::deserialize(
 
 void 
 DynamicParameters::setFLutMatrix(
-    uint8_t* _fLutMatrix)       //Fusion Spectrum Analysis Lookup Table
+    uint8_t _fLutMatrix)       //Fusion Spectrum Analysis Lookup Table
 {
-    for(int i=0;i<17;i++)
-        fLutMatrix[i] = _fLutMatrix[i];     //Copy array values
+    fLutMatrix = _fLutMatrix;     //Copy value
 }
 
 void 
@@ -253,12 +251,10 @@ DynamicParameters::setRxMetricPeriodicity(
 }
 
 
-void 
-DynamicParameters::getFLUTMatrix(
-    uint8_t* _fLutMatrix)   //Array of bits where information os going to be stored
+uint8_t 
+DynamicParameters::getFLUTMatrix()
 {
-    for(int i=0;i<17;i++)
-        _fLutMatrix[i] = fLutMatrix[i];
+    return fLutMatrix;
 }
 
 allocation_cfg_t 

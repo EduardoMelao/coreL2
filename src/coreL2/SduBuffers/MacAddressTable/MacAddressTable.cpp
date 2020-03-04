@@ -7,7 +7,7 @@
 @Arquive name : MacAddressTable.cpp
 @Classification : MAC Address Table
 @
-@Last alteration : January 20th, 2020
+@Last alteration : February 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -60,37 +60,31 @@ MacAddressTable::printMacTable(){
 void 
 MacAddressTable::addEntry(
     uint8_t* ipAddress,     //Entry IP Address
-    uint8_t macAddress,     //Entry 5GR MAC Address
-    bool flagBS)            //Entry flag indicating if it is a Base Station or not
+    uint8_t macAddress)     //Entry 5GR MAC Address)
 {
     //Relocate arrays
     uint8_t** _ipAddresses = new uint8_t*[numberRegisters+1];
     uint8_t* _macAddresses = new uint8_t[numberRegisters+1];
-    bool* _flagsBS = new bool[numberRegisters+1];
 
     //Copy old information
     for(int i=0;i<numberRegisters;i++){
         _ipAddresses[i] = ipAddresses[i];
         _macAddresses[i] = macAddresses[i];
-        _flagsBS[i] = flagsBS[i];
     }
 
     //Add new information
     _ipAddresses[numberRegisters] = ipAddress;
     _macAddresses[numberRegisters] = macAddress;
-    _flagsBS[numberRegisters] = flagBS;
 
     //Delete old arrays, if they exist
     if(numberRegisters){
         delete[] ipAddresses;
         delete[] macAddresses;
-        delete[] flagsBS;
     }
 
     //Renew class arrays
     this->ipAddresses = _ipAddresses;
     this->macAddresses = _macAddresses;
-    this->flagsBS = _flagsBS;
     if(verbose) cout<<"[MacAddressTable] Entry added"<<endl;
 
     //Increment number of registers
@@ -116,23 +110,19 @@ MacAddressTable::deleteEntry(
     for(int i=0;i<id;i++){
         _ipAddresses[i] = ipAddresses[i];
         _macAddresses[i] = macAddresses[i];
-        _flagsBS[i] = flagsBS[i];
     }
     for(int i=id;i<(numberRegisters-1);i++){
         _ipAddresses[i] = ipAddresses[i+1];
         _macAddresses[i] = macAddresses[i+1];
-        _flagsBS[i] = flagsBS[i+1];
     }
 
     //Delete old arrays
     delete[] ipAddresses;
     delete[] macAddresses;
-    delete[] flagsBS;
 
     //Renew class arrays
     this->ipAddresses = _ipAddresses;
     this->macAddresses = _macAddresses;
-    this->flagsBS = _flagsBS;
     if(verbose) cout<<"[MacAddressTable] Entry successfully deleted"<<endl;
 
     //Decrement number of registers
@@ -156,13 +146,6 @@ MacAddressTable::getMacAddress(
     return -1;
 }
 
-uint8_t MacAddressTable::getMacAddress(
-    int id)     //Entry identification
-{
-    if(id>=numberRegisters) return -1;
-    return macAddresses[id];
-}
-
 uint8_t* MacAddressTable::getIpAddress(
     uint8_t macAddr)    //Entry 5GR Mac Address
 {
@@ -171,22 +154,4 @@ uint8_t* MacAddressTable::getIpAddress(
             return ipAddresses[i];
     }
     return NULL;
-}
-
-uint8_t* MacAddressTable::getIpAddress(
-    int id)     //Entry Identification
-{
-    if(id>=numberRegisters) return 0;
-    return ipAddresses[id];
-}
-
-bool MacAddressTable::getFlagBS(
-    uint8_t mac)
-{
-    for(int i=0;i<numberRegisters;i++){
-        if(macAddresses[i]==mac)
-            return flagsBS[i];
-    }
-    if(verbose) cout<<"[MacAddressTable] Entry not found for flagBS."<<endl;
-    return false;
 }
