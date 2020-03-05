@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : February 20th, 2020
+@Last alteration : March 5th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -30,6 +30,8 @@ CoreL1::CoreL1(
 {
     verbose = _verbose;
     numberSockets = 0;
+    subFrameCounter = 0;    
+    rxMetricsPeriodicity = -1;      //Unnactivated
 
     //PDUs Client socket creation
     socketToL2 = createClientSocketToSendMessages(PORT_TO_L2, &serverPdusSocketAddress, "127.0.0.1");
@@ -280,12 +282,16 @@ CoreL1::decoding(
     string messageParameters;		            //This string will contain the parameters of the message
 	vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
 
+
+    //Downlink routine:
+    string subFrameStartMessage = flagBS? "1":"2";    //SubframeRx.Start control message
+    
     if(flagBS){     //Create BSSubframeRx.Start message
-    	BSSubframeRx_Start messageBS;	//Message parameters structure
-    	messageBS.snr = 10;    
-    	messageBS.serialize(messageParametersBytes);
-    	for(uint i=0;i<messageParametersBytes.size();i++)
-    		messageParameters+=messageParametersBytes[i];
+        BSSubframeRx_Start messageBS;	//Message parameters structure
+        messageBS.snr = 10;    
+        messageBS.serialize(messageParametersBytes);
+        for(uint i=0;i<messageParametersBytes.size();i++)
+            messageParameters+=messageParametersBytes[i];
     }
     else{       //Create UESubframeRx.Start message
         UESubframeRx_Start messageUE;	//Messages parameters structure
@@ -298,10 +304,6 @@ CoreL1::decoding(
             messageParameters+=messageParametersBytes[i];
     }
 
-    //Downlink routine:
-    string subFrameStartMessage = flagBS? "BS":"UE";    //SubframeRx.Start control message
-    subFrameStartMessage+="SubframeRx.Start";
-    
     //Add parameters
     subFrameStartMessage+=messageParameters;
 
@@ -314,8 +316,17 @@ CoreL1::decoding(
     while(size>0){
         if(verbose) cout<<"[CoreL1] PDU with size "<<(int)size<<" received."<<endl;
 
-        //Send control messages and PDU to L2
-        sendto(socketControlMessagesToL2, &(subFrameStartMessage[0]), subFrameStartMessage.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
+        //Send control messages and PDU to L2 and RX Metrics if it is time
+        if(subFrameCounter==rxMetricsPeriodicity){
+            sendto(socketControlMessagesToL2, &(subFrameStartMessage[0]), subFrameStartMessage.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
+            subFrameCounter = 0;
+        }
+        else{
+            sendto(socketControlMessagesToL2, &(subFrameStartMessage[0]), 1, MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
+            subFrameCounter ++;
+        }
+
+        //Send PDU
         sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
         
         //Receive next PDU
@@ -344,40 +355,35 @@ CoreL1::receiveInterlayerMessage(){
     while(messageSize>0){
         //#TODO: Implement other messages decoding because it is CONSIDERING ONLY SubframeTx.Start messages
 
-        //Manually convert char* to string
-    	int subFrameStartSize = 18;
-        for(int i=0;i<subFrameStartSize;i++)
-            message+=buffer[i];
-
     	vector<uint8_t> messageParametersBytes; //Array of Bytes where serialized message parameters will be stored
 
 
-        if(message=="BSSubframeTx.Start"){
+        if(buffer[0]=='1'){
             //Treat BSSubframeTx.Start parameters and trigger encoding MAC PDU to UE procedure
         	BSSubframeTx_Start messageParametersBS;
-        	for(int i=subFrameStartSize;i<messageSize;i++)
+        	for(int i=1;i<messageSize;i++)
         		messageParametersBytes.push_back(message[i]);
         	messageParametersBS.deserialize(messageParametersBytes);
+            rxMetricsPeriodicity = messageParametersBS.rxMetricPeriodicity;
         	if(verbose) cout<<"[CoreL1] Received BSSubframeTx.Start message. Receiving PDU from L2..."<<endl;
 			encoding();
         }
-        if(message=="UESubframeTx.Start"){
+        else if(buffer[0]=='2'){
             //Treat UESubframeTx.Start parameters and trigger encoding MAC PDU to BS procedure
 			UESubframeTx_Start messageParametersUE;
-			for(int i=subFrameStartSize;i<messageSize;i++)
+			for(int i=1;i<messageSize;i++)
 				messageParametersBytes.push_back(message[i]);
 			messageParametersUE.deserialize(messageParametersBytes);
+            rxMetricsPeriodicity = messageParametersUE.rxMetricPeriodicity;
 			if(verbose) cout<<"[CoreL1] Received UESubframeTx.Start message. Receiving PDU from L2..."<<endl;
 			encoding();
 		}
-
-        if(message=="BSSubframeTx.End"||message=="UESubframeTx.End"){
-            if(verbose) cout<<"[CoreL1] Received SubframeTx.End message from "<<message[0]<<message[1]<<"."<<endl;
+        else if(buffer[0]=='3'){
+            if(verbose) cout<<"[CoreL1] Received SubframeTx.End message."<<endl;
         }
 
         //Clear buffer and message and receive next control message
         bzero(buffer, MAXIMUMSIZE);
-        message.clear();
         messageSize = recv(socketControlMessagesFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
     }
 }

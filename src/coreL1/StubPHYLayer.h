@@ -46,6 +46,8 @@ private:
     int socketControlMessagesToL2;          //File descriptor of socket used to SEND Control Messages to L2
     struct sockaddr_in serverPdusSocketAddress; //Address of server to which client will send PDUs
     struct sockaddr_in serverControlMessagesSocketAddress;  //Address of server to which client will send control messages
+    int subFrameCounter;                    //Counter to trigger RX Metrics sending to MAC
+    uint8_t rxMetricsPeriodicity;           //Periodicity to send Rx metrics to MAC, in number of Subframes
     bool verbose;                           //Verbosity flag
 
     /**

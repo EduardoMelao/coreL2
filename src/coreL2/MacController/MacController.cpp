@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : February 20th, 2020
+@Last alteration : March 5th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -220,7 +220,7 @@ MacController::manager(){
                                 sduBuffers->enqueueControlSdu(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), currentParameters->getMacAddress(i));
                             }
 
-                            //Set 
+                            //Set Flag of UEs Out of Date to false
                             currentParameters->setFlagUesOutdated(false);
                         }
                     }
@@ -388,10 +388,8 @@ MacController::sendPdu(
     }
 
     //Downlink routine:
-    string subFrameStartMessage = flagBS? "BS":"UE";
-    subFrameStartMessage+="SubframeTx.Start";
-    string subFrameEndMessage = flagBS? "BS":"UE";
-    subFrameEndMessage += "SubframeTx.End";
+    string subFrameStartMessage = flagBS? "1":"2";
+    string subFrameEndMessage = "3";
     
     //Add parameters to original message
     subFrameStartMessage+=messageParameters;
