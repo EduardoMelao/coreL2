@@ -228,12 +228,12 @@ ProtocolControl::managerDynamicParameters(
 void 
 ProtocolControl::rxMetricsReport(){     //This procedure executes only on UE
     vector<uint8_t> rxMetricsBytes;     //Array of bytes where RX Metrics will be stored
-    
-    //Add Rx Metrics MACC SDU code to the beggining of the SDU
-    rxMetricsBytes.push_back('2');
 
     //Serialize Rx Metrics in the first position (because it is an UE)
     rxMetrics[0].serialize(rxMetricsBytes);
+    
+    //Add Rx Metrics MACC SDU code to the beggining of the SDU
+    rxMetricsBytes.insert(rxMetricsBytes.begin(), '2');
     
     if(verbose) cout<<"[MacController] RxMetrics report with size "<<rxMetricsBytes.size()<<" enqueued to BS."<<endl;
 
