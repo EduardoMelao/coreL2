@@ -7,7 +7,7 @@
 @Arquive name : LinkAdaptation.cpp
 @Classification : Link Adaptation
 @
-@Last alteration : February 20th, 2020
+@Last alteration : March 5th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -23,7 +23,7 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 */
 
 #include "LinkAdaptation.h"
-
+#include "../../common/lib5grange/lib5grange.h"
 LinkAdaptation::LinkAdaptation() {}
 
 LinkAdaptation::~LinkAdaptation() {}
@@ -34,7 +34,11 @@ LinkAdaptation::getSnrConvertToMcs(
 {   
     uint8_t mcs;    //Modulation and Coding Scheme
     
-    //#TODO: do some calculations/Look tables here
-    mcs = 10;
+    //Search for MCS into SNR-to-MCS mapping table
+    for(mcs=0;mcs<27;mcs++){
+        if(snr<lib5grange::mappingSNRtoMCS[mcs])
+            break;
+    }
+
     return mcs;
 }
