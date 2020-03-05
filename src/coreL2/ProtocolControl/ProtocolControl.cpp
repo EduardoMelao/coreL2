@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : February 20th, 2020
+@Last alteration : March 5th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -211,8 +211,6 @@ ProtocolControl::receiveInterlayerMessages(
     //Change MAC Rx Mode to DISABLED_MODE_RX before stopping System
     currentMacRxMode = DISABLED_MODE_RX;
 }
-
-
 
 void 
 ProtocolControl::managerDynamicParameters(

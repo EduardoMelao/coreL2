@@ -162,7 +162,7 @@ public:
 
     /**
      * @brief Gets Fusion Lookup Table matrix
-     * @returns Array of bits 
+     * @returns 8-bit integer containing array of 4 bits of Fusion LUT (least significant bits)
      */
     uint8_t getFLUTMatrix();
 
