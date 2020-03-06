@@ -32,7 +32,7 @@ namespace lib5grange {
 
     //These values are based on table from INATEL
     //Define SNR to MCS mapping. If SNR is greater than or equals to i and is lesser than j, then MCS = j.
-    float mappingSNRtoMCS[] = {-6.1, -3.6, -2.4, -1.3, -0.4, 1, 2.2, 6.6, 7.3, 7.9, 9, 
+    constexpr float mappingSNRtoMCS[] = {-6.1, -3.6, -2.4, -1.3, -0.4, 1, 2.2, 6.6, 7.3, 7.9, 9, 
     10.1, 11, 12, 13.5, 14.5, 15.9, 17.2, 18.6, 19.2, 20.7, 21.5, 25.6, 26.6, 27.2, 27.8, 28.7};
 
  typedef struct {
