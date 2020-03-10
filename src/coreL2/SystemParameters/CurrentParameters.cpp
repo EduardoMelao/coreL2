@@ -310,7 +310,7 @@ CurrentParameters::getMacAddress(
 bool
 CurrentParameters::areUesOutdated(){
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
 	return flagUesOutdated;
 }
@@ -367,7 +367,7 @@ CurrentParameters::setFlagUesOutdated(
 	bool _flagUesOutdated)	//New flag value
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
 	flagUesOutdated = _flagUesOutdated;
 }

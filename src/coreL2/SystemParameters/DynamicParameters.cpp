@@ -47,7 +47,7 @@ DynamicParameters::fillDynamicVariables(
     uint8_t _rxMetricPeriodicity)               //Rx Metrics Periodicity in number of subframes
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
 
 	//Copy fLutMatrix
     fLutMatrix=_fLutMatrix;
@@ -78,7 +78,7 @@ DynamicParameters::fillDynamicVariables(
     uint8_t _rxMetricPeriodicity)           //Rx Metrics periodicity in number of  
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
 
     //Push back information on vectors
     ulReservation.push_back(_ulReservation);
@@ -98,7 +98,7 @@ DynamicParameters::serialize(
     vector<uint8_t> & bytes)    //Vector where serialized bytes will be stored
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
 
     bytes.clear();  //Clear vector
 
@@ -132,7 +132,7 @@ DynamicParameters::deserialize(
     vector<uint8_t> & bytes)    //Vector where serialized bytes are stored
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
 
     uint8_t auxiliary;          //Auxiliary variable to store temporary information
 
@@ -161,7 +161,7 @@ DynamicParameters::setFLutMatrix(
     uint8_t _fLutMatrix)       //Fusion Spectrum Analysis Lookup Table
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
 
     fLutMatrix = _fLutMatrix;     //Copy value
 }
@@ -171,7 +171,7 @@ DynamicParameters::setUlReservation(
     allocation_cfg_t _ulReservation)    //Spectrum allocation for Uplink
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(_ulReservation.target_ue_id);
     if(index==-1){
@@ -190,7 +190,7 @@ DynamicParameters::setMcsDownlink(
     uint8_t _mcsDownlink)           //Modulation and Coding Scheme for Downlink
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -209,7 +209,7 @@ DynamicParameters::setMcsUplink(
     uint8_t _mcsUplink)     //Modulation and Coding Scheme for Uplink
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -232,7 +232,7 @@ DynamicParameters::setMimo(
     uint8_t _mimoPrecoding)                 //MIMO codeblock configuration for DL OR UL
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -258,7 +258,7 @@ DynamicParameters::setTPC(
     uint8_t _trasmissionPowerControl)   //Transmission Power Control value
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -276,7 +276,7 @@ DynamicParameters::setRxMetricPeriodicity(
     uint8_t _rxMetricPeriodicity)       //Rx Metrics Periodicity in number of subframes
 {    
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     if(rxMetricPeriodicity!=_rxMetricPeriodicity){
         rxMetricPeriodicity = _rxMetricPeriodicity; //Assign new values
@@ -288,7 +288,7 @@ uint8_t
 DynamicParameters::getFLUTMatrix()
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     return fLutMatrix;
 }
@@ -298,7 +298,7 @@ DynamicParameters::getUlReservation(
     uint8_t macAddress) //UE MAC Address
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -313,7 +313,7 @@ DynamicParameters::getUlReservations(
     vector<allocation_cfg_t> & _ulReservations)     //Vector where UL Reservations will be stored
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     _ulReservations.resize(ulReservation.size());   //Resize container vector
     for(int i=0;i<ulReservation.size();i++)
@@ -325,7 +325,7 @@ DynamicParameters::getMcsDownlink(
     uint8_t macAddress) //UE MAC Address
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -340,7 +340,7 @@ DynamicParameters::getMcsUplink(
     uint8_t macAddress) //UE MAC Address
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -355,7 +355,7 @@ DynamicParameters::getMimoConf(
     uint8_t macAddress) //UE MAC Address
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -371,7 +371,7 @@ DynamicParameters::getMimoDiversityMultiplexing(
     uint8_t macAddress) //UE MAC Address
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -386,7 +386,7 @@ DynamicParameters::getMimoAntenna(
     uint8_t macAddress) //UE MAC Address
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -401,7 +401,7 @@ DynamicParameters::getMimoOpenLoopClosedLoop(
     uint8_t macAddress) //UE MAC Address
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -416,7 +416,7 @@ DynamicParameters::getMimoPrecoding(
     uint8_t macAddress) //UE MAC Address
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -431,7 +431,7 @@ DynamicParameters::getTPC(
     uint8_t macAddress)//UE MAC Address
 {
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     int index = getIndex(macAddress);
     if(index==-1){
@@ -444,7 +444,7 @@ DynamicParameters::getTPC(
 uint8_t 
 DynamicParameters::getRxMetricsPeriodicity(){
     //Lock mutex till the end of procedure
-    lock_guard lk(dynamicParametersMutex);
+    lock_guard<mutex> lk(dynamicParametersMutex);
     
     return rxMetricPeriodicity;
 }
