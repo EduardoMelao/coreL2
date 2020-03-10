@@ -86,7 +86,7 @@ ProtocolControl::decodeControlSdus(
         if(verbose) cout<<"[ProtocolControl] UE Configured correctly. Returning ACK to BS..."<<endl;
 
         // ACK
-        char ackBuffer = '1';
+        char ackBuffer = '2';
 
         macController->sduBuffers->enqueueControlSdu((uint8_t*) &ackBuffer, 3, 0);
     }    
@@ -233,7 +233,7 @@ ProtocolControl::rxMetricsReport(){     //This procedure executes only on UE
     rxMetrics[0].serialize(rxMetricsBytes);
     
     //Add Rx Metrics MACC SDU code to the beggining of the SDU
-    rxMetricsBytes.insert(rxMetricsBytes.begin(), '2');
+    rxMetricsBytes.insert(rxMetricsBytes.begin(), '1');
     
     if(verbose) cout<<"[MacController] RxMetrics report with size "<<rxMetricsBytes.size()<<" enqueued to BS."<<endl;
 
