@@ -31,7 +31,7 @@ CoreL1::CoreL1(
     verbose = _verbose;
     numberSockets = 0;
     subFrameCounter = 0;    
-    rxMetricsPeriodicity = -1;      //Unnactivated
+    rxMetricsPeriodicity = 0;   //Unnactivated
 
     //PDUs Client socket creation
     socketToL2 = createClientSocketToSendMessages(PORT_TO_L2, &serverPdusSocketAddress, "127.0.0.1");
@@ -316,16 +316,18 @@ CoreL1::decoding(
     while(size>0){
         if(verbose) cout<<"[CoreL1] PDU with size "<<(int)size<<" received."<<endl;
 
+
         //Send control messages and PDU to L2 and RX Metrics if it is time
-        if(subFrameCounter==rxMetricsPeriodicity){
+        if(rxMetricsPeriodicity && subFrameCounter==rxMetricsPeriodicity){
             sendto(socketControlMessagesToL2, &(subFrameStartMessage[0]), subFrameStartMessage.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
             subFrameCounter = 0;
         }
         else{
             sendto(socketControlMessagesToL2, &(subFrameStartMessage[0]), 1, MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
-            subFrameCounter ++;
         }
 
+        if(rxMetricsPeriodicity) subFrameCounter ++;
+        
         //Send PDU
         sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
         
