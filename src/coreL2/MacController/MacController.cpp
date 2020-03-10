@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : March 5th, 2020
+@Last alteration : March 10th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -100,6 +100,16 @@ MacController::manager(){
                 
             	//Fill dynamic Parameters with current parameters (updating system)
             	currentParameters->loadDynamicParametersDefaultInformation(cliL2Interface->dynamicParameters);
+
+                //Perform MACC SDU construction to send to all UEs with actual system information
+                vector<uint8_t> dynamicParametersBytes;
+
+                //Enqueue a MACC SDU to each UE attached
+                for(int i=0;i<currentParameters->getNumberUEs();i++){
+                    dynamicParametersBytes.clear();
+                    currentParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
+                    sduBuffers->enqueueControlSdu(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), currentParameters->getMacAddress(i));
+                }
 
                 //Define IP-MAC correlation table creating and initializing a MacAddressTable with static informations (HARDCODE)
                 ipMacTable = new MacAddressTable(verbose);
@@ -216,7 +226,7 @@ MacController::manager(){
                             //Send a MACC SDU to each UE attached
                             for(int i=0;i<currentParameters->getNumberUEs();i++){
                                 dynamicParametersBytes.clear();
-                                cliL2Interface->dynamicParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
+                                currentParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
                                 sduBuffers->enqueueControlSdu(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), currentParameters->getMacAddress(i));
                             }
 
