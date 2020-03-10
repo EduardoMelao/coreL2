@@ -138,14 +138,16 @@ MacController::manager(){
                 //Create ProtocolControl to deal with MACC SDUs
                 protocolControl = new ProtocolControl(this, verbose);
 
-                //Perform MACC SDU construction to send to all UEs with actual system information
-                vector<uint8_t> dynamicParametersBytes;
+                if(flagBS){
+                    //Perform MACC SDU construction to send to all UEs with actual system information
+                    vector<uint8_t> dynamicParametersBytes;
 
-                //Enqueue a MACC SDU to each UE attached
-                for(int i=0;i<currentParameters->getNumberUEs();i++){
-                    dynamicParametersBytes.clear();
-                    currentParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
-                    sduBuffers->enqueueControlSdu(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), currentParameters->getMacAddress(i));
+                    //Enqueue a MACC SDU to each UE attached
+                    for(int i=0;i<currentParameters->getNumberUEs();i++){
+                        dynamicParametersBytes.clear();
+                        currentParameters->serialize(currentParameters->getMacAddress(i), dynamicParametersBytes);
+                        sduBuffers->enqueueControlSdu(&(dynamicParametersBytes[0]), dynamicParametersBytes.size(), currentParameters->getMacAddress(i));
+                    }
                 }
 
                 //#TODO: Send PHYConfig.Request here!
