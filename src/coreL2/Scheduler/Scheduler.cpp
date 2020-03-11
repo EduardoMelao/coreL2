@@ -7,7 +7,7 @@
 @Arquive name : Scheduler.cpp
 @Classification : Scheduler
 @
-@Last alteration : March 5th, 2020
+@Last alteration : March 11th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -41,12 +41,12 @@ Scheduler::~Scheduler() {}
 vector<int>
 Scheduler::selectUEs()
 {
-    vector<int> indexUEs;   //Array of indexes of UEs, each one referring to Current Parameters arrays UE position
+    vector<int> indexUEs;   //Array of UEIDs
 
     //Verify all UEs for data for transmission
     for(int i=0;i<currentParameters->getNumberUEs();i++){
         if(sduBuffers->bufferStatusInformation(currentParameters->getMacAddress(i)))
-            indexUEs.push_back(i);
+            indexUEs.push_back(currentParameters->getMacAddress(i));
     }
 
     return indexUEs;
@@ -57,36 +57,137 @@ Scheduler::scheduleRequest(
     MacPDU** macPDUs)   //Array of MAC PDUs where scheduler will store Multiplexed SDUs
 {
     //Define variables
-    vector<int> indexUEs;   //Array of indexes of UEs, each one referring to Current Parameters arrays UE position
-    int numberTotalRBs = 0; //Total Number of RBs for transmission
+    vector<int> ueIds;  //Array of UEIDs
     uint8_t fusionLutValue; //Fusion Lookup Table value: array of 4 least significat bits
 
     //Check buffer status information & select UEs for scheduling
-    indexUEs = selectUEs();
-    if(verbose) cout<<"[Scheduler] Selected "<<indexUEs.size()<<" UEs for next transmission."<<endl;
+    ueIds = selectUEs();
+    if(verbose) cout<<"[Scheduler] Selected "<<ueIds.size()<<" UEs for next transmission."<<endl;
 
-    //Read Fusion Lookup Tables and obtain Total Number of RBs for transmission (NumTRBs)
-    fusionLutValue = currentParameters->getFLUTMatrix();
-    for(int i=0;i<4;i++){       //For each bit
-        if((fusionLutValue>>i)==1){ //If channel is IDLE
-            numberTotalRBs+=33;         //Adds 33 RBs to Total number of RBs available
-        }
-    }
-
-    /*  #TODO:
-        1. inicializar macPDUs
-    */
+    //If there's just one UE for transmission, duplicate entry to simulate 2 UEs (Scheduler works with 2 UEs for transmission)
+    if(ueIds.size()==1)
+        ueIds.push_back(ueIds[0]);
     
-    //For each UE (each PDU?)
-    for(int i=0;i<indexUEs.size();i++){
-        /*  #TODO:
-        2. Inicializar um MAC PDU para cada macPDU[i] 
-        3. calcular numero RBs para cada UE;
-        4. Preencher informacao de alocacao em cada PDU com num RBs calculado, mimo, tudo que tiver
+    //Calculate allocation based on Fusion Lookup Table and fill MacPDU objects
+    calculateDownlinkSpectrumAllocation(macPDUs, currentParameters->getFLUTMatrix());
+    
+    //For each PDU:
+    for(int i=0;i<ueIds.size();i++){
+        /*  #TODO: fill MAC-PDY ctl struct
+        macPDUs[i]->macphy_ctl_.
+        */
+
+        //Fill MIMO struct
+        macPDUs[i]->mimo_.scheme = (currentParameters->getMimoConf(ueIds[i]))? ((currentParameters->getMimoDiversityMultiplexing(ueIds[i]))? DIVERSITY:MULTIPLEXING):NONE;
+        macPDUs[i]->mimo_.num_tx_antenas = currentParameters->getMimoAntenna(ueIds[i]);
+        macPDUs[i]->mimo_.precoding_mtx = currentParameters->getMimoPrecoding(ueIds[i]);
+
+        //Fill MCS struct
+        macPDUs[i]->mcs_.modulation = mcsToModulation[currentParameters->getMcsDownlink(ueIds[i])];
+
+        //Calculate number of bits for next transmission
+        size_t numberBits = get_bit_capacity(currentParameters->getNumerology(), macPDUs[i]->allocation_, macPDUs[i]->mimo_, macPDUs[i]->mcs_.modulation);
+
+        //Create a new Multiplexer object to aggregate SDUs
+
+        /*  #TODO: 
         5. lib5grange::get_bit_capacity(const size_t & numID,const allocation_cfg_t & allocation,const mimo_cfg_t & mimo,const qammod_t & mod) e colocar num array
         6. Criar mux Multiplexer() (AggregationQueue)
         7. verificar sdus de controle, depois de dados e ir adicionando;
         8. Preencher informacao de alocacao em cada PDU com num RBs calculado
     */
+    }
+}
+
+void
+Scheduler::calculateDownlinkSpectrumAllocation(
+    MacPDU** macPdus,           //Array of MAC PDUs where scheduler will store Multiplexed SDUs
+    uint8_t fusionLutValue)     //Fusion Lookup Table value: array of 4 least significat bits
+{
+    //Process cases 
+    switch(fusionLutValue){
+        case 15:    //1111 -> 2x33 RBs for both UEs
+            //UE[0]: RBs 0 to 65
+            macPdus[0]->allocation_.first_rb = 0;
+            macPdus[0]->allocation_.number_of_rb = 66;
+
+            //UE[1]: RBs 66 to 131
+            macPdus[1]->allocation_.first_rb = 66;
+            macPdus[1]->allocation_.number_of_rb = 66;
+        break;
+
+        case 13: case 11:   //1101(13) or 1011(11) -> 2x33 RBs for one UE and 1x33 RBs for the other
+            //UE[0]: RBs 0 to 32(flut=11) or 65(flut=13)
+            //UE[1]: RBs 66(flut=11) or 99(flut=13) to 131
+
+            macPdus[0]->allocation_.first_rb = 0;
+
+            if(fusionLutValue==11){
+                macPdus[0]->allocation_.number_of_rb = 33;
+                macPdus[1]->allocation_.first_rb = 66;
+                macPdus[1]->allocation_.number_of_rb = 66;
+            }
+            else{
+                macPdus[0]->allocation_.number_of_rb = 66;
+                macPdus[1]->allocation_.first_rb = 99;
+                macPdus[1]->allocation_.number_of_rb = 33;
+            }
+        break;
+
+        case 14: case 7:    //1110(14) or 0111(7) -> 1,5x33 RBs for both UEs
+            //UE[0]: RBs 0 to 48(flut=14) or 33 to 81(flut=7)
+            //UE[1]: RBs 49 to 98(flut=14) or 82 to 131(flut=7)
+
+            if(fusionLutValue==7){
+                macPdus[0]->allocation_.first_rb = 33;
+                macPdus[1]->allocation_.first_rb = 82;
+            }
+            else{
+                macPdus[0]->allocation_.first_rb = 0;
+                macPdus[1]->allocation_.first_rb = 49;
+            }
+
+            macPdus[0]->allocation_.number_of_rb = 49;
+            macPdus[1]->allocation_.number_of_rb = 50;
+        break;
+
+        case 9: case 10: case 12: case 5: case 6: case 3:           //1001, 1010, 1100, 0101, 0110 or 0011 -> 1x33 RBs for both UEs
+            //UE[0]: RBs 0 to 32(flut=9,10,12) or 33 to 65(flut=5,6) or 66 to 98(flut=3)
+            //UE[1]: RBs 33 to 65(flut=12) or 66 to 98(flut=6,10) or 99 to 131(flut=9,5,3)
+            for(int i=0;i<3;i++){
+                if((fusionLutValue<<i)&8==8){
+                    macPdus[0]->allocation_.first_rb = i*33;
+                    break;
+                }
+            }
+            for(int i=0;i<3;i++){
+                if((fusionLutValue>>i)&1==1){
+                    macPdus[1]->allocation_.first_rb = (3-i)*33;
+                    break;
+                }
+            }
+            macPdus[0]->allocation_.number_of_rb = 33;
+            macPdus[1]->allocation_.number_of_rb = 33;
+        break;
+
+        case 8: case 4: case 2: case 1:     //1000, 0100, 0010 or 0001 -> 0,5x33 RBs for both UEs
+            //UE[0]: RBs 0 to 15(flut=8) or 33 to 48(flut=4) or 66 to 81(flut=2) ir 99 to 114(flut=1)
+            //UE[1]: RBs 16 to 32(flut=8) or 49 to 65(flut=4) or 82 to 98(flut=2) ir 115 to 131(flut=1)
+            
+            for(int i=0;i<4;i++){
+                if((fusionLutValue<<i)&8==8){
+                    macPdus[0]->allocation_.first_rb = 33*i;
+                    break;
+                }
+            }
+            macPdus[1]->allocation_.first_rb = macPdus[0]->allocation_.number_of_rb + 16;
+
+            macPdus[0]->allocation_.number_of_rb = 16;
+            macPdus[1]->allocation_.number_of_rb = 17;
+        break;
+
+        default:
+            if(verbose) cout<<"[Scheduler] Invalid Fusion Lookup Table value"<<endl;
+        break;
     }
 }
