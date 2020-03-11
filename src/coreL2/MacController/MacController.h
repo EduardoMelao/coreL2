@@ -16,7 +16,6 @@
 #include "../SduBuffers/SduBuffers.h"
 #include "../ProtocolPackage/ProtocolPackage.h"
 #include "../SduBuffers/MacAddressTable/MacAddressTable.h"
-#include "../Multiplexer/AggregationQueue.h"
 #include "../Multiplexer/Multiplexer.h"
 #include "../ReceptionProtocol/ReceptionProtocol.h"
 #include "../TransmissionProtocol/TransmissionProtocol.h"
@@ -91,17 +90,17 @@ public:
      */
     void startThreads();
 
-    /**
-     * @brief Immediately schedules SDUs for transmission
-     */
-    void provisionalScheduling();
+    // #TODO: REMOVE /**
+    //  * @brief Immediately schedules SDUs for transmission
+    //  */
+    // void provisionalScheduling();
 
-    /**
-     * @brief Sends Pdu contained in MUX to MacAddress passed as parameter
-     * @param mux Multiplexer object containing multiplexed SDUs
-     * @param macAddress Destination MAC Address
-     */
-    void sendPdu(Multiplexer* mux, uint8_t macAddress);
+    // /**
+    //  * @brief Sends Pdu contained in MUX to MacAddress passed as parameter
+    //  * @param mux Multiplexer object containing multiplexed SDUs
+    //  * @param macAddress Destination MAC Address
+    //  */
+    // void sendPdu(Multiplexer* mux, uint8_t macAddress);
 
     /**
      * @brief Procedure that performs decoding of PDUs received from L1

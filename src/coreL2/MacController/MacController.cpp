@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : March 10th, 2020
+@Last alteration : March 11th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -298,122 +298,122 @@ MacController::startThreads(){
     if(verbose) cout<<"[MacController] Threads started successfully."<<endl;
 }
 
-void
-MacController::provisionalScheduling(){
-    char bufferSdu[MAXIMUM_BUFFER_LENGTH];  //Buffer to store aggregated SDUs
-    ssize_t numberBytesRead = 0;            //Size of MAC SDU read in Bytes
-    uint8_t macAddress;
-    uint16_t maxNumberBytes = 1500;
+// #TODO: REMOVE  void
+// MacController::provisionalScheduling(){
+//     char bufferSdu[MAXIMUM_BUFFER_LENGTH];  //Buffer to store aggregated SDUs
+//     ssize_t numberBytesRead = 0;            //Size of MAC SDU read in Bytes
+//     uint8_t macAddress;
+//     uint16_t maxNumberBytes = 1500;
 
-    while(currentMacMode!=STOP_MODE){
-        if(currentMacMode==IDLE_MODE){
-            currentMacTxMode = ACTIVE_MODE_TX;
-            for(int i=0;i<currentParameters->getNumberUEs();i++){
-                macAddress = flagBS? currentParameters->getMacAddress(i) : 0;
-                if(sduBuffers->bufferStatusInformation(macAddress)){
-                    //Fulfill bufferData with zeros 
-                    bzero(bufferSdu, MAXIMUM_BUFFER_LENGTH);
+//     while(currentMacMode!=STOP_MODE){
+//         if(currentMacMode==IDLE_MODE){
+//             currentMacTxMode = ACTIVE_MODE_TX;
+//             for(int i=0;i<currentParameters->getNumberUEs();i++){
+//                 macAddress = flagBS? currentParameters->getMacAddress(i) : 0;
+//                 if(sduBuffers->bufferStatusInformation(macAddress)){
+//                     //Fulfill bufferData with zeros 
+//                     bzero(bufferSdu, MAXIMUM_BUFFER_LENGTH);
 
-                    Multiplexer* mux = new Multiplexer(1, currentMacAddress, &macAddress, &maxNumberBytes, verbose);
+//                     Multiplexer* mux = new Multiplexer(1, currentMacAddress, &macAddress, &maxNumberBytes, verbose);
 
-                    //Gets next SDU from SduBuffers. Prority for MACC SDUs
-                    if(sduBuffers->getNumberControlSdus(macAddress)){
-                        numberBytesRead = sduBuffers->getNextControlSdu(macAddress, bufferSdu);
-                        mux->addSdu(bufferSdu, numberBytesRead, 0, macAddress);
-                    }
-                    else{
-                        numberBytesRead = sduBuffers->getNextDataSdu(macAddress, bufferSdu);
-                        mux->addSdu(bufferSdu, numberBytesRead, 1, macAddress);
-                    }
+//                     //Gets next SDU from SduBuffers. Prority for MACC SDUs
+//                     if(sduBuffers->getNumberControlSdus(macAddress)){
+//                         numberBytesRead = sduBuffers->getNextControlSdu(macAddress, bufferSdu);
+//                         mux->addSdu(bufferSdu, numberBytesRead, 0, macAddress);
+//                     }
+//                     else{
+//                         numberBytesRead = sduBuffers->getNextDataSdu(macAddress, bufferSdu);
+//                         mux->addSdu(bufferSdu, numberBytesRead, 1, macAddress);
+//                     }
 
-                    sendPdu(mux, macAddress);
-                }
-            }
-        }
-        else{
-            //Change MAC Tx Mode to DISABLED_MODE_TX
-            currentMacTxMode = DISABLED_MODE_TX;
-        }
-    }
-    if(verbose) cout<<"[Scheduller] Entering STOP_MODE."<<endl;    
-    //Change MAC Tx Mode to DISABLED_MODE_TX before stopping System
-    currentMacTxMode = DISABLED_MODE_TX;
-}
+//                     sendPdu(mux, macAddress);
+//                 }
+//             }
+//         }
+//         else{
+//             //Change MAC Tx Mode to DISABLED_MODE_TX
+//             currentMacTxMode = DISABLED_MODE_TX;
+//         }
+//     }
+//     if(verbose) cout<<"[Scheduller] Entering STOP_MODE."<<endl;    
+//     //Change MAC Tx Mode to DISABLED_MODE_TX before stopping System
+//     currentMacTxMode = DISABLED_MODE_TX;
+// }
 
-void 
-MacController::sendPdu(
-    Multiplexer* mux,       //Multiplexer object containing multiplexed SDUs
-    uint8_t macAddress)     //Destination MAC Address of AggregationQueue in the Multiplexer
-{
-    //Declaration of PDU buffers: data and control
-    char bufferPdu[MAXIMUM_BUFFER_LENGTH];
-    bzero(bufferPdu, MAXIMUM_BUFFER_LENGTH);
+// void 
+// MacController::sendPdu(
+//     Multiplexer* mux,       //Multiplexer object containing multiplexed SDUs
+//     uint8_t macAddress)     //Destination MAC Address of AggregationQueue in the Multiplexer
+// {
+//     //Declaration of PDU buffers: data and control
+//     char bufferPdu[MAXIMUM_BUFFER_LENGTH];
+//     bzero(bufferPdu, MAXIMUM_BUFFER_LENGTH);
 
-    //Gets PDU from multiplexer
-    ssize_t numberDataBytesRead = mux->getPdu(bufferPdu, macAddress);
+//     //Gets PDU from multiplexer
+//     ssize_t numberDataBytesRead = A->getPdu(bufferPdu, macAddress);
 
-    //Fill MAC PDU with information 
-    setMacPduStaticInformation(numberDataBytesRead, macAddress);
-    macPDU.mac_data_.assign(bufferPdu, bufferPdu+numberDataBytesRead);
-    macPDU.allocation_.target_ue_id = macAddress;
-    macPDU.mcs_.num_info_bytes = numberDataBytesRead;
-    macPDU.allocation_.number_of_rb = get_num_required_rb(macPDU.numID_, macPDU.mimo_, macPDU.mcs_.modulation, 3/4 , numberDataBytesRead*8);
+//     //Fill MAC PDU with information 
+//     setMacPduStaticInformation(numberDataBytesRead, macAddress);
+//     macPDU.mac_data_.assign(bufferPdu, bufferPdu+numberDataBytesRead);
+//     macPDU.allocation_.target_ue_id = macAddress;
+//     macPDU.mcs_.num_info_bytes = numberDataBytesRead;
+//     macPDU.allocation_.number_of_rb = get_num_required_rb(macPDU.numID_, macPDU.mimo_, macPDU.mcs_.modulation, 3/4 , numberDataBytesRead*8);
 
-    //Create SubframeTx.Start message
-    string messageParameters;		            //This string will contain the parameters of the message
-	vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
+//     //Create SubframeTx.Start message
+//     string messageParameters;		            //This string will contain the parameters of the message
+// 	vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
 
-    if(flagBS){     //Create BSSubframeTx.Start message
-    	BSSubframeTx_Start messageBS;	//Message parameters structure
+//     if(flagBS){     //Create BSSubframeTx.Start message
+//     	BSSubframeTx_Start messageBS;	//Message parameters structure
 
-        //Fill the structure with information
-    	messageBS.numUEs = currentParameters->getNumberUEs();
-    	messageBS.numPDUs = 1;
-        messageBS.fLutDL = currentParameters->getFLUTMatrix();
-        currentParameters->getUlReservations(messageBS.ulReservations);
-    	messageBS.numerology = currentParameters->getNumerology();
-    	messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
-    	messageBS.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
+//         //Fill the structure with information
+//     	messageBS.numUEs = currentParameters->getNumberUEs();
+//     	messageBS.numPDUs = 1;
+//         messageBS.fLutDL = currentParameters->getFLUTMatrix();
+//         currentParameters->getUlReservations(messageBS.ulReservations);
+//     	messageBS.numerology = currentParameters->getNumerology();
+//     	messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
+//     	messageBS.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
 
-        //Serialize struct
-    	messageBS.serialize(messageParametersBytes);
+//         //Serialize struct
+//     	messageBS.serialize(messageParametersBytes);
 
-        //Copy structure bytes to message
-    	for(uint i=0;i<messageParametersBytes.size();i++)
-    		messageParameters+=messageParametersBytes[i];
-    }
-    else{       //Create UESubframeTx.Start message
-        UESubframeTx_Start messageUE;	//Messages parameters structure
+//         //Copy structure bytes to message
+//     	for(uint i=0;i<messageParametersBytes.size();i++)
+//     		messageParameters+=messageParametersBytes[i];
+//     }
+//     else{       //Create UESubframeTx.Start message
+//         UESubframeTx_Start messageUE;	//Messages parameters structure
 
-        //Fill the structure with information
-        messageUE.ulReservation = currentParameters->getUlReservation(currentParameters->getMacAddress(0));
-        messageUE.numerology = currentParameters->getNumerology();
-    	messageUE.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
-        messageUE.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
+//         //Fill the structure with information
+//         messageUE.ulReservation = currentParameters->getUlReservation(currentParameters->getMacAddress(0));
+//         messageUE.numerology = currentParameters->getNumerology();
+//     	messageUE.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
+//         messageUE.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
 
-        //Serialize struct
-        messageUE.serialize(messageParametersBytes);
+//         //Serialize struct
+//         messageUE.serialize(messageParametersBytes);
 
-        //Copy struct bytes to message
-        for(uint i=0;i<messageParametersBytes.size();i++)
-            messageParameters+=messageParametersBytes[i];
-    }
+//         //Copy struct bytes to message
+//         for(uint i=0;i<messageParametersBytes.size();i++)
+//             messageParameters+=messageParametersBytes[i];
+//     }
 
-    //Downlink routine:
-    string subFrameStartMessage = flagBS? "1":"2";
-    string subFrameEndMessage = "3";
+//     //Downlink routine:
+//     string subFrameStartMessage = flagBS? "1":"2";
+//     string subFrameEndMessage = "3";
     
-    //Add parameters to original message
-    subFrameStartMessage+=messageParameters;
+//     //Add parameters to original message
+//     subFrameStartMessage+=messageParameters;
 
-    //Send interlayer messages and the PDU
-    protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
-    transmissionProtocol->sendPackageToL1(macPDU, macAddress);
-    protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
+//     //Send interlayer messages and the PDU
+//     protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
+//     transmissionProtocol->sendPackageToL1(macPDU, macAddress);
+//     protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
     
-    //Deletes multiplexer object
-    delete mux;
-}
+//     //Deletes multiplexer object
+//     delete mux;
+// }
 
 uint8_t 
 MacController::decoding()
@@ -454,18 +454,18 @@ MacController::decoding()
     ProtocolPackage pdu(buffer, numberDecodingBytes , verbose);
     pdu.removeMacHeader();
 
-    //Create AggregationQueue object to help unstacking SDUs contained in the PDU
-    AggregationQueue *aggregationQueue = pdu.getMultiplexedSDUs();
-    while((numberDecodingBytes = aggregationQueue->getSDU(buffer))>0){
+    //Create Multiplexer object to help unstacking SDUs contained in the PDU
+    Multiplexer *multiplexer = pdu.getMultiplexedSDUs();
+    while((numberDecodingBytes = multiplexer->getSDU(buffer))>0){
         //Test if it is Control SDU
-        if(aggregationQueue->getCurrentDataControlFlag()==0)
+        if(multiplexer->getCurrentDataControlFlag()==0)
             protocolControl->decodeControlSdus(currentMacMode, buffer, numberDecodingBytes, macAddress);
         else{    //Data SDU
         if(verbose) cout<<"[MacController] Data SDU received. Forwarding to L3."<<endl; 
             transmissionProtocol->sendPackageToL3(buffer, numberDecodingBytes);
         }
     }
-    delete aggregationQueue;
+    delete multiplexer;
     
     return macAddress;
 }

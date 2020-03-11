@@ -92,7 +92,7 @@ Scheduler::scheduleRequest(
 
         /*  #TODO: 
         5. lib5grange::get_bit_capacity(const size_t & numID,const allocation_cfg_t & allocation,const mimo_cfg_t & mimo,const qammod_t & mod) e colocar num array
-        6. Criar mux Multiplexer() (AggregationQueue)
+        6. Criar mux Multiplexer() (Multiplexer)
         7. verificar sdus de controle, depois de dados e ir adicionando;
         8. Preencher informacao de alocacao em cada PDU com num RBs calculado
     */

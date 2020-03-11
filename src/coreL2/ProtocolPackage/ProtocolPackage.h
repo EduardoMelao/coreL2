@@ -12,10 +12,10 @@
 #include <string.h>	//memcpy
 using namespace std;
 
-#include "../Multiplexer/AggregationQueue.h"
+#include "../Multiplexer/Multiplexer.h"
 
-//Predefinition of class AggregationQueue 
-class AggregationQueue;
+//Predefinition of class Multiplexer 
+class Multiplexer;
 
 /**
  * @brief Class used to build MAC Header with all information it needs
@@ -88,10 +88,10 @@ public:
     void removeMacHeader();
     
     /**
-     * @brief Gets a AggregationQueue object that will be used to unstack SDUs in decoding
-     * @returns AggregationQueue to perform demultiplexing
+     * @brief Gets a Multiplexer object that will be used to unstack SDUs in decoding
+     * @returns Multiplexer to perform demultiplexing
      */
-    AggregationQueue* getMultiplexedSDUs();
+    Multiplexer* getMultiplexedSDUs();
     
     /**
      * @brief Gets total PDU size
