@@ -57,8 +57,10 @@ Scheduler::scheduleRequest(
     MacPDU** macPDUs)   //Array of MAC PDUs where scheduler will store Multiplexed SDUs
 {
     //Define variables
-    vector<int> ueIds;  //Array of UEIDs
-    uint8_t fusionLutValue; //Fusion Lookup Table value: array of 4 least significat bits
+    vector<int> ueIds;                      //Array of UEIDs
+    uint8_t fusionLutValue;                 //Fusion Lookup Table value: array of 4 least significat bits
+    char sduBuffer[MAXIMUM_BUFFER_LENGTH];  //Buffer to store SDU on aggregation procedure
+    size_t sduSize;                         //SDU Size in bytes
 
     //Check buffer status information & select UEs for scheduling
     ueIds = selectUEs();
@@ -89,13 +91,61 @@ Scheduler::scheduleRequest(
         size_t numberBits = get_bit_capacity(currentParameters->getNumerology(), macPDUs[i]->allocation_, macPDUs[i]->mimo_, macPDUs[i]->mcs_.modulation);
 
         //Create a new Multiplexer object to aggregate SDUs
+        Multiplexer* multiplexer = new Multiplexer(numberBits/8, 0, ueIds[i], verbose);
 
-        /*  #TODO: 
-        5. lib5grange::get_bit_capacity(const size_t & numID,const allocation_cfg_t & allocation,const mimo_cfg_t & mimo,const qammod_t & mod) e colocar num array
-        6. Criar mux Multiplexer() (Multiplexer)
-        7. verificar sdus de controle, depois de dados e ir adicionando;
-        8. Preencher informacao de alocacao em cada PDU com num RBs calculado
-    */
+        //Aggregation procedure - Control SDUs
+        int numberControlSDUs = sduBuffers->getNumberControlSdus(ueIds[i]);
+        if(numberControlSDUs==-1){
+            if(verbose) cout<<"[Scheduler] Invalid MAC address scheduling control SDUs."<<endl;
+            exit(1);
+        }
+        
+        for(int i=0;i<numberControlSDUs;i++){
+            //Verify if it is possivel to enqueue next SDU
+            if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextControlSduSize(ueIds[0]))>numberBits/8){
+                cout<<"[Scheduler] End of scheduling control SDUs: extrapolated bit capacity."<<endl;
+                break;
+            }
+
+            //Clear buffer
+            bzero(sduBuffer, MAXIMUM_BUFFER_LENGTH);
+
+            //Get SDU from queue
+            sduSize = sduBuffers->getNextControlSdu(ueIds[i], sduBuffer);
+
+            //Add SDU to multiplexer
+            multiplexer->addSDU(sduBuffer, sduSize, 0);
+        }
+
+        //Aggregation procedure - Data SDUs
+        int numberDataSDUs = sduBuffers->getNumberDataSdus(ueIds[i]);
+        if(numberDataSDUs==-1){
+            if(verbose) cout<<"[Scheduler] Invalid MAC address scheduling data SDUs."<<endl;
+            exit(1);
+        }
+        
+        for(int i=0;i<numberDataSDUs;i++){
+            //Verify if it is possivel to enqueue next SDU
+            if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextDataSduSize(ueIds[0]))>numberBits/8){
+                cout<<"[Scheduler] End of scheduling data SDUs: extrapolated bit capacity."<<endl;
+                break;
+            }
+
+            //Clear buffer
+            bzero(sduBuffer, MAXIMUM_BUFFER_LENGTH);
+
+            //Get SDU from queue
+            sduSize = sduBuffers->getNextDataSdu(ueIds[i], sduBuffer);
+
+            //Add SDU to multiplexer
+            multiplexer->addSDU(sduBuffer, sduSize, 1);
+        }
+
+        //Retreive full PDU from multiplexer
+        multiplexer->getPDU(macPDUs[i]->mac_data_);
+
+        //Delete multiplexer
+        delete multiplexer;
     }
 }
 

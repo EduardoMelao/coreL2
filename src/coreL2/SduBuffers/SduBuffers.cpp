@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : February 18th, 2020
+@Last alteration : March 11th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -256,7 +256,7 @@ SduBuffers::getNextControlSdu(
     //Lock mutex to remove SDU from the head of the queue
     lock_guard<mutex> lk(controlMutex);
     if(controlSduQueue[index].size()==0){
-        if(verbose) cout<<"[SduBuffers] Tried to get empty SDU control SDU queue."<<endl;
+        if(verbose) cout<<"[SduBuffers] Tried to get empty SDU from control SDU queue."<<endl;
         return -1;
     }
 
@@ -272,7 +272,7 @@ SduBuffers::getNextControlSdu(
     controlSizes[index].erase(controlSizes[index].begin());
     controlSduQueue[index].erase(controlSduQueue[index].begin());
 
-    if(verbose) cout<<"[SduBuffers] Got SDU from L3 queue."<<endl;
+    if(verbose) cout<<"[SduBuffers] Got SDU from control SDU queue."<<endl;
 
     return returnValue;
 }

@@ -9,12 +9,9 @@
 
 #include <iostream>
 #include <vector>
+#include <string.h>	//memcpy
 
-#include "../ProtocolPackage/ProtocolPackage.h"
 using namespace std;
-
-//Predefinition of class ProtocolPackage 
-class ProtocolPackage;
 
 /**
  * @brief Queue used to store SDUs that will be transmitted to a specific destination
@@ -22,8 +19,9 @@ class ProtocolPackage;
 class Multiplexer{
 private:
     uint8_t numberSDUs;                     //Number of SDUs multiplexed
+    int currentPDUSize;                     //Size of PDU that is being aggregated
     int maxNumberBytes;                     //Maximum number of bytes
-    char* buffer;                           //Buffer accumulates SDUs
+    char* sduBuffer;                        //Buffer accumulates SDUs
     uint8_t sourceAddress;                  //Source MAC address
     uint8_t destinationAddress;             //Destination MAC address
     int offset;                             //Offset for decoding
@@ -59,14 +57,12 @@ public:
     Multiplexer(int _maxNumberBytes, uint8_t sourceAddress, uint8_t destinationAddress, bool _verbose);
     
     /**
-     * @brief Constructs a Multiplexer to help decoding an incoming PDU, dequeueing SDUs contained in it
-     * @param _buffer Buffer containing PDU for decoding
-     * @param _nSDUs Number of SDUs enqueued in PDU
-     * @param _sizesSDUs Array with sizes of each SDU enqueued
-     * @param _flagsDataControlSDUS Array with Data/Control flags of each SDU
+     * @brief Constructs Multiplexer with an incoming PDU to be decoded
+     * @param pdu Buffer containing full PDU
+     * @param _size Size of PDU in bytes
      * @param _verbose Verbosity flag
      */
-    Multiplexer(char* _buffer, uint8_t _nSDUs, uint16_t* _sizesSDUs, uint8_t* _flagsDataControlSDUS, bool _verbose);
+    Multiplexer(char* pdu, size_t _size, bool _verbose);
     
     /**
      * @brief Destroy a Multiplexer object
@@ -95,11 +91,10 @@ public:
     ssize_t getSDU(char* sdu);
     
     /**
-     * @brief Creates a new ProtocolPackage object based on information stored in class variables on encoding process
-     * @returns ProtocolPackage for the SDUs multiplexed
-     * Requires clearing the buffer before using this Multiplexer again
+     * @brief Creates a new ProtocolPackage object based on information stored in class variables on encoding process and returns serialized PDU
+     * @param pduBuffer Buffer to store PDU with SDUs multiplexed
      */
-    ProtocolPackage* getPDUPackage();
+    void getPDU(vector<uint8_t> & pduBuffer);
 
     /**
      * @brief Gets information of Data/Control flag of previous SDU to be used in decoding
@@ -112,5 +107,15 @@ public:
      * @returns Destination MAC address;
      */
     uint8_t getDestinationAddress();
+
+    /**
+     * @brief Inserts MAC header based on class variables values
+     */
+    void insertMacHeader();
+    
+    /**
+     * @brief Removes MAC header and input its information to class variables
+     */
+    void removeMacHeader();
 };
 #endif  //INCLUDED_AGGREGATION_QUEUE_H
