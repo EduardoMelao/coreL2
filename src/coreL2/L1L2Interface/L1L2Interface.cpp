@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : January 20th, 2020
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -98,47 +98,88 @@ L1L2Interface::createServerSocketToReceiveMessages(
 }
 
 void
-L1L2Interface::sendPdu(
-	MacPDU macPdu,          //MAC PDU structure
-	uint8_t macAddress)     //Destination MAC Address
+L1L2Interface::sendPdus(
+	MacPDU** macPdus,           //MAC PDUs structure
+    int numberPdus)             //Number of MAC PDUs for transmission
 {
-    ssize_t numberSent;      //Number of Bytes sent to L1
+    ssize_t numberSent;                 //Number of Bytes sent to L1
+    size_t numberPduBytes;              //Number of Bytes contained into PDU 
+    vector<uint8_t> serializedMacPdus;  //Array of Bytes containing all MAC PDUs serialized
 
-    //Perform CRC calculation
-    size_t numberDataBytes = macPdu.mac_data_.size();   //Number of Data Bytes before inserting CRC
-    macPdu.mac_data_.resize(numberDataBytes+2);
-    crcPackageCalculate((char*)&(macPdu.mac_data_[0]), numberDataBytes);
-    //Serialize MAC PDU
-    vector<uint8_t> serializedMacPdu;
-    macPdu.serialize(serializedMacPdu);
+    //Perform CRC calculations
+    for(int i=0;i<numberPdus;i++){
+        numberPduBytes = macPdus[i]->mac_data_.size();      //Number of Data Bytes before inserting CRC
+        macPdus[i]->mac_data_.resize(numberPduBytes+2);     //Resize vector
+        crcPackageCalculate((char*)&(macPdus[i]->mac_data_[0]), numberPduBytes);
+        macPdus[i]->serialize(serializedMacPdus);           //Serialize MAC PDU
+    }
 
     //Send PDU to L1
-    numberSent = sendto(socketPduToL1,&(serializedMacPdu[0]), serializedMacPdu.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
+    numberSent = sendto(socketPduToL1,&(serializedMacPdus[0]), serializedMacPdus.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
 
     //Verify if transmission was successful
 	if(numberSent!=-1){
-		if(verbose) cout<<"[L1L2Interface] Pdu sent:"<<serializedMacPdu.size()<<" bytes."<<endl;
+		if(verbose) cout<<"[L1L2Interface] Pdu sent:"<<serializedMacPdus.size()<<" bytes."<<endl;
 		return;
 	}
 	if(verbose) cout<<"[L1L2Interface] Could not send Pdu."<<endl;
 }
 
-ssize_t
-L1L2Interface::receivePdu(
-    const char* buffer,         //Buffer where PDU is going to be store
-    size_t maximumSize)         //Maximum PDU size
+void
+L1L2Interface::receivePdus(
+    vector<vector<uint8_t>> & buffer,   //Buffer where PDU are going to be stored
+    size_t maximumSize)                 //Maximum PDU size
 {
-    ssize_t returnValue;    //Value that will be returned at the end of this procedure
+    char *receptionBuffer = new char[maximumSize];  //Buffer to receive PDUs from L1
+    bzero(receptionBuffer, maximumSize);            //Clear Reception buffer
+
 
     //Perform socket UDP packet reception
-    returnValue = recv(socketPduFromL1, (void*)buffer, maximumSize, MSG_WAITALL);
+    ssize_t totalSize = recv(socketPduFromL1, receptionBuffer, maximumSize, MSG_WAITALL);
 
-    //Test if PDU received is valid and checks CRC
-    if(returnValue>0){
-        if(!crcPackageChecking((char*)buffer, returnValue))
-            return -2;
+    //Test if Received information is valid
+    if(totalSize<1){
+        if(verbose) cout<<"[L1L2Interface] Invalid information received from PHY."<<endl;
+        exit(1);
     }
-    return returnValue==0? 0:returnValue-2;     //Value returned considers size without CRC Bytes
+
+    //Demultiplex PDU(s) received
+    size_t offset = 0;      //Offset location decoding buffer
+    uint8_t numberSDUs;     //Number of SDUs in actual PDU
+    int sizeSdus = 0;       //Total size of SDUs into PDU
+    int sizePdu;            //Total size of actual PDU
+    
+    //While offset does not reach the end of receptionBuffer
+    while(offset<totalSize){
+        //Reset counter of total size of SDUs
+        sizeSdus = 0;
+
+        //Read PDU size
+        numberSDUs = (uint8_t) receptionBuffer[offset+1];
+
+        //Calculate total Size of SDUs into PDU
+        for(int i=0;i<numberSDUs;i++){
+            sizeSdus += (((receptionBuffer[offset+2+2*i]&127)<<8)|((receptionBuffer[offset+3+2*i])&255));
+        }
+
+        //Set offset to PDU total size
+        sizePdu = 2 + 2*numberSDUs + sizeSdus + 2;  //2 bytes: SA, DA, numPDUs;2 bytes for each: D/C flag and size; 2 bytes at end: CRC
+        offset += sizePdu;   
+
+        //Drop PDU if CRC does not check
+        if(!crcPackageChecking(&(receptionBuffer[offset-sizePdu]), sizePdu)){
+            if(verbose) cout<<"Drop Package due to CRC error"<<endl;
+            continue;
+        }
+
+        //Resize buffer to include another PDU
+        buffer.resize(buffer.size()+1);
+
+        //Assign new content
+        buffer[buffer.size()-1].assign(&(receptionBuffer[offset-sizePdu]), &(receptionBuffer[offset-sizePdu])+sizePdu);
+    }
+
+    delete [] receptionBuffer;
 }
 
 void

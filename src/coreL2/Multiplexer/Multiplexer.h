@@ -4,8 +4,8 @@
 /* All rights Reserved                   */
 /*****************************************/
 
-#ifndef INCLUDED_AGGREGATION_QUEUE_H
-#define INCLUDED_AGGREGATION_QUEUE_H
+#ifndef INCLUDED_MULTIPLEXER_H
+#define INCLUDED_MULTIPLEXER_H
 
 #include <iostream>
 #include <vector>
@@ -59,10 +59,9 @@ public:
     /**
      * @brief Constructs Multiplexer with an incoming PDU to be decoded
      * @param pdu Buffer containing full PDU
-     * @param _size Size of PDU in bytes
      * @param _verbose Verbosity flag
      */
-    Multiplexer(char* pdu, size_t _size, bool _verbose);
+    Multiplexer(uint8_t* pdu, bool _verbose);
     
     /**
      * @brief Destroy a Multiplexer object
@@ -117,5 +116,11 @@ public:
      * @brief Removes MAC header and input its information to class variables
      */
     void removeMacHeader();
+
+    /**
+     * @brief Tests if Multiplexed has no MAC SDUs aggregated
+     * @returns TRUE if Multiplexer is empty; FALSE otherwise
+     */
+    bool isEmpty();
 };
-#endif  //INCLUDED_AGGREGATION_QUEUE_H
+#endif  //INCLUDED__MULTIPLEXER_H

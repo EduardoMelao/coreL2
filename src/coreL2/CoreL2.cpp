@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : February 18th, 2020
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -27,10 +27,7 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 using namespace std;
 
 //Custom headers implemented
-#include "ProtocolPackage/ProtocolPackage.h"
-#include "SduBuffers/MacAddressTable/MacAddressTable.h"
 #include "MacController/MacController.h"
-#include "SystemParameters/CurrentParameters.h"
 
 void stubCLI(MacController & macController){
     while(1){

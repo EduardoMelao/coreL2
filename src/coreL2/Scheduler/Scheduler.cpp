@@ -7,7 +7,7 @@
 @Arquive name : Scheduler.cpp
 @Classification : Scheduler
 @
-@Last alteration : March 11th, 2020
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -53,7 +53,7 @@ Scheduler::selectUEs()
 }
 
 void
-Scheduler::scheduleRequest(
+Scheduler::scheduleRequestBS(
     MacPDU** macPDUs)   //Array of MAC PDUs where scheduler will store Multiplexed SDUs
 {
     //Define variables
@@ -141,12 +141,95 @@ Scheduler::scheduleRequest(
             multiplexer->addSDU(sduBuffer, sduSize, 1);
         }
 
-        //Retreive full PDU from multiplexer
-        multiplexer->getPDU(macPDUs[i]->mac_data_);
+        //Retreive full PDU from multiplexer if not empty
+        if(!multiplexer->isEmpty())
+            multiplexer->getPDU(macPDUs[i]->mac_data_);
 
         //Delete multiplexer
         delete multiplexer;
     }
+}
+
+void
+Scheduler::scheduleRequestUE(
+    MacPDU* macPDU)     //MAC PDU where scheduler will store Multiplexed SDUs
+{
+    //Define variables
+    char sduBuffer[MAXIMUM_BUFFER_LENGTH];  //Buffer to store SDU on aggregation procedure
+    size_t sduSize;                         //SDU Size in bytes
+    
+    /*  #TODO: fill MAC-PDY ctl struct
+    macPDUs[i]->macphy_ctl_.
+    */
+
+    //Fill MIMO struct
+    macPDU->mimo_.scheme = currentParameters->getMimoConf(0)? ((currentParameters->getMimoDiversityMultiplexing(0))? DIVERSITY:MULTIPLEXING):NONE;
+    macPDU->mimo_.num_tx_antenas = currentParameters->getMimoAntenna(0);
+    macPDU->mimo_.precoding_mtx = currentParameters->getMimoPrecoding(0);
+
+    //Fill MCS struct
+    macPDU->mcs_.modulation = mcsToModulation[currentParameters->getMcsUplink(0)];
+
+    //Calculate number of bits for next transmission
+    size_t numberBits = get_bit_capacity(currentParameters->getNumerology(), macPDU->allocation_, macPDU->mimo_, macPDU->mcs_.modulation);
+
+    //Create a new Multiplexer object to aggregate SDUs
+    Multiplexer* multiplexer = new Multiplexer(numberBits/8, currentParameters->getCurrentMacAddress(), 0, verbose);
+
+    //Aggregation procedure - Control SDUs
+    int numberControlSDUs = sduBuffers->getNumberControlSdus(0);
+    if(numberControlSDUs==-1){
+        if(verbose) cout<<"[Scheduler] Invalid MAC address scheduling control SDUs."<<endl;
+        exit(1);
+    }
+    
+    for(int i=0;i<numberControlSDUs;i++){
+        //Verify if it is possivel to enqueue next SDU
+        if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextControlSduSize(0))>numberBits/8){
+            cout<<"[Scheduler] End of scheduling control SDUs: extrapolated bit capacity."<<endl;
+            break;
+        }
+
+        //Clear buffer
+        bzero(sduBuffer, MAXIMUM_BUFFER_LENGTH);
+
+        //Get SDU from queue
+        sduSize = sduBuffers->getNextControlSdu(0, sduBuffer);
+
+        //Add SDU to multiplexer
+        multiplexer->addSDU(sduBuffer, sduSize, 0);
+    }
+
+    //Aggregation procedure - Data SDUs
+    int numberDataSDUs = sduBuffers->getNumberDataSdus(0);
+    if(numberDataSDUs==-1){
+        if(verbose) cout<<"[Scheduler] Invalid MAC address scheduling data SDUs."<<endl;
+        exit(1);
+    }
+    
+    for(int i=0;i<numberDataSDUs;i++){
+        //Verify if it is possivel to enqueue next SDU
+        if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextDataSduSize(0))>numberBits/8){
+            cout<<"[Scheduler] End of scheduling data SDUs: extrapolated bit capacity."<<endl;
+            break;
+        }
+
+        //Clear buffer
+        bzero(sduBuffer, MAXIMUM_BUFFER_LENGTH);
+
+        //Get SDU from queue
+        sduSize = sduBuffers->getNextDataSdu(0, sduBuffer);
+
+        //Add SDU to multiplexer
+        multiplexer->addSDU(sduBuffer, sduSize, 1);
+    }
+
+    //Retreive full PDU from multiplexer if not empty
+    if(!multiplexer->isEmpty())
+        multiplexer->getPDU(macPDU->mac_data_);
+
+    //Delete multiplexer
+    delete multiplexer;
 }
 
 void

@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : March 11th, 2020
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -211,6 +211,15 @@ SduBuffers::bufferStatusInformation(
     uint8_t macAddress)
 {
     return (getNumberDataSdus(macAddress)!=0)||(getNumberControlSdus(macAddress)!=0);
+}
+
+bool
+SduBuffers::bufferStatusInformation(){
+    bool returnValue = false;
+    for(int i=0;i<currentParameters->getNumberUEs();i++){
+        returnValue = returnValue||bufferStatusInformation(currentParameters->getMacAddress(i));
+    }
+    return returnValue;
 }
 
 ssize_t 

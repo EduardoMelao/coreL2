@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : March 5th, 2020
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -172,7 +172,7 @@ CoreL1::addSocket(
 }
 
 bool 
-CoreL1::sendPdu(
+CoreL1::sendPdus(
     const char* buffer,     //Information buffer
     size_t size,            //Size of information in bytes
     uint16_t port)          //Port of destination socket
@@ -199,15 +199,15 @@ CoreL1::sendPdu(
 }
 
 ssize_t 
-CoreL1::receivePdu(
+CoreL1::receivePdus(
     const char* buffer,     //Information buffer
     size_t maxSiz)          //Maximum size of buffer
 {         
-    return receivePdu(buffer, maxSiz, ports[0]);
+    return receivePdus(buffer, maxSiz, ports[0]);
 }
 
 ssize_t 
-CoreL1::receivePdu(
+CoreL1::receivePdus(
     const char* buffer,     //Information buffer
     size_t maxSiz,          //Maximum size of buffer
     uint16_t port)          //Port of receiving socket
@@ -246,28 +246,51 @@ CoreL1::getSocketIndex(
 }
 
 void
-CoreL1::encoding(){
-    char buffer[MAXIMUMSIZE];   //Buffer to store packet from L2
-    ssize_t size;               //Size of packet received
-    uint8_t macAddress;         //Destination MAC address
+CoreL1::encoding(
+    uint8_t numberPdus)     //Number of PDUs for transmission
+{
+    char bufferFromL2[MAXIMUMSIZE]; //Buffer to store packet from L2
+    vector<uint8_t> bufferPdu;      //Buffer to store only data to send to the other side
+    ssize_t size;                   //Size of packet received
+    uint8_t macAddress;             //Destination MAC address
+    size_t pdusTotalSize = 0;       //Total size of PDUs for transmission
+    MacPDU* macPdu;                 //Pointer to store desserialized PDU
     
     //Clear buffer
-    bzero(buffer, MAXIMUMSIZE);
+    bzero(bufferFromL2, MAXIMUMSIZE);
 
     //Receive from L2
-    size = recv(socketFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
+    size = recv(socketFromL2, bufferFromL2, MAXIMUMSIZE, MSG_WAITALL);
 
-    //Deserialize MAC PDU received
-	vector<uint8_t> serializedMacPdu;
-	serializedMacPdu.resize(size);
-	serializedMacPdu.assign(buffer, buffer+size);
-	MacPDU macPdu(serializedMacPdu);
+    //Convert buffer received to vector<uint8_t>
+    vector<uint8_t> serializedMacPdu;
+    serializedMacPdu.resize(size);
+    serializedMacPdu.assign(bufferFromL2, bufferFromL2+size);
+    
+    //Deserialize MAC PDUs received
+    for(int i=0;i<numberPdus;i++){
+        //Desserialize next PDU
+        macPdu = new MacPDU(serializedMacPdu);
+
+        //Resize vector to store PDUs
+        bufferPdu.resize(bufferPdu.size()+macPdu->mac_data_.size());
+
+        //Copy data to vector that will be sent to other PHY
+        for(int j=0;j<macPdu->mac_data_.size();i++)
+            bufferPdu.push_back(macPdu->mac_data_[j]);
+
+        //Print allocation
+        if(verbose) cout<<"[CoreL1] Allocation: First RB: "<<(int)macPdu->allocation_.first_rb<<" | Number RB: "<<(int)macPdu->allocation_.number_of_rb<<endl;
+
+        //Delete recently created macPdu object
+        delete macPdu;
+    }
 
     //#TODO: Remove this part of code because PHY will not send MAC PDUs via sockets
-	macAddress = (((uint8_t)macPdu.mac_data_[0])&15);
+	macAddress = ((bufferPdu[0])&15);
 
     //Send PDU through correct port  
-    sendPdu((const char*) &(macPdu.mac_data_[0]), macPdu.mac_data_.size(), ports[getSocketIndex(macAddress)]);
+    sendPdus((const char*) &(bufferPdu[0]), bufferPdu.size(), ports[getSocketIndex(macAddress)]);
 }
 
 void 
@@ -282,9 +305,8 @@ CoreL1::decoding(
     string messageParameters;		            //This string will contain the parameters of the message
 	vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
 
-
     //Downlink routine:
-    string subFrameStartMessage = flagBS? "1":"2";    //SubframeRx.Start control message
+    string subFrameStartMessage = flagBS? "C":"D";    //SubframeRx.Start control message
     
     if(flagBS){     //Create BSSubframeRx.Start message
         BSSubframeRx_Start messageBS;	//Message parameters structure
@@ -310,7 +332,7 @@ CoreL1::decoding(
     //Clear buffer
     bzero(buffer, MAXIMUMSIZE);
 
-    size = receivePdu(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
+    size = receivePdus(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
 
     //Communication Stream
     while(size>0){
@@ -328,12 +350,12 @@ CoreL1::decoding(
 
         if(rxMetricsPeriodicity) subFrameCounter ++;
         
-        //Send PDU
+        //Send PDUs
         sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
         
-        //Receive next PDU
+        //Receive next PDUs
         bzero(buffer, MAXIMUMSIZE);
-        size = receivePdu(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
+        size = receivePdus(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
     }
 }
 
@@ -358,30 +380,39 @@ CoreL1::receiveInterlayerMessage(){
         //#TODO: Implement other messages decoding because it is CONSIDERING ONLY SubframeTx.Start messages
 
     	vector<uint8_t> messageParametersBytes; //Array of Bytes where serialized message parameters will be stored
+        BSSubframeTx_Start messageParametersBS; //Struct for BSSubframeTx.Start parameters
+        UESubframeTx_Start messageParametersUE; //Struct for UESubframeTx.Start parameters
 
 
-        if(buffer[0]=='1'){
-            //Treat BSSubframeTx.Start parameters and trigger encoding MAC PDU to UE procedure
-        	BSSubframeTx_Start messageParametersBS;
-        	for(int i=1;i<messageSize;i++)
-        		messageParametersBytes.push_back(message[i]);
-        	messageParametersBS.deserialize(messageParametersBytes);
-            rxMetricsPeriodicity = messageParametersBS.rxMetricPeriodicity;
-        	if(verbose) cout<<"[CoreL1] Received BSSubframeTx.Start message. Receiving PDU from L2..."<<endl;
-			encoding();
-        }
-        else if(buffer[0]=='2'){
-            //Treat UESubframeTx.Start parameters and trigger encoding MAC PDU to BS procedure
-			UESubframeTx_Start messageParametersUE;
-			for(int i=1;i<messageSize;i++)
-				messageParametersBytes.push_back(message[i]);
-			messageParametersUE.deserialize(messageParametersBytes);
-            rxMetricsPeriodicity = messageParametersUE.rxMetricPeriodicity;
-			if(verbose) cout<<"[CoreL1] Received UESubframeTx.Start message. Receiving PDU from L2..."<<endl;
-			encoding();
-		}
-        else if(buffer[0]=='3'){
-            if(verbose) cout<<"[CoreL1] Received SubframeTx.End message."<<endl;
+        switch(buffer[0])
+        {
+            case 'C':
+                //Treat BSSubframeTx.Start parameters and trigger encoding MAC PDU to UE procedure
+                for(int i=1;i<messageSize;i++)
+                    messageParametersBytes.push_back(message[i]);
+                messageParametersBS.deserialize(messageParametersBytes);
+                rxMetricsPeriodicity = messageParametersBS.rxMetricPeriodicity;
+                if(verbose) cout<<"[CoreL1] Received BSSubframeTx.Start message. Receiving PDU from L2..."<<endl;
+                encoding(messageParametersBS.numPDUs);
+                break;
+
+            case 'D':
+                //Treat UESubframeTx.Start parameters and trigger encoding MAC PDU to BS procedure
+                for(int i=1;i<messageSize;i++)
+                    messageParametersBytes.push_back(message[i]);
+                messageParametersUE.deserialize(messageParametersBytes);
+                rxMetricsPeriodicity = messageParametersUE.rxMetricPeriodicity;
+                if(verbose) cout<<"[CoreL1] Received UESubframeTx.Start message. Receiving PDU from L2..."<<endl;
+                encoding(1);
+                break;
+
+            case 'E':
+                if(verbose) cout<<"[CoreL1] Received SubframeTx.End message."<<endl;
+                break;
+            
+            default:
+                if(verbose) cout<<"[CoreL1] Unknown Control Message received."<<endl;
+                break;
         }
 
         //Clear buffer and message and receive next control message

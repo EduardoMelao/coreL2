@@ -14,7 +14,6 @@
 #include <condition_variable>   //std::condition_variable
 
 #include "../SduBuffers/SduBuffers.h"
-#include "../ProtocolPackage/ProtocolPackage.h"
 #include "../SduBuffers/MacAddressTable/MacAddressTable.h"
 #include "../Multiplexer/Multiplexer.h"
 #include "../ReceptionProtocol/ReceptionProtocol.h"
@@ -24,15 +23,17 @@
 #include "../../common/libMac5gRange/libMac5gRange.h"
 #include "../SystemParameters/CurrentParameters.h"
 #include "../CLIL2Interface/CLIL2Interface.h"
+#include "../Scheduler/Scheduler.h"
 
 using namespace std;
 
-#define MAXIMUM_BUFFER_LENGTH 2048      //Maximum buffer length in bytes
-#define TIMEOUT_DYNAMIC_PARAMETERS 5    //Timeout(seconds) to check for dynamic parameters alterations
+#define MAXIMUM_BUFFER_LENGTH 10000     //Maximum buffer length in bytes
 
 
 //Initializing classes that will be defined in other .h files
 class ProtocolControl;
+class SduBuffers;
+class Scheduler;
 
 /**
  * @brief Class responsible for managing all MAC 5G-RANGE operations
@@ -51,7 +52,7 @@ private:
     MacAddressTable* ipMacTable;            //Table to associate IP addresses to 5G-RANGE domain MAC addresses
     ProtocolControl* protocolControl;       //Object to deal with enqueueing CONTROL SDUS
 	thread *threads;                        //Threads array
-    MacPDU macPDU;                          //Object MacPDU containing all information that will be sent to PHY
+    Scheduler* scheduler;                   //Scheduler object to make Spectrum and SDU scheduling procedures
     bool verbose;                           //Verbosity flag
 
 public:
@@ -89,6 +90,11 @@ public:
      * @brief Declares and starts all threads necessary for MacController
      */
     void startThreads();
+
+    /**
+     * @brief Executes forever verifying if there's something to schedule
+     */
+    void scheduling();
 
     // #TODO: REMOVE /**
     //  * @brief Immediately schedules SDUs for transmission

@@ -61,12 +61,12 @@ public:
      */
     bool allocTunInterface();
     
-/**
- * @brief Performs reading of packets in the interface; Blocks if there is no packet to read
- * @param buffer Buffer to store packet read
- * @param numberBytes Maximum number of bytes to read
- * @returns Number of bytes read; 0 for EOF; -1 for errors
- */
+    /**
+     * @brief Performs reading of packets in the interface; Blocks if there is no packet to read
+     * @param buffer Buffer to store packet read
+     * @param numberBytes Maximum number of bytes to read
+     * @returns Number of bytes read; 0 for EOF; -1 for errors
+     */
     ssize_t readTunInterface(char* buffer, size_t numberBytes);
  
     /**

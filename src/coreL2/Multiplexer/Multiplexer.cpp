@@ -7,7 +7,7 @@
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : March 11th, 2020
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -43,17 +43,24 @@ Multiplexer::Multiplexer(
 }
 
 Multiplexer::Multiplexer(
-    char* pdu,          //Buffer containing PDU
-    size_t _pduSize,    //Size of PDU in Bytes
+    uint8_t* pdu,          //Buffer containing PDU
     bool _verbose)      //Verbosity flag
 {
     verbose = _verbose;
-    currentPDUSize = _pduSize;
-    sduBuffer = pdu;
+    sduBuffer = (char*)pdu;
 }
 
 Multiplexer::~Multiplexer(){
     delete[] sduBuffer;
+}
+
+int 
+Multiplexer::currentBufferLength(){
+    int length = 0;
+    for(int i=0;i<numberSDUs;i++){
+        length += sizesSDUs[i];
+    }
+    return length;
 }
 
 int 
@@ -165,7 +172,7 @@ Multiplexer::insertMacHeader(){
     int i, j;   //Auxiliary variables
 
     //Allocate new buffer
-    char* buffer = new char[currentPDUSize];
+    char* buffer = new char[currentPDUSize-2];  //-2 because of CRC
 
     //Fills the 2 first slots
     buffer[0] = (sourceAddress<<4)|(destinationAddress&15);
@@ -215,4 +222,9 @@ Multiplexer::removeMacHeader(){
     
     sduBuffer = buffer2;
     if(verbose) cout<<"[Multiplexer] MAC Header removed successfully."<<endl;
+}
+
+bool
+Multiplexer::isEmpty(){
+    return numberSDUs==0;
 }

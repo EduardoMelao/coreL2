@@ -40,9 +40,8 @@ public:
      * @brief Receives packet from PHY Layer
      * @param buffer Buffer where packet will be stored
      * @param maximumSize Maximum size of buffer in Bytes
-     * @returns Size of information received in Bytes; 0 for EOF; -1 for errors
      */
-    ssize_t receivePackageFromL1(char* buffer, int maximumSize);
+    void receivePackageFromL1(vector<vector<uint8_t>> & buffer, int maximumSize);
 
     /**
      * @brief Receives packet from Linux IP Layer

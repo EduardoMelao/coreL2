@@ -13,8 +13,8 @@
 #include "../ReceptionProtocol/ReceptionProtocol.h"     //Reception Protocol to manage reception of L3 packets from TUN
 #include "../SystemParameters/CurrentParameters.h"      //System Current Parameters contains number of UEs and their IDs (MAC addresses)
 #include "../../common/libMac5gRange/libMac5gRange.h"   //MAC Common library contains system's states and substates
+#include "../MacController/MacController.h"             //Mac Controller Library
 
-#define MAXIMUM_BUFFER_LENGTH 2048  //Maximum buffer size
 #define DST_OFFSET 16               //Destination address offset in IP Packet [bytes]    
 
 using namespace std;
@@ -97,6 +97,12 @@ public:
      * @returns TRUE if there are packets to schedule; FALSE otherwise
      */
     bool bufferStatusInformation(uint8_t macAddress);
+
+    /**
+     * @brief Informs the Scheduler about the state of all SDU buffers
+     * @returns TRUE if there are packets to schedule; FALSE otherwise
+     */
+    bool bufferStatusInformation();
     
     /**
      * @brief Gets next data SDU on queue for treatment

@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : March 5th, 2020
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -127,7 +127,7 @@ ProtocolControl::receiveInterlayerMessages(
 
             vector<uint8_t> messageParametersBytes;     //Bytes of serialized message parameters
 
-            if(buffer[0]=='1'){
+            if(buffer[0]=='A'){
                 if(messageSize>1){      //It means that RX metrics were received
                     BSSubframeRx_Start messageParametersBS;     //Define struct for BS paremeters
 
@@ -160,7 +160,7 @@ ProtocolControl::receiveInterlayerMessages(
                 if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
                 sourceMacAddress = macController->decoding();
             }
-            else if(buffer[0]=='2'){
+            else if(buffer[0]=='B'){
                 if(messageSize>1){      //It means that RX metrics were received
                     UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
 

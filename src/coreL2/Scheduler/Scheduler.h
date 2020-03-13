@@ -9,6 +9,8 @@
 #include "../SduBuffers/SduBuffers.h"
 #include "../../common/lib5grange/lib5grange.h"
 
+class SduBuffers;
+
 using namespace std;
 using namespace lib5grange;
 /**
@@ -42,10 +44,17 @@ public:
     ~Scheduler();
 
     /**
-     * @brief Scheduling procedure
+     * @brief Scheduling procedure for BS
      * @param macPDUs Array of MAC PDUs where scheduler will store Multiplexed SDUs
      */
-    void scheduleRequest(MacPDU** macPdus);
+    void scheduleRequestBS(MacPDU** macPdus);
+
+
+    /**
+     * @brief Scheduling procedure for UE
+     * @param macPDUs MAC PDU where scheduler will store Multiplexed SDUs
+     */
+    void scheduleRequestUE(MacPDU* macPdu);
 
     /**
      * @brief Procedure thar calculates spectrum allocation for 2 UEs (and only) for schedulingRequest procedure for downlink
