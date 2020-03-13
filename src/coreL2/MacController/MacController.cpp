@@ -378,6 +378,7 @@ MacController::scheduling(){
             //Change MAC Tx Mode to DISABLED_MODE_TX
             currentMacTxMode = DISABLED_MODE_TX;
         }
+        this_thread::sleep_for(chrono::nanoseconds(1));
     }
     if(verbose) cout<<"[MacController - Scheduling] Entering STOP_MODE."<<endl;    
     //Change MAC Tx Mode to DISABLED_MODE_TX before stopping System
