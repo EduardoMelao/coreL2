@@ -48,6 +48,7 @@ TunInterface::TunInterface(
 {
     verbose = _verbose;
     deviceName = new char[IFNAMSIZ+1];
+    mtu = _mtu;
     memset(deviceName,0,IFNAMSIZ+1);
     if(_deviceName!=NULL) strncpy(deviceName,_deviceName,sizeof(deviceName)-1);
 }
