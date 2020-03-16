@@ -273,10 +273,9 @@ CoreL1::encoding(
         macPdu = new MacPDU(serializedMacPdu);
 
         //Copy data to vector that will be sent to other PHY
-        for(int j=0;j<macPdu->mac_data_.size();j++){
+        for(int j=0;j<macPdu->mac_data_.size();j++)
             bufferPdu.push_back(macPdu->mac_data_[j]);
-            cout<<(int)bufferPdu[j]<<" "<<(int)macPdu->mac_data_[j]<<endl;
-        }
+
         //Print allocation
         if(verbose) cout<<"[CoreL1] Allocation: First RB: "<<(int)macPdu->allocation_.first_rb<<" | Number RB: "<<(int)macPdu->allocation_.number_of_rb<<endl;
 
