@@ -372,6 +372,10 @@ MacController::scheduling(){
                 protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
                 transmissionProtocol->sendPackagesToL1(macPdus, numberPdus);
                 protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
+
+                //Delete both Mac PDUs
+                delete macPdus[0];
+                delete macPdus[1];
             }
         }
         else{

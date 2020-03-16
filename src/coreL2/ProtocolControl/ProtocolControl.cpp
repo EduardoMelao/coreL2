@@ -34,7 +34,9 @@ ProtocolControl::ProtocolControl(
     verbose = _verbose;
 }
 
-ProtocolControl::~ProtocolControl() { }
+ProtocolControl::~ProtocolControl() {
+    delete[] rxMetrics;
+ }
 
 void 
 ProtocolControl::decodeControlSdus(

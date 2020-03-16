@@ -25,7 +25,6 @@ using namespace lib5grange;
 class CurrentParameters : public DynamicParameters{
 private:
 	bool flagBS;					//Flag to indicate if current equipment is BS or UE
-	bool verbose;					//Verbosity flag
 	bool flagUesOutdated;			//Flag to indicate if it is necessary to send current parameters to UE
 
 	//Static(only) information as described on spreadsheet L1-L2_InterfaceDefinition.xlsx

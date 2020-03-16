@@ -104,7 +104,6 @@ MacAddressTable::deleteEntry(
     //Relocate arrays
     uint8_t** _ipAddresses = new uint8_t*[numberRegisters-1];
     uint8_t* _macAddresses = new uint8_t[numberRegisters-1];
-    bool* _flagsBS = new bool[numberRegisters-1];
 
     //Copy information
     for(int i=0;i<id;i++){
