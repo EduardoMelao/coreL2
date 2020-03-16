@@ -266,7 +266,7 @@ CoreL1::encoding(
     vector<uint8_t> serializedMacPdu;
     serializedMacPdu.resize(size);
     serializedMacPdu.assign(bufferFromL2, bufferFromL2+size);
-    
+
     //Deserialize MAC PDUs received
     for(int i=0;i<numberPdus;i++){
         //Desserialize next PDU
@@ -276,7 +276,7 @@ CoreL1::encoding(
         bufferPdu.resize(bufferPdu.size()+macPdu->mac_data_.size());
 
         //Copy data to vector that will be sent to other PHY
-        for(int j=0;j<macPdu->mac_data_.size();i++)
+        for(int j=0;j<macPdu->mac_data_.size();j++)
             bufferPdu.push_back(macPdu->mac_data_[j]);
 
         //Print allocation
@@ -372,7 +372,6 @@ CoreL1::sendInterlayerMessage(
 void
 CoreL1::receiveInterlayerMessage(){
     char buffer[MAXIMUMSIZE];       //Buffer where message will be stored
-    string message;                 //String containing message converted from char*
     ssize_t messageSize = recv(socketControlMessagesFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
 
     //Control message stream
@@ -389,7 +388,7 @@ CoreL1::receiveInterlayerMessage(){
             case 'C':
                 //Treat BSSubframeTx.Start parameters and trigger encoding MAC PDU to UE procedure
                 for(int i=1;i<messageSize;i++)
-                    messageParametersBytes.push_back(message[i]);
+                    messageParametersBytes.push_back(buffer[i]);
                 messageParametersBS.deserialize(messageParametersBytes);
                 rxMetricsPeriodicity = messageParametersBS.rxMetricPeriodicity;
                 if(verbose) cout<<"[CoreL1] Received BSSubframeTx.Start message. Receiving PDU from L2..."<<endl;
@@ -399,7 +398,7 @@ CoreL1::receiveInterlayerMessage(){
             case 'D':
                 //Treat UESubframeTx.Start parameters and trigger encoding MAC PDU to BS procedure
                 for(int i=1;i<messageSize;i++)
-                    messageParametersBytes.push_back(message[i]);
+                    messageParametersBytes.push_back(buffer[i]);
                 messageParametersUE.deserialize(messageParametersBytes);
                 rxMetricsPeriodicity = messageParametersUE.rxMetricPeriodicity;
                 if(verbose) cout<<"[CoreL1] Received UESubframeTx.Start message. Receiving PDU from L2..."<<endl;

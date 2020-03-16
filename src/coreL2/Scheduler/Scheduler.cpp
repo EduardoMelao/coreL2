@@ -75,9 +75,13 @@ Scheduler::scheduleRequestBS(
     
     //For each PDU:
     for(int i=0;i<ueIds.size();i++){
-        /*  #TODO: fill MAC-PDY ctl struct
-        macPDUs[i]->macphy_ctl_.
-        */
+    	//Assign MAC PDU UEID
+    	macPDUs[i]->allocation_.target_ue_id = ueIds[i];
+
+        //Fill MAC - PHY control struct
+        macPDUs[i]->macphy_ctl_.first_tb_in_subframe = i==0;
+        macPDUs[i]->macphy_ctl_.last_tb_in_subframe = i==(ueIds.size()-1);
+        macPDUs[i]->macphy_ctl_.sequence_number = i;
 
         //Fill MIMO struct
         macPDUs[i]->mimo_.scheme = (currentParameters->getMimoConf(ueIds[i]))? ((currentParameters->getMimoDiversityMultiplexing(ueIds[i]))? DIVERSITY:MULTIPLEXING):NONE;
@@ -87,8 +91,11 @@ Scheduler::scheduleRequestBS(
         //Fill MCS struct
         macPDUs[i]->mcs_.modulation = mcsToModulation[currentParameters->getMcsDownlink(ueIds[i])];
 
+        //Fill Numerology
+        macPDUs[i]->numID_ = currentParameters->getNumerology();
+
         //Calculate number of bits for next transmission
-        size_t numberBits = get_bit_capacity(currentParameters->getNumerology(), macPDUs[i]->allocation_, macPDUs[i]->mimo_, macPDUs[i]->mcs_.modulation);
+        size_t numberBits = get_bit_capacity(macPDUs[i]->numID_, macPDUs[i]->allocation_, macPDUs[i]->mimo_, macPDUs[i]->mcs_.modulation);
 
         //Create a new Multiplexer object to aggregate SDUs
         Multiplexer* multiplexer = new Multiplexer(numberBits/8, 0, ueIds[i], verbose);
