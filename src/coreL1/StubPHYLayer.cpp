@@ -255,9 +255,6 @@ CoreL1::encoding(
     uint8_t macAddress;             //Destination MAC address
     size_t pdusTotalSize = 0;       //Total size of PDUs for transmission
     MacPDU* macPdu;                 //Pointer to store desserialized PDU
-    
-    //Clear buffer
-    bzero(bufferFromL2, MAXIMUMSIZE);
 
     //Receive from L2
     size = recv(socketFromL2, bufferFromL2, MAXIMUMSIZE, MSG_WAITALL);
@@ -267,18 +264,19 @@ CoreL1::encoding(
     serializedMacPdu.resize(size);
     serializedMacPdu.assign(bufferFromL2, bufferFromL2+size);
 
+    //Clear bufferPdu
+    bufferPdu.clear();
+
     //Deserialize MAC PDUs received
     for(int i=0;i<numberPdus;i++){
         //Desserialize next PDU
         macPdu = new MacPDU(serializedMacPdu);
 
-        //Resize vector to store PDUs
-        bufferPdu.resize(bufferPdu.size()+macPdu->mac_data_.size());
-
         //Copy data to vector that will be sent to other PHY
-        for(int j=0;j<macPdu->mac_data_.size();j++)
+        for(int j=0;j<macPdu->mac_data_.size();j++){
             bufferPdu.push_back(macPdu->mac_data_[j]);
-
+            cout<<(int)bufferPdu[j]<<" "<<(int)macPdu->mac_data_[j]<<endl;
+        }
         //Print allocation
         if(verbose) cout<<"[CoreL1] Allocation: First RB: "<<(int)macPdu->allocation_.first_rb<<" | Number RB: "<<(int)macPdu->allocation_.number_of_rb<<endl;
 
