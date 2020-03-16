@@ -48,6 +48,8 @@ Multiplexer::Multiplexer(
 {
     verbose = _verbose;
     sduBuffer = (char*)pdu;
+    offset = 0;
+    currentPDUSize = 0;
 }
 
 Multiplexer::~Multiplexer(){
@@ -206,12 +208,14 @@ Multiplexer::removeMacHeader(){
     numberSDUs = (uint8_t) sduBuffer[1];
 
     //Declare new sizes and Data/Control flags arrays and get information for SDUs decoding
-    for(int i=0;i<numberSDUs;i++){
+    for(i=0;i<numberSDUs;i++){
         flagsDataControlSDUs.push_back((sduBuffer[2+2*i]&255)>>7);
         sizesSDUs.push_back(((sduBuffer[2+2*i]&127)<<8)|((sduBuffer[3+2*i])&255));
+        currentPDUSize+=sizesSDUs[i];
     }
-    i = 2+2*numberSDUs;
-    currentPDUSize-=i;
+
+    //Update i value to use in further loop
+    i = 2 + 2*i;
 
     //Create a new buffer that will contain only SDUs, no header
     char* buffer2 = new char[currentPDUSize];
