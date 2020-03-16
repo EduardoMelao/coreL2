@@ -112,7 +112,7 @@ MacController::manager(){
                 ipMacTable->addEntry(addressEntry2, 2);
                 
                 //Create Tun Interface and allocate it
-                tunInterface = new TunInterface(deviceNameTun, verbose);
+                tunInterface = new TunInterface(deviceNameTun, currentParameters->getMTU(), verbose);
                 if(!(tunInterface->allocTunInterface())){
                     if(verbose) cout << "[MacController] Error allocating tun interface." << endl;
                     exit(1);

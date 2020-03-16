@@ -26,24 +26,25 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 using namespace std;    
 
 TunInterface::TunInterface(){
-    TunInterface("tun0", false);
+    TunInterface("tun0", 1500, false);
 }
 
 TunInterface::TunInterface(
     bool _verbose)      //Verbosity flag
 {
-    TunInterface("tun0", _verbose);
+    TunInterface("tun0", 1500, _verbose);
 }
 
 TunInterface::TunInterface(
     const char* _deviceName)        //Interface name
 {
-    TunInterface(_deviceName,false);
+    TunInterface(_deviceName, 1500, false);
 }
 
 TunInterface::TunInterface(
     const char* _deviceName,        //Interface name
-    bool _verbose)              //Verbosity flag
+    uint16_t _mtu,                  //Interface MTU
+    bool _verbose)                  //Verbosity flag
 {
     verbose = _verbose;
     deviceName = new char[IFNAMSIZ+1];
@@ -80,9 +81,9 @@ TunInterface::allocTunInterface(){
     //Set interface to be inblockable for reading
     fcntl(fileDescriptor, F_SETFL, O_NONBLOCK);
 
-    //Forces interface to me initialized as "UP"
+    //Forces interface to me initialized as "UP" with MTU
     char cmd[100];
-    sprintf(cmd, "ifconfig %s up", interfaceRequirement.ifr_ifrn.ifrn_name);
+    sprintf(cmd, "ifconfig %s up mtu %d", interfaceRequirement.ifr_ifrn.ifrn_name, mtu);
     system(cmd);
     if(verbose) cout << "[TunInterface] Tun interface allocated successfully." << endl;
     return true;
