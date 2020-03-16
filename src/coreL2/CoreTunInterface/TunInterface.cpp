@@ -83,7 +83,7 @@ TunInterface::allocTunInterface(){
 
     //Forces interface to me initialized as "UP" with MTU
     char cmd[100];
-    sprintf(cmd, "ifconfig %s up mtu %s", interfaceRequirement.ifr_ifrn.ifrn_name, to_string(mtu));
+    sprintf(cmd, "ifconfig %s up mtu %s", interfaceRequirement.ifr_ifrn.ifrn_name, to_string(mtu).c_str());
     system(cmd);
     if(verbose) cout << "[TunInterface] Tun interface allocated successfully." << endl;
     return true;
