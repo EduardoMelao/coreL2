@@ -111,7 +111,7 @@ Scheduler::scheduleRequestBS(
         for(int j=0;j<numberControlSDUs;j++){
             //Verify if it is possivel to enqueue next SDU
             if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextControlSduSize(ueIds[0]))>numberBits/8){
-                cout<<"[Scheduler] End of scheduling control SDUs: extrapolated bit capacity."<<endl;
+                if(verbose) cout<<"[Scheduler] End of scheduling control SDUs: extrapolated bit capacity."<<endl;
                 break;
             }
 
@@ -135,7 +135,7 @@ Scheduler::scheduleRequestBS(
         for(int j=0;j<numberDataSDUs;j++){
             //Verify if it is possivel to enqueue next SDU
             if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextDataSduSize(ueIds[0]))>numberBits/8){
-                cout<<"[Scheduler] End of scheduling data SDUs: extrapolated bit capacity."<<endl;
+                if(verbose) cout<<"[Scheduler] End of scheduling data SDUs: extrapolated bit capacity."<<endl;
                 break;
             }
 
@@ -195,7 +195,7 @@ Scheduler::scheduleRequestUE(
     for(int i=0;i<numberControlSDUs;i++){
         //Verify if it is possivel to enqueue next SDU
         if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextControlSduSize(0))>numberBits/8){
-            cout<<"[Scheduler] End of scheduling control SDUs: extrapolated bit capacity."<<endl;
+            if(verbose) cout<<"[Scheduler] End of scheduling control SDUs: extrapolated bit capacity."<<endl;
             break;
         }
 
@@ -219,7 +219,7 @@ Scheduler::scheduleRequestUE(
     for(int i=0;i<numberDataSDUs;i++){
         //Verify if it is possivel to enqueue next SDU
         if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextDataSduSize(0))>numberBits/8){
-            cout<<"[Scheduler] End of scheduling data SDUs: extrapolated bit capacity."<<endl;
+            if(verbose) cout<<"[Scheduler] End of scheduling data SDUs: extrapolated bit capacity."<<endl;
             break;
         }
 
