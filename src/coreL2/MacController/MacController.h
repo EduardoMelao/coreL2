@@ -27,7 +27,7 @@
 
 using namespace std;
 
-#define MAXIMUM_BUFFER_LENGTH 20480     //Maximum buffer length in bytes
+#define MAXIMUM_BUFFER_LENGTH 102400     //Maximum buffer length in bytes
 
 
 //Initializing classes that will be defined in other .h files

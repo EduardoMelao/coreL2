@@ -96,6 +96,7 @@ Scheduler::scheduleRequestBS(
 
         //Calculate number of bits for next transmission
         size_t numberBits = get_bit_capacity(macPDUs[i]->numID_, macPDUs[i]->allocation_, macPDUs[i]->mimo_, macPDUs[i]->mcs_.modulation);
+        if(verbose) cout<<"[Scheduler] Scheduled "<<numberBits/8<<" Bytes for PDU "<<i<<endl;
 
         //Create a new Multiplexer object to aggregate SDUs
         Multiplexer* multiplexer = new Multiplexer(numberBits/8, 0, ueIds[i], verbose);
@@ -179,6 +180,7 @@ Scheduler::scheduleRequestUE(
 
     //Calculate number of bits for next transmission
     size_t numberBits = get_bit_capacity(currentParameters->getNumerology(), macPDU->allocation_, macPDU->mimo_, macPDU->mcs_.modulation);
+    if(verbose) cout<<"[Scheduler] Scheduled "<<numberBits/8<<" Bytes for PDU."<<endl;
 
     //Create a new Multiplexer object to aggregate SDUs
     Multiplexer* multiplexer = new Multiplexer(numberBits/8, currentParameters->getCurrentMacAddress(), 0, verbose);
