@@ -12,7 +12,7 @@
 #define CONTROL_MESSAGES_PORT_TO_L2 8093
 #define CONTROL_MESSAGES_PORT_FROM_L2 8092
 
-#define MAXIMUMSIZE 20480
+#define MAXIMUMSIZE 102400
 
 #include <iostream>     //cout
 #include <stdint.h>     //uint16_t
