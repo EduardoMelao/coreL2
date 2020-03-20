@@ -122,8 +122,9 @@ SduBuffers::enqueueingDataSdus(
             if(index!=-1){
                 //Allocate new buffer and copy information
                 char* bufferDataSdu = new char[numberBytesRead];
-                for(int i=0;i<numberBytesRead;i++)
-                    bufferDataSdu[i]=buffer[i];
+
+                //Copy array
+                memcpy(bufferDataSdu, buffer, numberBytesRead);
                 
                 dataSduQueue[index].push_back(bufferDataSdu);
                 dataSizes[index].push_back(numberBytesRead);
@@ -167,8 +168,7 @@ SduBuffers::enqueueControlSdu(
     char* buffer = new char[numberBytes];
 
     //Copy SDU to buffer
-    for(int i=0;i<numberBytes;i++)
-        buffer[i]=controlSdu[i];
+    memcpy(buffer, controlSdu, numberBytes);
 
     int index = currentParameters->getIndex(macAddress);
             
@@ -240,8 +240,9 @@ SduBuffers::getNextDataSdu(
     //Get front values from the vectors
     returnValue = dataSizes[index].front();
     char* buffer2 = dataSduQueue[index].front();
-    for(int i=0;i<returnValue;i++)
-        buffer[i] = buffer2[i];           //Copying
+
+    //Copy
+    memcpy(buffer, buffer2, returnValue);
     
     delete [] buffer2;
 
@@ -272,8 +273,9 @@ SduBuffers::getNextControlSdu(
     //Get front values from the vectors
     returnValue = controlSizes[index].front();
     char* buffer2 = controlSduQueue[index].front();
-    for(int i=0;i<returnValue;i++)
-        buffer[i] = buffer2[i];           //Copying
+
+    //Copy
+    memcpy(buffer, buffer2, returnValue);
     
     delete [] buffer2;
 

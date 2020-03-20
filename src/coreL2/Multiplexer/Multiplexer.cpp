@@ -97,8 +97,7 @@ Multiplexer::addSduPosition(
     //Implanting actual SDU
     sizesSDUs[position] = size;
     flagsDataControlSDUs[position] = flagDataControl;
-    for(int i=0;i<size;i++)
-        sduBuffer[length-bufferOffset+i] = sdu[i];
+    memcpy(&(sduBuffer[length-bufferOffset]), sdu, size);
     numberSDUs++;
     currentPDUSize += 2 + size;     //2 for D/C flag + size fields
     if(!flagDataControl) controlOffset++;
@@ -138,8 +137,7 @@ Multiplexer::getSDU(
         positionBuffer+=sizesSDUs[i];
     
     //Copy SDU from buffer
-    for(int i=0;i<sizesSDUs[offset];i++)
-        sdu[i] = sduBuffer[positionBuffer+i];
+    memcpy(sdu, &(sduBuffer[positionBuffer]), sizesSDUs[offset]);
     
     //Increment decoding offset
     offset++;
