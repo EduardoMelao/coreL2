@@ -7,7 +7,7 @@
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : January 3rd, 2019
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -19,197 +19,216 @@ Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
 Direction : Diretoria de Operações (DO)
 UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
-@Description : This module manages the queues of SDUs that will generate PDUs 
-    to send to destination. This module is used on Transmission only.
+@Description : This module manages a single queue of aggregatedSDUs and 
+    is used on encoding and decoding of the MAC PDU. 
 */
 
 #include "Multiplexer.h"
 
 Multiplexer::Multiplexer(
-        uint16_t _maxNumberBytes,       //Maximum number of Bytes in PDU
-        uint8_t _sourceMac,             //Source MAC Address
-        MacAddressTable* _ipMacTable,   //MAC - IP table   
-        int _maxSDUs,                   //Maximum number of SDUs in PDU
-        bool _flagBS,                   //Flag true if equipment is BS, otherwise it is UE
-        bool _verbose)                  //Verbosity flag
+    int _maxNumberBytes,            //Maximum number of Bytes in a PDU
+    uint8_t _sourceAddress,         //Source MAC Address
+    uint8_t _destinationAddress,    //Destination MAC Address
+    bool _verbose)                  //Verbosity flag
 {
-    transmissionQueues = new TransmissionQueue*[MAX_BUFFERS];
-    sourceMac = _sourceMac;
-    destinationMac = new uint8_t[MAX_BUFFERS];
-    numberBytes = new uint16_t[MAX_BUFFERS];
+    //Initialize class variables
+    currentPDUSize = 4;     //SA, DA and NUM fields in MAC HEADER + CRC
     maxNumberBytes = _maxNumberBytes;
-    numberTransmissionQueues = 0;
-    ipMacTable = _ipMacTable;
-    maxSDUs = _maxSDUs;
-    flagBS = _flagBS;
+    sduBuffer = new char[maxNumberBytes];
+    sourceAddress = _sourceAddress;
+    destinationAddress = _destinationAddress;
+    numberSDUs = 0;
+    controlOffset = 0;
     verbose = _verbose;
-    if(_verbose) cout<<"[Multiplexer] Created successfully."<<endl;
 }
 
-Multiplexer::~Multiplexer()
+Multiplexer::Multiplexer(
+    uint8_t* pdu,          //Buffer containing PDU
+    bool _verbose)      //Verbosity flag
 {
-    for(int i=0;i<numberTransmissionQueues;i++)
-        delete transmissionQueues[i];
-    delete[] transmissionQueues;
-    delete[] destinationMac;
-    delete[] numberBytes; 
+    verbose = _verbose;
+    sduBuffer = (char*)pdu;
+    offset = 0;
+    currentPDUSize = 0;
 }
 
-uint8_t
-Multiplexer::getMacAddress(
-    char* dataSdu)          //SDU containg IP bytes
-{
-    uint8_t mac;            //MAC address of destination of the SDU
-    uint8_t ipAddress[4];   //Destination IP address encapsulated into SDU
-
-    //Gets IP Address from packet
-    for(int i=0;i<4;i++)
-        ipAddress[i] = (uint8_t) dataSdu[DST_OFFSET+i]; //Copying IP address
-    
-    //Search IP Address in MacAddressTable
-    mac = ipMacTable->getMacAddress(ipAddress);
-}
-
-void 
-Multiplexer::setTransmissionQueue(
-    uint8_t _destinationMac)    //Destination MAC Address
-{
-    //Check if array is full
-    if(numberTransmissionQueues>MAX_BUFFERS && verbose){
-        cout<<"[Multiplexer] Trying to create more buffers than supported."<<endl;
-        exit(1);
-    }
-
-    //Allocate new TransmissionQueue and stores it in array
-    transmissionQueues[numberTransmissionQueues] = new TransmissionQueue(maxNumberBytes, sourceMac, _destinationMac, maxSDUs, verbose);
-    
-    //Initialize values of number of bytes and data/control flag
-    destinationMac[numberTransmissionQueues] = _destinationMac;
-    numberBytes[numberTransmissionQueues] = 0;
-
-    //Increment counter
-    numberTransmissionQueues++;
+Multiplexer::~Multiplexer(){
+    delete[] sduBuffer;
 }
 
 int 
-Multiplexer::addSdu(
-    char* sdu,          //Data SDU received from TUN
-    uint16_t size)      //Number of Bytes in SDU
-{
-    return addSdu(sdu, size, 1, getMacAddress(sdu));
+Multiplexer::currentBufferLength(){
+    int length = 0;
+    for(int i=0;i<numberSDUs;i++){
+        length += sizesSDUs[i];
+    }
+    return length;
 }
 
 int 
-Multiplexer::addSdu(
-    char* sdu,                  //SDU buffer
-    uint16_t size,              //Number of Bytes of SDU
-    uint8_t flagDataControl,    //Data/Control flag
-    uint8_t _destinationMac)    //Destination MAC Address
-{
-    int i;
-
-    //Look for TransmissionQueue corresponding to Mac Address
-    for(i=0;i<numberTransmissionQueues;i++)
-        if(destinationMac[i]==_destinationMac)
-            break;
-
-    //TransmissionQueue not found
-    if(i==numberTransmissionQueues){
-        if(!flagBS){
-            if(verbose) cout<<"[Multiplexer] No TransmissionQueue found. Forwarding to BS..."<<endl;
-            i = 0;      //BS index of TransmissionQueues (only this TransmissionQueue)
-        }
-        else if(verbose){
-            cout<<"[Multiplexer] Error: no TransmissionQueue found."<<endl;
-            return -2;
-        }
-    }
-
-    //Test if queue is full: if so, returns the MAC Address
-    if((size + 2 + transmissionQueues[i]->getNumberofBytes())>maxNumberBytes){
-        if(verbose) cout<<"[Multiplexer] Number of bytes exceed buffer max length. Returning MAC Address."<<endl;
-        return _destinationMac;
-    }
-
-    //Test if there number of SDUs extrapolates maximum
-    if(transmissionQueues[i]->numberSDUs+1 == transmissionQueues[i]->maximumNumberSDUs){
-        if(verbose) cout<<"[Multiplexer] Tried to multiplex more SDUs than supported."<<endl;
-        return _destinationMac;
-    }
-
-    //Attempts to add SDU to TransmissionQueue
-    if(transmissionQueues[i]->addSDU(sdu, size, flagDataControl)){
-        numberBytes[i]+=size;
-        if(verbose&&flagDataControl) cout<< "[Multiplexer] Data SDU added to queue!"<<endl;
-        if(verbose&&!flagDataControl) cout<< "[Multiplexer] Control SDU added to queue!"<<endl;
-        return -1;
-    }
-    return -2; 
-}
-
-ssize_t 
-Multiplexer::getPdu(
-    char* buffer,       //Buffer to store PDU
-    uint8_t macAddress) //Destination MAC Address of PDU
-{
-    ssize_t size;   //Size of PDU
-    int index;      //Auxiliary variable for loop
-
-    for(index=0;index<numberTransmissionQueues;index++){
-        if(destinationMac[index]==macAddress)
-            break;
-    }
-    //Test if macAddress was found
-    if(index==numberTransmissionQueues){
-        if(verbose) cout<<"[Multiplexer] Could not get PDU: MAC Address not found."<<endl;
-        return -1;
-    }
-
-    //Test if there are bytes to return
-    if(numberBytes[index] == 0){
-        if(verbose) cout<<"[Multiplexer] Could not get PDU: no Bytes to transfer."<<endl;
-        return -1;
-    }
-
-    //Creates a ProtocolPackage to receive the PDU
-    ProtocolPackage* pdu = transmissionQueues[index]->getPDUPackage();
-
-    if(verbose) cout<<"[Multiplexer] Inserting MAC Header."<<endl;
-
-    //Inserts MacHeader and returns PDU size
-    pdu->insertMacHeader();
-    size = pdu->getPduSize();
-    memcpy(buffer, pdu->buffer, size);
-    delete pdu;
-
-    transmissionQueues[index]->clearBuffer();
-    numberBytes[index] = 0;
-
-    return size;
+Multiplexer::getNumberofBytes(){
+    return currentPDUSize;
 }
 
 bool 
-Multiplexer::emptyPdu(
-    uint8_t macAddress)      //Destination MAC Address of PDU
+Multiplexer::addSduPosition(
+    char* sdu,                  //Buffer containing single SDU
+    uint16_t size,              //SDU size
+    uint8_t flagDataControl,    //SDU Data/Control flag
+    int position)               //Position in the queue where SDU will be added
 {
-    for(int i=0;i<numberTransmissionQueues;i++){
-        if(destinationMac[i]==macAddress)
-            return numberBytes[i]==0;
+    int bufferOffset = 0;                   //Buffer offset to manage copying arrays
+    int length = currentBufferLength();     //Current length of the queue
+
+    //Resize vectors:
+    sizesSDUs.resize(numberSDUs+1);
+    flagsDataControlSDUs.resize(numberSDUs+1);
+
+    //Copying forward information already in queue
+    for(int i=numberSDUs-1;i>=position;i--){
+        sizesSDUs[i+1] = sizesSDUs[i];
+        flagsDataControlSDUs[i+1] = flagsDataControlSDUs[i];
+        bufferOffset+=sizesSDUs[i+1];
     }
-    if(verbose) cout<<"[Multiplexer] MAC address not found verifying empty PDU."<<endl;
+    for(int i=(length-1);i>=(length-bufferOffset);i--){
+        sduBuffer[i+size] = sduBuffer[i];
+    }
+
+    //Implanting actual SDU
+    sizesSDUs[position] = size;
+    flagsDataControlSDUs[position] = flagDataControl;
+    for(int i=0;i<size;i++)
+        sduBuffer[length-bufferOffset+i] = sdu[i];
+    numberSDUs++;
+    currentPDUSize += 2 + size;     //2 for D/C flag + size fields
+    if(!flagDataControl) controlOffset++;
+    if(verbose) cout<<"[Multiplexer] Multiplexed "<<(int)numberSDUs<<" SDUs into PDU."<<endl;
     return true;
 }
 
-int 
-Multiplexer::getNumberTransmissionQueues(){
-    return numberTransmissionQueues;
+bool 
+Multiplexer::addSDU(
+    char* sdu,                  //Buffer containing single SDU
+    uint16_t size,              //SDU size
+    uint8_t flagDataControl)    //SDU Data/Control flag
+{
+    //Verify if it is possible to insert SDU (considering CRC)
+    if((size+2+currentPDUSize)>maxNumberBytes){
+        if(verbose) cout<<"[Multiplexer] Tried to multiplex SDU which size extrapolates maxNumberBytes."<<endl;
+        exit(4);
+    }
+
+    //Adds SDU to position depending if it is Data or Control SDU
+    return flagDataControl? addSduPosition(sdu, size, flagDataControl, numberSDUs):addSduPosition(sdu, size, flagDataControl, controlOffset);
 }
 
-void
-Multiplexer::setMaxNumberBytes(
-		uint16_t _maxNumberBytes)	//Maximum number of Bytes for each PDU
+ssize_t 
+Multiplexer::getSDU(
+    char* sdu)      //Buffer to store SDU
 {
-	maxNumberBytes = _maxNumberBytes;
-	for(int i=0;i<numberTransmissionQueues;i++)
-		transmissionQueues[i]->maxNumberBytes = _maxNumberBytes;
+    //Test if Decoding queue has ended
+    if(offset == numberSDUs){
+        if(verbose) cout<<"[Multiplexer] End of demultiplexing."<<endl;
+        return -1;
+    }
+
+    //Set an position offset to next SDU position in buffer
+    int positionBuffer = 0;
+    for(int i=0;i<offset;i++)
+        positionBuffer+=sizesSDUs[i];
+    
+    //Copy SDU from buffer
+    for(int i=0;i<sizesSDUs[offset];i++)
+        sdu[i] = sduBuffer[positionBuffer+i];
+    
+    //Increment decoding offset
+    offset++;
+    if(verbose) cout<<"[Multiplexer] Demultiplexed SDU "<<offset<<endl;
+    return sizesSDUs[offset-1];
+}
+
+void 
+Multiplexer::getPDU(
+    vector<uint8_t> & pduBuffer)
+{
+    //Create new PDU object and inserts MAC Header
+    insertMacHeader();
+    
+    //Copy PDU to buffer
+    for(int i=0;i<currentPDUSize-2;i++)     //-2 because of CRC
+        pduBuffer.push_back(sduBuffer[i]);
+}
+
+uint8_t 
+Multiplexer::getCurrentDataControlFlag(){
+    return flagsDataControlSDUs[offset-1];
+}
+
+uint8_t 
+Multiplexer::getDestinationAddress(){
+    return destinationAddress;
+}
+
+void 
+Multiplexer::insertMacHeader(){
+    int i, j;   //Auxiliary variables
+
+    //Allocate new buffer
+    char* buffer = new char[currentPDUSize-2];  //-2 because of CRC
+
+    //Fills the 2 first slots
+    buffer[0] = (sourceAddress<<4)|(destinationAddress&15);
+    buffer[1] = numberSDUs;
+
+    //Fills with the SDUs informations
+    for(i=0;i<numberSDUs;i++){
+        buffer[2+2*i] = (flagsDataControlSDUs[i]<<7)|(sizesSDUs[i]>>8);
+        buffer[3+2*i] = sizesSDUs[i]&255;
+    }
+
+    //Copy the buffer with the SDUs multiplexed to the new buffer
+    for(i=2+2*i,j=0;i<currentPDUSize-2;i++,j++){
+        buffer[i] = sduBuffer[j];
+    }
+
+    memcpy(sduBuffer, buffer, currentPDUSize-2);
+
+    delete [] buffer;
+
+    if(verbose) cout<<"[Multiplexer] MAC Header inserted."<<endl;
+}
+
+void 
+Multiplexer::removeMacHeader(){
+    int i;  //Auxiliary variable
+
+    //Get information from first 2 slots
+    sourceAddress = (uint8_t) (sduBuffer[0]>>4);
+    destinationAddress = (uint8_t) (sduBuffer[0]&15);
+    numberSDUs = (uint8_t) sduBuffer[1];
+
+    //Declare new sizes and Data/Control flags arrays and get information for SDUs decoding
+    for(i=0;i<numberSDUs;i++){
+        flagsDataControlSDUs.push_back((sduBuffer[2+2*i]&255)>>7);
+        sizesSDUs.push_back(((sduBuffer[2+2*i]&127)<<8)|((sduBuffer[3+2*i])&255));
+        currentPDUSize+=sizesSDUs[i];
+    }
+
+    //Update i value to use in further loop
+    i = 2 + 2*i;
+
+    //Create a new buffer that will contain only SDUs, no header
+    char* buffer2 = new char[currentPDUSize];
+
+    for(int j=0;j<currentPDUSize;i++,j++){
+        buffer2[j]=sduBuffer[i];
+    }
+    
+    sduBuffer = buffer2;
+    if(verbose) cout<<"[Multiplexer] MAC Header removed successfully."<<endl;
+}
+
+bool
+Multiplexer::isEmpty(){
+    return numberSDUs==0;
 }

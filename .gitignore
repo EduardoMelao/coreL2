@@ -36,3 +36,5 @@
 .cproject 
 .project
 .settings/
+
+*.txt

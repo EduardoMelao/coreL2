@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : January 21st, 2019
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -20,17 +20,14 @@ Direction : Diretoria de Operações (DO)
 UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 @Description : Medium Access Control (MAC) Layer main module for PoC in project H2020 5G-RANGE. 
-    This module initializes Static/Default parameters and the main module of 5G-RANGE MAC System.
+    This module instantiates and initializes 5G-RANGE MAC System manager.
 */
 
 #include <iostream>
 using namespace std;
 
 //Custom headers implemented
-#include "ProtocolPackage/ProtocolPackage.h"
-#include "Multiplexer/MacAddressTable/MacAddressTable.h"
 #include "MacController/MacController.h"
-#include "SystemParameters/CurrentParameters.h"
 
 void stubCLI(MacController & macController){
     while(1){
@@ -64,12 +61,8 @@ void stubCLI(MacController & macController){
 }
 
 int main(int argc, char** argv){
-    uint8_t* macAddresses;          //Array of 5GR MAC Addresses of attached equipments
-    int numberEquipments;           //Number of attached equipments
-    int argumentsOffset;			//Arguments interpretation offset
     bool verbose = false;           //Verbosity flag
     char *devname = NULL;           //Tun interface name
-    bool flagBS;                    //Base Station flag: true if BS, false if UE
 
 	//Verify verbose
     if(argc==2){

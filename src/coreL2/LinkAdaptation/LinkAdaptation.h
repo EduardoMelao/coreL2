@@ -10,7 +10,7 @@
 #include <stdint.h>     //uint8_t
 
 /**
- * @brief Class to perform Link Adaptation calculations such as converting SINR to CQI-UL
+ * @brief Class to perform Link Adaptation calculations such as converting SNR to MCS
  */
 class LinkAdaptation{
 private:
@@ -26,9 +26,9 @@ public:
     ~LinkAdaptation();
 
     /**
-     * @brief Based on SINR, performs calculation of Channel Quality Information
-     * @returns Channel Quality Information
+     * @brief Based on SNR, performs calculation of MCS
+     * @returns Modulation and Coding Scheme
      */
-    static uint8_t getSinrConvertToCqi(float sinr);
+    static uint8_t getSnrConvertToMcs(float snr);
 };
 #endif  //INCLUDED_LINK_ADAPTATION_H

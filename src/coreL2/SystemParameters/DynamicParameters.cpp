@@ -7,7 +7,7 @@
 @Arquive name : DynamicParameters.cpp
 @Classification : System Parameters - Dynamic Parameters
 @
-@Last alteration : January 21st, 2019
+@Last alteration : March 10th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -34,7 +34,7 @@ DynamicParameters::~DynamicParameters() {}
 
 void 
 DynamicParameters::fillDynamicVariables(
-    uint8_t* _fLutMatrix,                       //Fusion Lookup Table Matrix
+    uint8_t _fLutMatrix,                        //Fusion Lookup Table Matrix
     vector<allocation_cfg_t> _ulReservations,   //Uplink Reservations
     vector<uint8_t> _mcsDownlink,               //Modulation and Coding Scheme Downlink
     vector<uint8_t> _mcsUplink,                 //Modulation and Coding Scheme Uplink
@@ -46,9 +46,11 @@ DynamicParameters::fillDynamicVariables(
     vector<uint8_t> _transmissionPowerControl,  //Transmission Power Control
     uint8_t _rxMetricPeriodicity)               //Rx Metrics Periodicity in number of subframes
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+
 	//Copy fLutMatrix
-	for(int i=0;i<17;i++)
-		fLutMatrix[i]=_fLutMatrix[i];
+    fLutMatrix=_fLutMatrix;
 
     //Redefine vectors
     ulReservation = _ulReservations;
@@ -75,6 +77,9 @@ DynamicParameters::fillDynamicVariables(
     uint8_t _transmissionPowerControl,      //Transmission Power Control
     uint8_t _rxMetricPeriodicity)           //Rx Metrics periodicity in number of  
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+
     //Push back information on vectors
     ulReservation.push_back(_ulReservation);
     mcsUplink.push_back(_mcsUplink);
@@ -92,6 +97,9 @@ DynamicParameters::serialize(
     uint8_t targetUeId,         //Target UE Identification
     vector<uint8_t> & bytes)    //Vector where serialized bytes will be stored
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+
     bytes.clear();  //Clear vector
 
     uint8_t auxiliary;      //Auxiliary variable to help shift binaries
@@ -123,6 +131,9 @@ void
 DynamicParameters::deserialize(
     vector<uint8_t> & bytes)    //Vector where serialized bytes are stored
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+
     uint8_t auxiliary;          //Auxiliary variable to store temporary information
 
     pop_bytes(auxiliary, bytes);
@@ -147,16 +158,21 @@ DynamicParameters::deserialize(
 
 void 
 DynamicParameters::setFLutMatrix(
-    uint8_t* _fLutMatrix)       //Fusion Spectrum Analysis Lookup Table
+    uint8_t _fLutMatrix)       //Fusion Spectrum Analysis Lookup Table
 {
-    for(int i=0;i<17;i++)
-        fLutMatrix[i] = _fLutMatrix[i];     //Copy array values
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+
+    fLutMatrix = _fLutMatrix;     //Copy value
 }
 
 void 
 DynamicParameters::setUlReservation(
     allocation_cfg_t _ulReservation)    //Spectrum allocation for Uplink
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(_ulReservation.target_ue_id);
     if(index==-1){
         cout<<"[DynamicParameters] Error setting UlReservation: MAC Address not found."<<endl;
@@ -173,6 +189,9 @@ DynamicParameters::setMcsDownlink(
     uint8_t macAddress,             //UE Mac Address
     uint8_t _mcsDownlink)           //Modulation and Coding Scheme for Downlink
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error setting MCS Downlink: MAC Address not found."<<endl;
@@ -189,6 +208,9 @@ DynamicParameters::setMcsUplink(
     uint8_t macAddress,                 //UE Mac Address
     uint8_t _mcsUplink)     //Modulation and Coding Scheme for Uplink
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error setting MCS Uplink: MAC Address not found."<<endl;
@@ -209,6 +231,9 @@ DynamicParameters::setMimo(
     uint8_t _mimoOpenLoopClosedLoop,        //MIMO open loop or closed loop
     uint8_t _mimoPrecoding)                 //MIMO codeblock configuration for DL OR UL
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error setting MIMO: MAC Address not found."<<endl;
@@ -232,6 +257,9 @@ DynamicParameters::setTPC(
     uint8_t macAddress,                 //UE Mac Address
     uint8_t _trasmissionPowerControl)   //Transmission Power Control value
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error setting TPC: MAC Address not found."<<endl;
@@ -247,24 +275,31 @@ void
 DynamicParameters::setRxMetricPeriodicity(
     uint8_t _rxMetricPeriodicity)       //Rx Metrics Periodicity in number of subframes
 {    
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     if(rxMetricPeriodicity!=_rxMetricPeriodicity){
         rxMetricPeriodicity = _rxMetricPeriodicity; //Assign new values
     }
 }
 
 
-void 
-DynamicParameters::getFLUTMatrix(
-    uint8_t* _fLutMatrix)   //Array of bits where information os going to be stored
+uint8_t 
+DynamicParameters::getFLUTMatrix()
 {
-    for(int i=0;i<17;i++)
-        _fLutMatrix[i] = fLutMatrix[i];
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
+    return fLutMatrix;
 }
 
 allocation_cfg_t 
 DynamicParameters::getUlReservation(
     uint8_t macAddress) //UE MAC Address
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error getting UlReservation: macAddress not found."<<endl;
@@ -277,6 +312,9 @@ void
 DynamicParameters::getUlReservations(
     vector<allocation_cfg_t> & _ulReservations)     //Vector where UL Reservations will be stored
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     _ulReservations.resize(ulReservation.size());   //Resize container vector
     for(int i=0;i<ulReservation.size();i++)
         _ulReservations[i]=ulReservation[i];
@@ -286,6 +324,9 @@ uint8_t
 DynamicParameters::getMcsDownlink(
     uint8_t macAddress) //UE MAC Address
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error getting MCS Downlink: macAddress not found."<<endl;
@@ -298,6 +339,9 @@ uint8_t
 DynamicParameters::getMcsUplink(
     uint8_t macAddress) //UE MAC Address
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error getting MCS Uplink: macAddress not found."<<endl;
@@ -310,6 +354,9 @@ uint8_t
 DynamicParameters::getMimoConf(
     uint8_t macAddress) //UE MAC Address
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error getting MIMO Configuration: macAddress not found."<<endl;
@@ -323,6 +370,9 @@ uint8_t
 DynamicParameters::getMimoDiversityMultiplexing(
     uint8_t macAddress) //UE MAC Address
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error getting MIMO Diversity/Multiplexing flag: macAddress not found."<<endl;
@@ -335,6 +385,9 @@ uint8_t
 DynamicParameters::getMimoAntenna(
     uint8_t macAddress) //UE MAC Address
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error getting MIMO number of Antennas: macAddress not found."<<endl;
@@ -347,6 +400,9 @@ uint8_t
 DynamicParameters::getMimoOpenLoopClosedLoop(
     uint8_t macAddress) //UE MAC Address
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error getting MIMO OpenLoop/ClosedLoop flag: macAddress not found."<<endl;
@@ -359,6 +415,9 @@ uint8_t
 DynamicParameters::getMimoPrecoding(
     uint8_t macAddress) //UE MAC Address
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error getting MIMO Precoding index: macAddress not found."<<endl;
@@ -371,6 +430,9 @@ uint8_t
 DynamicParameters::getTPC(
     uint8_t macAddress)//UE MAC Address
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     int index = getIndex(macAddress);
     if(index==-1){
         cout<<"[DynamicParameters] Error getting Transmission Power Control: macAddress not found."<<endl;
@@ -381,6 +443,9 @@ DynamicParameters::getTPC(
 
 uint8_t 
 DynamicParameters::getRxMetricsPeriodicity(){
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
     return rxMetricPeriodicity;
 }
 

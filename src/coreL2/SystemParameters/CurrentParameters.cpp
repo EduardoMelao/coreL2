@@ -7,7 +7,7 @@
 @Arquive name : CurrentParameters.cpp
 @Classification : System Parameters - Current Parameters
 @
-@Last alteration : January 22nd, 2019
+@Last alteration : March 10th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -25,9 +25,12 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 #include "CurrentParameters.h"
 
+CurrentParameters::CurrentParameters() { }
+
 CurrentParameters::CurrentParameters(
 		bool _verbose)		//Verbosity flag
 {
+	flagUesOutdated = false;
 	verbose = _verbose;
 }
 
@@ -65,24 +68,11 @@ CurrentParameters::readTxtSystemParameters(
 	ofdm_gfdm = stoi(readBuffer);
 	readBuffer.clear();
 
-	//Gets FUSION LUT matrix default value (only BS)
+	//Gets Fusion LUT matrix default value (only BS)
 	if(flagBS){
-		int counter = 0;		//Counter to help Fusion LUT filling
-		string readLUTValue;	//String to store reading position for Fusion LUT
-		getline(readingConfigurationsFile, readBuffer);		//Reads line with all 17 values (positions), equivalent to 132 bits
-		
-		//Retrieve all 17 positions of array from line
-		for(int i=0;i<readBuffer.size();i++){
-			if(readBuffer[i]==' '){							//If there's a space, finish reading position;
-				fLutMatrix[counter] = stoi(readLUTValue);	//Store value;
-				readLUTValue.clear();						//Clear buffer; and
-				counter++;									//Increase counter.
-			}
-			else
-				readLUTValue+=readBuffer[i];				//If this is not a space, add to buffer
-		}
-		fLutMatrix[counter] = stoi(readLUTValue);			//Last position does not end with a space
-		readLUTValue.clear();
+		getline(readingConfigurationsFile, readBuffer);
+		fLutMatrix = stoi(readBuffer);
+		readBuffer.clear();
 	}
 
 	//Gets Reception Metrics Periodicity
@@ -200,11 +190,7 @@ CurrentParameters::recordTxtCurrentParameters(){
 
 	//Writes FUSION LUT matrix values (only BS)
 	if(flagBS){
-		writingConfigurationsFile << to_string(fLutMatrix[0]);	//First position
-		for(int i=1;i<17;i++){
-			writingConfigurationsFile << ' ' << to_string((int)fLutMatrix[i]);
-		}
-		writingConfigurationsFile << '\n';	//Add line break at the end of this line
+		writingConfigurationsFile << to_string(fLutMatrix) << '\n';
 	}
 
 	//Writes Reception Metrics Periodicity
@@ -321,13 +307,21 @@ CurrentParameters::getMacAddress(
 	return ulReservation[index].target_ue_id;
 }
 
+bool
+CurrentParameters::areUesOutdated(){
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
+	return flagUesOutdated;
+}
+
 void 
 CurrentParameters::setSystemParameters(
 	DynamicParameters* dynamicParameters)	//Pointer to DynamicParameters object, which stores parameters modified
 {
 	//(Only BS) Sets Fusion LookUp Table
 	if(flagBS){
-		dynamicParameters->getFLUTMatrix(fLutMatrix);
+		fLutMatrix = dynamicParameters->getFLUTMatrix();
 	}
 
 	//For each UE, loads MCS Downlink and Uplink
@@ -356,4 +350,24 @@ CurrentParameters::setCLIParameters(
 		mimoPrecoding[getIndex(ulReservation[i].target_ue_id)] = dynamicParameters->getMimoPrecoding(ulReservation[i].target_ue_id);
 		transmissionPowerControl[getIndex(ulReservation[i].target_ue_id)] = dynamicParameters->getTPC(ulReservation[i].target_ue_id);
 	}
+}
+
+void
+CurrentParameters::setUEParameters(
+	DynamicParameters* dynamicParameters)	//Pointer to DynamicParameters object, which stores parameters modified
+{
+	//The only diference from setCLIParameters is MCS Uplink
+	mcsUplink[0] = dynamicParameters->getMcsUplink(ulReservation[0].target_ue_id);
+
+	setCLIParameters(dynamicParameters);
+}
+
+void
+CurrentParameters::setFlagUesOutdated(
+	bool _flagUesOutdated)	//New flag value
+{
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
+	flagUesOutdated = _flagUesOutdated;
 }

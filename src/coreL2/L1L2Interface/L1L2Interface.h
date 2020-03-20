@@ -70,20 +70,17 @@ public:
     ~L1L2Interface();
 
     /**
-     * @param macPdu MAC PDU structure containing all information PHY needs
-     * @param macAddress Destination MAC Address
-     * @returns True if transmission was successful, false otherwise
+     * @param macPdus MAC PDUs structure containing all information PHY needs
+     * @param numberPDUs Number of MAC PDUs for transmission
      */
-    void sendPdu(MacPDU _macPdu, uint8_t macAddress);
+    void sendPdus(MacPDU** macPdus, int numberPdus);
 
     /**
-     * @brief Received a PDU from PHY Layer
-     * @param buffer Buffer where PDU is going to be store
+     * @brief Receives PDUs from PHY Layer
+     * @param buffer Buffer where PDUs are going to be store
      * @param maximumSize Maximum size of PDU
-     * @param macAddress Source MAC Address from which packet will be received
-     * @returns Received PDU size in bytes
      */
-    ssize_t receivePdu(const char* buffer, size_t maximumSize, uint8_t macAddress);
+    void receivePdus(vector<vector<uint8_t>> & buffer, size_t maximumSize);
 
     /**
      * @brief Sends Control Message to PHY

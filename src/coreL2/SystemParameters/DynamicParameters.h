@@ -26,7 +26,7 @@ class DynamicParameters{
 private:
 protected:
     //Dynamic information as informed on spreadsheet L1-L2_InterfaceDefinition.xlsx
-	uint8_t fLutMatrix[17];						//[132 bits] BitMap from Fusion Spectrum Analysis
+	uint8_t fLutMatrix;							//[4 bits] BitMap from Fusion Spectrum Analysis
 	vector<allocation_cfg_t> ulReservation;	    //[24 bits each] Spectrum allocation for Uplink
 	vector<uint8_t> mcsDownlink;				//[4 bit each] Modulation and Coding Scheme for Downlink
 	vector<uint8_t> mcsUplink;					//[4 bit each] Modulation and Coding Scheme for Uplink
@@ -37,6 +37,7 @@ protected:
 	vector<uint8_t> mimoPrecoding;				//[4 bits each] MIMO codeblock configuration for DL and UL
 	vector<uint8_t> transmissionPowerControl;	//[6 bits each] Transmission Power Control
 	uint8_t rxMetricPeriodicity;				//[4 bits each] CSI period for CQI, PMI and SSM provided by PHY
+	mutex dynamicParametersMutex;				//Mutex to control access of parameters
 	bool verbose;								//Verbosity flag
 
 public:
@@ -70,7 +71,7 @@ public:
 	 * @param _transmissionPowerControl Transmission Power Control
 	 * @param _rxMetricPeriodicity CSI period for CQI, PMI and SSM provided by PHY
 	 */
-	void fillDynamicVariables(uint8_t* _fLutMatrix, vector<allocation_cfg_t> _ulReservations, vector<uint8_t> _mcsDownlink, vector<uint8_t> _mcsUplink, vector<uint8_t> _mimoConf, vector<uint8_t> _mimoDiversityMultiplexing,
+	void fillDynamicVariables(uint8_t _fLutMatrix, vector<allocation_cfg_t> _ulReservations, vector<uint8_t> _mcsDownlink, vector<uint8_t> _mcsUplink, vector<uint8_t> _mimoConf, vector<uint8_t> _mimoDiversityMultiplexing,
 						vector<uint8_t> _mimoAntenna, vector<uint8_t> _mimoOpenLoopClosedLoop, vector<uint8_t> _mimoPrecoding, vector<uint8_t> _transmissionPowerControl, uint8_t _rxMetricPeriodicity);
 
     /**
@@ -106,7 +107,7 @@ public:
 	 * @brief Sets Fusion Lookup Matrix
 	 * @param _fLutMatrix BitMap from Fusion Spectrum Analisys
 	 */
-	void setFLutMatrix(uint8_t* _fLutMatrix);
+	void setFLutMatrix(uint8_t _fLutMatrix);
 
 	/**
 	 * @brief Sets Uplink Reservation
@@ -162,9 +163,9 @@ public:
 
     /**
      * @brief Gets Fusion Lookup Table matrix
-     * @param _fLutMatrix Array of bits where information os going to be stored
+     * @returns 8-bit integer containing array of 4 bits of Fusion LUT (least significant bits)
      */
-    void getFLUTMatrix(uint8_t* _fLutMatrix);
+    uint8_t getFLUTMatrix();
 
     /**
      * @brief Getter for Ul Reservation

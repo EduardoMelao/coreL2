@@ -7,7 +7,7 @@
 @Arquive name : LinkAdaptation.cpp
 @Classification : Link Adaptation
 @
-@Last alteration : January 22nd, 2019
+@Last alteration : March 5th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -23,18 +23,22 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 */
 
 #include "LinkAdaptation.h"
-
+#include "../../common/lib5grange/lib5grange.h"
 LinkAdaptation::LinkAdaptation() {}
 
 LinkAdaptation::~LinkAdaptation() {}
 
 uint8_t
-LinkAdaptation::getSinrConvertToCqi(
-    float sinr)     //Signal to Interference plus Noise Ratio informed by PHY
+LinkAdaptation::getSnrConvertToMcs(
+    float snr)  //Signal to Noise Ratio informed by PHY
 {   
-    uint8_t cqiUplink;      //Channel Quality Information
+    uint8_t mcs;    //Modulation and Coding Scheme
     
-    //#TODO: do some calculations/Look tables here
-    cqiUplink = 10;
-    return cqiUplink;
+    //Search for MCS into SNR-to-MCS mapping table
+    for(mcs=0;mcs<27;mcs++){
+        if(snr<lib5grange::mappingSNRtoMCS[mcs])
+            break;
+    }
+
+    return mcs;
 }

@@ -27,17 +27,17 @@ public:
 
     /**
      * @brief Performs calculation of Spectrum Sensing base on measurements from PHY
-     * @param spectrumSensingMeasurement (#TODO) Verify if it is an array of 132 bits with measurements from PHY
-     * @param spectrumSensingReport Array of 132 bits with information about spectrum sensing
+     * @param spectrumSensingMeasurement (#TODO) Verify if it is an array of 4 bits with measurements from PHY
+     * @returns Array of 4 bits with information about spectrum sensing
      */
-    static void calculateSpectrumSensingValue(uint8_t* spectrumSensingMeasurement, uint8_t* spectrumSensingReport);
+    static uint8_t calculateSpectrumSensingValue(uint8_t spectrumSensingMeasurement);
 
     /**
      * @brief Calculates number of RBs in idle
      * @param spectrumSensingReport from UE
      * @returns Number of RBs in idle
      */
-    static uint16_t spectrumSensingConvertToRBIdle(uint8_t* spectrumSensingReport);
+    static uint16_t spectrumSensingConvertToRBIdle(uint8_t spectrumSensingReport);
 };
 
 #endif  //INCLUDED_COSORA_H

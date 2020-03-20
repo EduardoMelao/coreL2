@@ -7,7 +7,7 @@ Structure of Default information file. Just leave numbers in the file, respectin
  - BS		[1..15]		Number of UEs 
  - BS/UE 	[0..5]		Numerology
  - BS/UE 	[0/1]		OFDM(0) or GFDM(1)
- - BS       17*[0..255] Fusion LUT Matrix 132 bits [0/1] compressed into 17[0..255] Bytes with spaces between them. For the 17th Byte, consider only 4 least significant bits
+ - BS       [0..15]     Fusion LUT Matrix 4 bits [0/1] compressed into 1[0..15] Byte.
  - BS/UE	[1..10]	    Rx Metrics Periodicity in number of subframes
  - BS/UE	[0..1500]	MTU
  - BS/UE	[0..65536]	IP timeout

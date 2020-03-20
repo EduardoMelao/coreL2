@@ -12,7 +12,7 @@
 #define CONTROL_MESSAGES_PORT_TO_L2 8093
 #define CONTROL_MESSAGES_PORT_FROM_L2 8092
 
-#define MAXIMUMSIZE 2048
+#define MAXIMUMSIZE 102400
 
 #include <iostream>     //cout
 #include <stdint.h>     //uint16_t
@@ -46,6 +46,8 @@ private:
     int socketControlMessagesToL2;          //File descriptor of socket used to SEND Control Messages to L2
     struct sockaddr_in serverPdusSocketAddress; //Address of server to which client will send PDUs
     struct sockaddr_in serverControlMessagesSocketAddress;  //Address of server to which client will send control messages
+    int subFrameCounter;                    //Counter to trigger RX Metrics sending to MAC
+    uint8_t rxMetricsPeriodicity;           //Periodicity to send Rx metrics to MAC, in number of Subframes
     bool verbose;                           //Verbosity flag
 
     /**
@@ -93,7 +95,7 @@ public:
      * @param port Socket port to identify which socket to send information
      * @returns True if transmission was successful; False if it was not
      */
-    bool sendPdu(const char* buffer, size_t size, uint16_t port);
+    bool sendPdus(const char* buffer, size_t size, uint16_t port);
 
     /**
      * @brief Receive PDU from socket considering there's just one socket added
@@ -101,7 +103,7 @@ public:
      * @param maxSiz Maximum size of buffer
      * @returns Length in bytes of information received
      */   
-    ssize_t receivePdu(const char* buffer, size_t maxSiz); 
+    ssize_t receivePdus(const char* buffer, size_t maxSiz); 
 
     /**
      * @brief Receive PDU from socket identified by port
@@ -110,7 +112,7 @@ public:
      * @param port Socket port to identify which socket to receive information
      * @returns Length in bytes of information received
      */
-    ssize_t receivePdu(const char* buffer, size_t maxSiz, uint16_t port);
+    ssize_t receivePdus(const char* buffer, size_t maxSiz, uint16_t port);
 
     /**
      * @brief Get index of socket to send/receive information
@@ -128,8 +130,9 @@ public:
 
     /**
      * @brief Encoding function: executes forever and receives Data packets from L2 and send them to destination socket
+     * @param numberPdus Number of PDUs for transmission
      */
-    void encoding();
+    void encoding(uint8_t numberPdus);
 
     /**
      * @brief Decoding function: executes forever and forward received data packets to L2

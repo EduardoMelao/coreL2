@@ -11,50 +11,44 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "../Multiplexer/Multiplexer.h"
-#include "../MacController/MacController.h"
 #include "../LinkAdaptation/LinkAdaptation.h"
-#include "../AdaptiveModulationCoding/AdaptiveModulationCoding.h"
+#include "../MacController/MacController.h"
 #include "../Cosora/Cosora.h"
 
-class MacController;	//Initializing class that will be defined in other .h file
+
+//Initializing classes that will be defined in other .h files
+class MacController;
 
 /**
- * @brief Class to manage including MACc SDUs in Multiplexer
+ * @brief Class to manage including MACC SDUs in Multiplexer and interlayer messages.
  */
 class ProtocolControl{
 private:
-    MacController* macController;   //MAC Controller that instantiated this object and has all shared variables
-    bool verbose;                   //Verbosity flag
+    MacController* macController;           //MacController object with all system modules
+    RxMetrics* rxMetrics;                   //Object to handle RxMetrics collected in UE and sent to BS
+    bool verbose;                           //Verbosity flag
 
 public:
     /**
      * @brief Constructs a new ProtocolControl object
-     * @param _macController MacController object which has all information of mutexes, condition variables and main multiplexer
+     * @param _macController MacController object with all system modules
      * @param _verbose Verbosity flag
      */
-    ProtocolControl(MacController* _macController, bool _verbose);
+    ProtocolControl(MacController* _macController,  bool _verbose);
 
     /**
      * @brief Destroys ProtocolControl object
      */
     ~ProtocolControl();
-    
-    /**
-     * @brief Procedure that executes forever and controls MACC SDUs generation, adding SDUs from MAC Control Queue to Multiplexer
-     * @param controlSdu MAC Control SDU Bytes
-     * @param numberBytes Size of MACC SDU in Bytes
-     * @param macAddress Destination MAC Address
-     */
-    void enqueueControlSdus(uint8_t* controlSdu, size_t numberBytes, uint8_t macAddress);
 
     /**
      * @brief Receives and treat Control SDUs on decoding
+     * @param currentMacMode Current MAC execution mode
      * @param buffer Buffer containing Control SDU
      * @param numberDecodingBytes Size of Control SDU in Bytes
      * @param macAddress Source MAC Address
      */
-    void decodeControlSdus(char* buffer, size_t numberDecodingBytes, uint8_t macAddress);
+    void decodeControlSdus(MacModes & currentMacMode, char* buffer, size_t numberDecodingBytes, uint8_t macAddress);
 
     /**
      * @brief Perform transmission of Interlayer Control Messages to PHY
@@ -69,6 +63,19 @@ public:
      * @param currentMacRxMode Actual MAC Rx Mode to signal to system if it is in an active mode, e.g. ACTIVE_MODE_RX
      */
     void receiveInterlayerMessages(MacModes & currentMacMode, MacRxModes & currentMacRxMode);
+
+    /**
+     * @brief [UE] Receives bytes referring to Dynamic Parameters coming by MACC SDU and updates class with new information
+     * @param currentMacMode Current MAC execution Mode
+     * @param bytesDynamicParameters Serialized bytes from CLIL2Interface object
+     * @param size Number of bytes of serialized information
+     */ 
+    void managerDynamicParameters(MacModes & currentMacMode, uint8_t* bytesDynamicParameters, size_t numberBytes);
+
+    /**
+     * @brief (Only UE) Periodically sends RxMetrics Report to BS
+     */
+    void rxMetricsReport();
 };
 
 
