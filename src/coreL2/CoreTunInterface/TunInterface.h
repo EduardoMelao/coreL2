@@ -22,6 +22,7 @@
 class TunInterface{
 private:
     int fileDescriptor;     //File descriptor of the interface
+    uint16_t mtu;           //Maximum Transmission Unit for the interface
     char* deviceName;       //[optional] Name of the interface
     bool verbose;           //Verbosity flag
 
@@ -46,9 +47,10 @@ public:
     /**
      * @brief Creates interface
      * @param deviceName Interface name
+     * @param _mtu Interface mtu
      * @param _verbose Verbosity flag
      */
-    TunInterface(const char* deviceName, bool _verbose);
+    TunInterface(const char* deviceName, uint16_t _mtu, bool _verbose);
     
     /**
      * @brief Destroys TUN interface
@@ -61,12 +63,12 @@ public:
      */
     bool allocTunInterface();
     
-/**
- * @brief Performs reading of packets in the interface; Blocks if there is no packet to read
- * @param buffer Buffer to store packet read
- * @param numberBytes Maximum number of bytes to read
- * @returns Number of bytes read; 0 for EOF; -1 for errors
- */
+    /**
+     * @brief Performs reading of packets in the interface; Blocks if there is no packet to read
+     * @param buffer Buffer to store packet read
+     * @param numberBytes Maximum number of bytes to read
+     * @returns Number of bytes read; 0 for EOF; -1 for errors
+     */
     ssize_t readTunInterface(char* buffer, size_t numberBytes);
  
     /**

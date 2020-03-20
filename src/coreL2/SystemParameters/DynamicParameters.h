@@ -37,6 +37,7 @@ protected:
 	vector<uint8_t> mimoPrecoding;				//[4 bits each] MIMO codeblock configuration for DL and UL
 	vector<uint8_t> transmissionPowerControl;	//[6 bits each] Transmission Power Control
 	uint8_t rxMetricPeriodicity;				//[4 bits each] CSI period for CQI, PMI and SSM provided by PHY
+	mutex dynamicParametersMutex;				//Mutex to control access of parameters
 	bool verbose;								//Verbosity flag
 
 public:
@@ -162,7 +163,7 @@ public:
 
     /**
      * @brief Gets Fusion Lookup Table matrix
-     * @returns Array of bits 
+     * @returns 8-bit integer containing array of 4 bits of Fusion LUT (least significant bits)
      */
     uint8_t getFLUTMatrix();
 

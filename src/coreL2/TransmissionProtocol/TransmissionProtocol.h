@@ -38,10 +38,10 @@ public:
     ~TransmissionProtocol();
 
     /**
-     * @param macPdu MAC PDU structure containing all information PHY needs
-     * @param macAddress Destination MAC Address
+     * @param macPdus MAC PDU structures containing all information PHY needs
+     * @param numberPdus Number of PDUs for transmission
      */
-    void sendPackageToL1(MacPDU macPdu, uint8_t macAddress);
+    void sendPackagesToL1(MacPDU** macPdus, int numberPdus);
     
     /**
      * @param controlBuffer Buffer with Control message

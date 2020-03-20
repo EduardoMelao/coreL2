@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : February 20th, 2020
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -34,7 +34,9 @@ ProtocolControl::ProtocolControl(
     verbose = _verbose;
 }
 
-ProtocolControl::~ProtocolControl() { }
+ProtocolControl::~ProtocolControl() {
+    delete[] rxMetrics;
+ }
 
 void 
 ProtocolControl::decodeControlSdus(
@@ -45,19 +47,10 @@ ProtocolControl::decodeControlSdus(
 {
     //If it is BS, it can receive ACKs or Rx Metrics
     if(macController->currentParameters->isBaseStation()){
-        if(numberDecodingBytes==3){     //It is an "ACK"
-            string receivedString;      //String to be compared to "ACK"
-
-            //Convert array received to string
-            for(int i=0;i<numberDecodingBytes;i++)
-                receivedString += buffer[i];
-            
-            //Compare Strings
-            if(receivedString=="ACK"){
-                if(verbose) cout<<"[ProtocolControl] Received ACK from UE."<<endl;
-            }
+        if(buffer[0]=='2'){     //It is an "ACK"
+            if(verbose) cout<<"[ProtocolControl] Received ACK from UE."<<endl;
         }
-        else{   //RxMetrics received from UE
+        else if(buffer[0]=='1'){   //RxMetrics received from UE
             //Verify index
             int index = macController->currentParameters->getIndex(macAddress);
             if(index == -1){
@@ -95,10 +88,9 @@ ProtocolControl::decodeControlSdus(
         if(verbose) cout<<"[ProtocolControl] UE Configured correctly. Returning ACK to BS..."<<endl;
 
         // ACK
+        char ackBuffer = '2';
 
-        char ackBuffer[3] = {'A', 'C', 'K'};
-
-        macController->sduBuffers->enqueueControlSdu((uint8_t*) ackBuffer, 3, 0);
+        macController->sduBuffers->enqueueControlSdu((uint8_t*) &ackBuffer, 3, 0);
     }    
 }
 
@@ -134,70 +126,73 @@ ProtocolControl::receiveInterlayerMessages(
             //If it returns 0 or less, no information was received
             if(messageSize<=0)
                 continue;
-            
-            //Manually convert char* to string //#TODO: CONSIDERING ONLY SubframeRx.Start messages! Implement other types of messages (necessary?)
-            int subFrameStartSize = 18;
-            for(int i=0;i<subFrameStartSize;i++)
-                message+=buffer[i];
 
             vector<uint8_t> messageParametersBytes;     //Bytes of serialized message parameters
 
-            if(macController->flagBS){
-                BSSubframeRx_Start messageParametersBS;     //Define struct for BS paremeters
+            if(buffer[0]=='C'){
+                if(messageSize>1){      //It means that RX metrics were received
+                    BSSubframeRx_Start messageParametersBS;     //Define struct for BS paremeters
 
-                //Copy buffer to vector
-                for(int i=subFrameStartSize;i<messageSize;i++)
-                    messageParametersBytes.push_back(buffer[i]);
-                
-                //Deserialize message
-                messageParametersBS.deserialize(messageParametersBytes);
+                    //Copy buffer to vector
+                    for(int i=1;i<messageSize;i++)
+                        messageParametersBytes.push_back(buffer[i]);
+                    
+                    //Deserialize message
+                    messageParametersBS.deserialize(messageParametersBytes);
 
-                if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start message. Receiving PDU from L1..."<<endl;
+                    if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start with Rx Metrics message. Receiving PDU from L1..."<<endl;
 
-                //Receive source MAC Address from decoding function
+                    //Receive source MAC Address from decoding function
+
+                    //Calculates new UL MCS and sets it based on SNR received
+                    macController->cliL2Interface->dynamicParameters->setMcsUplink(sourceMacAddress, LinkAdaptation::getSnrConvertToMcs(messageParametersBS.snr));
+                    
+                    //If new MCS is different from old, enter RECONFIG mode
+                    if(macController->cliL2Interface->dynamicParameters->getMcsUplink(sourceMacAddress)!=macController->currentParameters->getMcsUplink(sourceMacAddress)){
+                        //Changes current MAC mode to RECONFIG
+                        currentMacMode = RECONFIG_MODE;
+
+                        //Set flag to indicate that UEs are out-of-date
+                        macController->currentParameters->setFlagUesOutdated(true);
+
+                        if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+                    }
+                }
+
+                if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
                 sourceMacAddress = macController->decoding();
-
-                //Calculates new UL MCS and sets it based on SNR received
-                macController->cliL2Interface->dynamicParameters->setMcsUplink(sourceMacAddress, LinkAdaptation::getSnrConvertToMcs(messageParametersBS.snr));
-                
-                //If new MCS is different from old, enter RECONFIG mode
-                if(macController->cliL2Interface->dynamicParameters->getMcsUplink(sourceMacAddress)!=macController->currentParameters->getMcsUplink(sourceMacAddress)){
-                    //Changes current MAC mode to RECONFIG
-                    currentMacMode = RECONFIG_MODE;
-
-                    //Set flag to indicate that UEs are out-of-date
-                    macController->currentParameters->setFlagUesOutdated(true);
-
-                    if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
-                }
             }
-            else{
-                UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
+            else if(buffer[0]=='D'){
+                if(messageSize>1){      //It means that RX metrics were received
+                    UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
 
-                //Copy buffer to vector
-                for(int i=subFrameStartSize;i<messageSize;i++)
-                    messageParametersBytes.push_back(buffer[i]);
+                    //Copy buffer to vector
+                    for(int i=1;i<messageSize;i++)
+                        messageParametersBytes.push_back(buffer[i]);
 
-                //Deserialize message
-                messageParametersUE.deserialize(messageParametersBytes);
-                if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start message. Receiving PDU from L1..."<<endl;
+                    //Deserialize message
+                    messageParametersUE.deserialize(messageParametersBytes);
+                    if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start with Rx Metrics message. Receiving PDU from L1..."<<endl;
 
-                //Perform Spctrum Sensing Report calculation
-                uint8_t ssReport = Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm);     //SSM->SSReport calculation
+                    //Perform Spctrum Sensing Report calculation
+                    uint8_t ssReport = Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm);     //SSM->SSReport calculation
 
-                //Verify if RX metrics changed
-                bool rxMetricsOutdated = (rxMetrics->snr!=messageParametersUE.snr)||(rxMetrics->ssReport!=ssReport);
-                rxMetricsOutdated = rxMetricsOutdated||(rxMetrics->pmi!=messageParametersUE.pmi)||(rxMetrics->ri!=messageParametersUE.ri);
+                    //Verify if RX metrics changed
+                    bool rxMetricsOutdated = (rxMetrics->snr!=messageParametersUE.snr)||(rxMetrics->ssReport!=ssReport);
+                    rxMetricsOutdated = rxMetricsOutdated||(rxMetrics->pmi!=messageParametersUE.pmi)||(rxMetrics->ri!=messageParametersUE.ri);
 
-                //Assign new values and enqueue a control SDU to BS with updated information
-                if(rxMetricsOutdated){
-                    rxMetrics->snr = messageParametersUE.snr;
-                    rxMetrics->ssReport = ssReport;
-                    rxMetrics->pmi = messageParametersUE.pmi;
-                    rxMetrics->ri = messageParametersUE.ri;
+                    //Assign new values and enqueue a control SDU to BS with updated information
+                    if(rxMetricsOutdated){
+                        rxMetrics->snr = messageParametersUE.snr;
+                        rxMetrics->ssReport = ssReport;
+                        rxMetrics->pmi = messageParametersUE.pmi;
+                        rxMetrics->ri = messageParametersUE.ri;
 
-                    rxMetricsReport();
+                        rxMetricsReport();
+                    }
                 }
+
+                if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
                 macController->decoding();
             }
         }
@@ -211,8 +206,6 @@ ProtocolControl::receiveInterlayerMessages(
     //Change MAC Rx Mode to DISABLED_MODE_RX before stopping System
     currentMacRxMode = DISABLED_MODE_RX;
 }
-
-
 
 void 
 ProtocolControl::managerDynamicParameters(
@@ -240,6 +233,9 @@ ProtocolControl::rxMetricsReport(){     //This procedure executes only on UE
 
     //Serialize Rx Metrics in the first position (because it is an UE)
     rxMetrics[0].serialize(rxMetricsBytes);
+    
+    //Add Rx Metrics MACC SDU code to the beggining of the SDU
+    rxMetricsBytes.insert(rxMetricsBytes.begin(), '1');
     
     if(verbose) cout<<"[MacController] RxMetrics report with size "<<rxMetricsBytes.size()<<" enqueued to BS."<<endl;
 

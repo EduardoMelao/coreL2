@@ -7,7 +7,7 @@
 @Arquive name : CurrentParameters.cpp
 @Classification : System Parameters - Current Parameters
 @
-@Last alteration : February 20th, 2020
+@Last alteration : March 10th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -309,6 +309,9 @@ CurrentParameters::getMacAddress(
 
 bool
 CurrentParameters::areUesOutdated(){
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
 	return flagUesOutdated;
 }
 
@@ -363,5 +366,8 @@ void
 CurrentParameters::setFlagUesOutdated(
 	bool _flagUesOutdated)	//New flag value
 {
+    //Lock mutex till the end of procedure
+    lock_guard<mutex> lk(dynamicParametersMutex);
+    
 	flagUesOutdated = _flagUesOutdated;
 }

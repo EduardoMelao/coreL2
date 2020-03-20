@@ -29,6 +29,12 @@
 
 namespace lib5grange {
     using namespace std;
+
+    //These values are based on table from INATEL
+    //Define SNR to MCS mapping. If SNR is greater than or equals to i and is lesser than j, then MCS = j.
+    constexpr float mappingSNRtoMCS[] = {-6.1, -3.6, -2.4, -1.3, -0.4, 1, 2.2, 6.6, 7.3, 7.9, 9, 
+    10.1, 11, 12, 13.5, 14.5, 15.9, 17.2, 18.6, 19.2, 20.7, 21.5, 25.6, 26.6, 27.2, 27.8, 28.7};
+
  typedef struct {
         unsigned k;                       /**< Number of subcarriers */
         unsigned m;                       /**< Number of subsimbols */
@@ -145,7 +151,7 @@ namespace lib5grange {
     };
 
 
- /** QAM mdodulation enum type.
+    /** QAM mdodulation enum type.
      *  The value is the number of bits per symbol in each modulation
      */
     typedef enum {
@@ -154,6 +160,38 @@ namespace lib5grange {
         QAM64  = 6,     /**<  64QAM - 6 bits per symbol**/
         QAM256 = 8      /**< 256QAM - 8 bits per symbol**/
     } qammod_t;
+
+    constexpr qammod_t mcsToModulation[] =
+        {
+            QPSK,   //MCS 0 (filler)
+            QPSK,   //MCS 1
+            QPSK,   //MCS 2
+            QPSK,   //MCS 3
+            QPSK,   //MCS 4
+            QPSK,   //MCS 5
+            QPSK,   //MCS 6
+            QPSK,   //MCS 7
+            QAM16,  //MCS 8
+            QAM16,  //MCS 9
+            QAM16,  //MCS 10
+            QAM16,  //MCS 11
+            QAM16,  //MCS 12
+            QAM16,  //MCS 13
+            QAM16,  //MCS 14
+            QAM16,  //MCS 15
+            QAM16,  //MCS 16
+            QAM64,  //MCS 17
+            QAM64,  //MCS 18
+            QAM64,  //MCS 19
+            QAM64,  //MCS 20
+            QAM64,  //MCS 21
+            QAM64,  //MCS 22
+            QAM256, //MCS 23
+            QAM256, //MCS 24
+            QAM256, //MCS 25
+            QAM256, //MCS 26
+            QAM256  //MCS 27
+        };
 
     /**
      * @brief Transform any basic C type into bytes

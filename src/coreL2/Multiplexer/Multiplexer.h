@@ -8,76 +8,119 @@
 #define INCLUDED_MULTIPLEXER_H
 
 #include <iostream>
-#include <list>
-#include <string.h>
+#include <vector>
+#include <string.h>	//memcpy
 
-#include "../Multiplexer/AggregationQueue.h"
-#include "../ProtocolPackage/ProtocolPackage.h"
-
-#define MAX_BUFFERS 8       //Maximum number of SDU buffers (maximum destinations)
 using namespace std;
 
+/**
+ * @brief Queue used to store SDUs that will be transmitted to a specific destination
+ */
 class Multiplexer{
 private:
-    int numberDestinations;                     //Number of destinations actually stored in Multiplexer
-    AggregationQueue** aggregationQueueX;     //Array of AggregationQueues to manage SDU queues
-    uint8_t sourceMac;                          //Source MAC Address
-    uint8_t* destinationMacX;                   //Destination MAC5GR Address for each AggregationQueue
-    uint16_t* numberBytesAgrX;                  //Number of bytes for each UE
-    uint16_t* maxNumberBytesX;                  //Maximum number of bytes to fill PDUx
-    bool verbose;                               //Verbosity flag
-public:
+    uint8_t numberSDUs;                     //Number of SDUs multiplexed
+    int currentPDUSize;                     //Size of PDU that is being aggregated
+    int maxNumberBytes;                     //Maximum number of bytes
+    char* sduBuffer;                        //Buffer accumulates SDUs
+    uint8_t sourceAddress;                  //Source MAC address
+    uint8_t destinationAddress;             //Destination MAC address
+    int offset;                             //Offset for decoding
+    int controlOffset;                      //Offset for encoding Control SDUs
+    vector<uint16_t> sizesSDUs;             //Sizes of each SDU multiplexed
+    vector<uint8_t> flagsDataControlSDUs;   //Data(1)/Control(0) flag
+    bool verbose;                           //Verbosity flag
+    
     /**
-     * @brief Constructs a Multiplexer with information necessary to manage the queues
-     * @param _numberDestinations Number of destinations with PDUs to aggregate
-     * @param _sourceMac Source MAC Address
-     * @param _destinationMacX Destination MAC Addresses
-     * @param _maxNumberBytesX Maximum number of Bytes for each Buffer of PDUs
+     * @brief Adds SDU to specific position of the multiplexing queue
+     * @param sdu Buffer containing single SDU
+     * @param size SDU size
+     * @param flagDataControl SDU D/C flag
+     * @param position Position where SDU will be added
+     * @returns True if SDU was inserted successfully; False otherwise
+     */
+    bool addSduPosition(char* sdu, uint16_t size, uint8_t flagDataControl, int position);  
+    
+    /**
+     * @brief Returns the current queue buffer length considering the size of each SDU
+     * @returns Current Multiplexer buffer length in bytes
+     */
+    int currentBufferLength();     
+public:
+
+    /**
+     * @brief Constructs a new Multiplexer to accumulate SDUs for future transmission (encoding)
+     * @param maxNumberBytes Maximum number of bytes supported by a single PDU
+     * @param sourceAddress Source MAC Address
+     * @param destinationAddress Destination MAC Address
      * @param _verbose Verbosity flag
      */
-    Multiplexer(int _numberDestinations, uint8_t _sourceMac, uint8_t* _destinationMacX, uint16_t* _maxNumberBytesX, bool _verbose);
+    Multiplexer(int _maxNumberBytes, uint8_t sourceAddress, uint8_t destinationAddress, bool _verbose);
     
     /**
-     * @brief Destroys the Multiplexer object and unallocates memory
+     * @brief Constructs Multiplexer with an incoming PDU to be decoded
+     * @param pdu Buffer containing full PDU
+     * @param _verbose Verbosity flag
+     */
+    Multiplexer(uint8_t* pdu, bool _verbose);
+    
+    /**
+     * @brief Destroy a Multiplexer object
      */
     ~Multiplexer();
-    
-    /**
-     * @brief Adds a new SDU to the AggregationQueue that corresponds with MAC address passed as parameter
-     * @param sdu SDU buffer
-     * @param size Number of bytes of SDU
-     * @param flagDataControl Data/Control Flag
-     * @param destinationMac Destination MAC Address
-     */    
-    void addSdu(char* sdu, uint16_t size, uint8_t flagDataControl, uint8_t destinationMac);
-    
-    /**
-     * @brief Gets the multiplexed PDU with MacHeader from AggregationQueue identified by MAC Address
-     * @param buffer Buffer where PDU will be stored
-     * @param macAddress Destination MAC Address of PDU
-     * @returns Size of the PDU; -1 for errors
-     */    
-    ssize_t getPdu(char* buffer, uint8_t macAddress);
-    
-    /**
-     * @brief Gets the number of AggregationQueues allocated in the Multiplexer
-     * @returns Number of AggregationQueues
-     */    
-    int getNumberDestinations();
 
     /**
-     * @brief Informs if SDU can be added to AggregationQueue to certain UE
-     * @param macAddress Destination MAC Address
-     * @param sduSize Size of SDU in Bytes
-     * @returns TRUE if queue is full; FALSE if SDU is supported
+     * @brief Returns the total PDU length in bytes, considering extra overhead of 2 bytes (sourceAddress, destinationAddress, numSDUs)
      */
-    bool aggregationQueueFull(uint8_t macAddress, uint16_t sduSize);
+    int getNumberofBytes();
+    
+    /**
+     * @brief Adds SDU to the multiplexing queue
+     * @param sdu Buffer containing single SDU
+     * @param size SDU size
+     * @param flagDataControl SDU D/C flag
+     * @returns True if SDU was inserted successfully; False otherwise
+     */     
+    bool addSDU(char* sdu, uint16_t size, uint8_t flagDataControl);
 
     /**
-     * @brief Gets the index refering to destination MAC queue in Multiplexer
-     * @param macAddress Destination MAC address 
-     * @returns Index of AggregationQueue; -1 if macAddress not found
+     * @brief Function used for getting SDUs while decoding
+     * @param sdu Buffer to store SDU
+     * @returns Size of next SDU multiplexed; Returns 0 for EOF
      */
-    int getAggregationQueueIndex(uint8_t macAddress);
+    ssize_t getSDU(char* sdu);
+    
+    /**
+     * @brief Creates a new ProtocolPackage object based on information stored in class variables on encoding process and returns serialized PDU
+     * @param pduBuffer Buffer to store PDU with SDUs multiplexed
+     */
+    void getPDU(vector<uint8_t> & pduBuffer);
+
+    /**
+     * @brief Gets information of Data/Control flag of previous SDU to be used in decoding
+     * @returns Data(1)/Control(0) flag for SDU immediately behind (it is supposed getSDU() has been used before) current SDU in decoding queue
+     */
+    uint8_t getCurrentDataControlFlag();
+
+    /**
+     * @brief Gets destination MAC address of Multiplexer object
+     * @returns Destination MAC address;
+     */
+    uint8_t getDestinationAddress();
+
+    /**
+     * @brief Inserts MAC header based on class variables values
+     */
+    void insertMacHeader();
+    
+    /**
+     * @brief Removes MAC header and input its information to class variables
+     */
+    void removeMacHeader();
+
+    /**
+     * @brief Tests if Multiplexed has no MAC SDUs aggregated
+     * @returns TRUE if Multiplexer is empty; FALSE otherwise
+     */
+    bool isEmpty();
 };
-#endif  //INCLUDED_MULTIPLEXER_H
+#endif  //INCLUDED__MULTIPLEXER_H
