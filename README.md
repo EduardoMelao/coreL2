@@ -2,7 +2,33 @@
 
 L2 layer for POC of 5G-RANGE project
 
-Structure of Default information file. Just leave numbers in the file, respecting the ranges indicated below:
+## Compiling instructions (pre-requisite: CMake version 3.0.0)
+Enter `build` directory, configure CMake and run `make` command:
+```sh
+$ cd build/
+$ cmake ..
+$ make
+```
+
+## Running instructions
+To run L2 module, first you need to run PHY module and leave it waiting for MAC commands. To compile and run stub PHY module, follow these instructions:
+```sh
+$ cd build/src/coreL1/
+$ sudo make
+$ sudo ./coreL1.o <numberEquipments> <ipEquipmentN> <portEquipmentN> <macEquipmentN> [...] --v
+```
+where N indicates these three informations need to be provided for each equipment, without brackets. `--v` activates verbose mode.
+
+With StubL1 set, MAC can be set up with
+```
+$ cd build/
+$ sudo ./coreL2.o --v
+```
+where `--v` also activates verbose mode.
+
+
+## Structure of Default information file. 
+Just leave numbers in the file `build/Default.txt`, respecting the ranges indicated below:
  - BS/UE    [0..1]      Flag BS(1) or UE(0)
  - BS		[1..15]		Number of UEs 
  - BS/UE 	[0..5]		Numerology
