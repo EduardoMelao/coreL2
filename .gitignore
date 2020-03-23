@@ -36,5 +36,12 @@
 .cproject 
 .project
 .settings/
+build/CMakeFiles
+build/Testing
 
-*.txt
+#Cmake
+*.cmake
+build/CMakeCache.txt
+build/*.json
+build/DartConfiguration.tcl
+
