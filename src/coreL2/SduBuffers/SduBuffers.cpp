@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : March 13th, 2020
+@Last alteration : March 24th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -67,20 +67,18 @@ SduBuffers::enqueueingDataSdus(
 {
     char buffer[MAXIMUM_BUFFER_LENGTH];
     ssize_t numberBytesRead = 0;
+    ssize_t selectReturnValue = 0;
     
     //Mark current MAC Tun mode as ENABLED for reading TUN interface and enqueueing Data SDUs.
     currentMacTunMode = TUN_ENABLED;
 
     //Loop will execute until STOP mode is activated
     while(currentMacMode!=STOP_MODE){
-        //Allocate buffer
-        bzero(buffer, MAXIMUM_BUFFER_LENGTH);
-
         //Read from TUN Interface
-        numberBytesRead = reception->receivePackageFromL3(buffer, MAXIMUM_BUFFER_LENGTH);
+        selectReturnValue = reception->isL3Ready();
 
-        //Check if there is actually information received
-        if(numberBytesRead<0){
+        //Check if there is actually information to receive
+        if(!numberBytesRead){
             continue;
         }
 
@@ -89,6 +87,10 @@ SduBuffers::enqueueingDataSdus(
             //Lock to write in the queue
             lock_guard<mutex> lk(dataMutex);
             
+            //Clear buffer and receive Packet
+            bzero(buffer, MAXIMUM_BUFFER_LENGTH);
+            numberBytesRead = reception->receivePackageFromL3(buffer, MAXIMUM_BUFFER_LENGTH);
+
             //Check EOF
             if(numberBytesRead==0){
                 if(verbose) cout<<"[SduBuffers] End of Transmission."<<endl;
@@ -117,7 +119,6 @@ SduBuffers::enqueueingDataSdus(
             //First, consult destination MAC address based on IP Address
             int index = currentParameters->getIndex(getMacAddress(buffer));
 
-            
             //Test if index exists
             if(index!=-1){
                 //Allocate new buffer and copy information

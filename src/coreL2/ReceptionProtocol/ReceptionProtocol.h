@@ -51,5 +51,11 @@ public:
      */
     ssize_t receivePackageFromL3(char* buffer, int maximumSize);
 
+    /**
+     * @brief Performs select() procedure
+     * @returns -1 for errors; 0 for timeout; >0 if information is ready
+     */
+    ssize_t isL3Ready();
+
 };
 #endif  //INCLUDED_RECEPTION_PROTOCOL_H
