@@ -18,6 +18,7 @@
 #include <sys/time.h>   //struct timeval
 #include <sys/types.h>  //select()
 
+#define TIMEOUT_SELECT 1    //select() procedure timeout in nanoseconds  
 
 /**
  * @brief Class to alloc, save the descriptor and manage operations of TUN interface

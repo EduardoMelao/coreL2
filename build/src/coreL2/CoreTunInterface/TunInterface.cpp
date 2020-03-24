@@ -117,5 +117,5 @@ TunInterface::writeTunInterface(
 ssize_t 
 TunInterface::isTunInterfaceReady()
 {
-    return select(1, &fileDescriptorSet, NULL, NULL, &timeout);
+    return pselect(1, &fileDescriptorSet, NULL, NULL, &timeout, NULL);
 }
