@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : March 13th, 2020
+@Last alteration : March 24th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -21,7 +21,6 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 @Description : This module manages all System execution modes and their transitions. 
     It creates and starts TUN Interface reading, Control module, and decoding threads. 
-    Also, management of SDUs concatenation into PDU is made by this module. (temporarily)
 */
 
 #include "MacController.h"
@@ -284,14 +283,50 @@ MacController::manager(){
 void 
 MacController::startThreads(){
 
+    //Retrieve number of cores 
+    unsigned int numberCores = thread::hardware_concurrency();
+
+    //Create CPUSET
+    cpu_set_t cpuSet;
+
     //TUN queue control thread (only IDLE mode)
     threads[0] = thread(&SduBuffers::enqueueingDataSdus, sduBuffers,  ref(currentMacMode), ref(currentMacTunMode));
+    
+    //Assign core 4 to SduBuffers::enqueueingDataSdus() thread
+    CPU_ZERO(&cpuSet);
+    CPU_SET(4%numberCores,&cpuSet);
+    int errorCheck = pthread_setaffinity_np(threads[0].native_handle(), sizeof(cpuSet), &cpuSet);
+    if(errorCheck!=0){
+        if(verbose) cout<<"[MacController] Error assigning thread SduBuffers::enqueueingDataSdus to CPU "<<4%numberCores<<endl;
+    }
+    else
+        if(verbose) cout<<"[MacController] Thread SduBuffers::enqueueingDataSdus assigned to CPU "<<4%numberCores<<endl;
 
     //Control messages from PHY reading (only IDLE mode)
     threads[1] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl, ref(currentMacMode), ref(currentMacRxMode));
 
-    //#TODO: SCHEDULER
+    //Assign core 2 to ProtocolControl::receiveInterlyerMessages() thread
+    CPU_ZERO(&cpuSet);
+    CPU_SET(2%numberCores,&cpuSet);
+    errorCheck = pthread_setaffinity_np(threads[1].native_handle(), sizeof(cpuSet), &cpuSet);
+    if(errorCheck!=0){
+        if(verbose) cout<<"[MacController] Error assigning thread ProtocolControl::receiveInterlyerMessages() to CPU "<<2%numberCores<<endl;
+    }
+    else
+        if(verbose) cout<<"[MacController] Thread ProtocolControl::receiveInterlyerMessages() assigned to CPU "<<2%numberCores<<endl;
+
+    //Scheduler thread
     threads[2] = thread(&MacController::scheduling, this);
+
+    //Assign core 3 to scheduler thread
+    CPU_ZERO(&cpuSet);
+    CPU_SET(3%numberCores,&cpuSet);
+    errorCheck = pthread_setaffinity_np(threads[2].native_handle(), sizeof(cpuSet), &cpuSet);
+    if(errorCheck!=0){
+        if(verbose) cout<<"[MacController] Error assigning thread scheduler to CPU "<<2%numberCores<<endl;
+    }
+    else
+        if(verbose) cout<<"[MacController] Thread scheduler assigned to CPU "<<3%numberCores<<endl;
 
     //Join all threads
     for(int i=0;i<3;i++){

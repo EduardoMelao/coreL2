@@ -7,7 +7,7 @@
 @Arquive name : CoreL2.cpp
 @Classification : MAC Layer
 @
-@Last alteration : March 13th, 2020
+@Last alteration : March 24th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -63,8 +63,8 @@ void stubCLI(MacController & macController){
 int main(int argc, char** argv){
     bool verbose = false;           //Verbosity flag
     char *devname = NULL;           //Tun interface name
-
-	//Verify verbose
+    
+    //Verify verbose
     if(argc==2){
         if(argv[1][0]=='-') verbose = true;
         else devname = argv[1];
@@ -77,10 +77,43 @@ int main(int argc, char** argv){
     //Create a new MacController (main module) object
     MacController equipment(devname, verbose);
 
-    //Start stub to replace CLI
-    thread t1(stubCLI, ref(equipment));
-    t1.detach();
+    //Retrieve number of cores 
+    unsigned int numberCores = thread::hardware_concurrency();
 
-    //Finally, start threads
-    equipment.initialize();
+    //Start stub to replace CLI
+    thread t0(stubCLI, ref(equipment));
+
+    //Create CPUSET
+    cpu_set_t cpuSet;
+
+    //Assign core 0 to StubCLI thread
+    CPU_ZERO(&cpuSet);
+    CPU_SET(0,&cpuSet);
+    int errorCheck = pthread_setaffinity_np(t0.native_handle(), sizeof(cpuSet), &cpuSet);
+    if(errorCheck!=0){
+        if(verbose) cout<<"[CoreL2] Error assigning thread StubCLI to CPU 0."<<endl;
+    }
+    else
+        if(verbose) cout<<"[CoreL2] Thread StubCLI assigned to CPU 0."<<endl;
+    
+    //Detach StubCLI thread
+    t0.detach();
+
+    //Create thread for MacController::manager()
+    thread t1(&MacController::initialize, &equipment);
+
+    //Assign core 1%numberCores to MacController::manager()
+    CPU_ZERO(&cpuSet);
+    CPU_SET(1%numberCores,&cpuSet);
+    errorCheck = pthread_setaffinity_np(t1.native_handle(), sizeof(cpuSet), &cpuSet);
+    if(errorCheck!=0){
+        if(verbose) cout<<"[CoreL2] Error assigning thread MacController::manager() to CPU 1."<<endl;
+    }
+    else
+        if(verbose) cout<<"[CoreL2] Thread MacController::manager() assigned to CPU 1."<<endl;
+    
+    //Finally, join second thread
+    t1.join();
+
+    return 0;
 }

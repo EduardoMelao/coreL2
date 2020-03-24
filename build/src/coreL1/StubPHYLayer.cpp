@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : March 13th, 2020
+@Last alteration : March 24th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -426,12 +426,40 @@ CoreL1::startThreads(){
      */
     thread threads[numberThreads];
 
-    for(int i=0;i<numberSockets;i++)
-        threads[i] = thread(&CoreL1::decoding, this, macAddresses[i]);
-    threads[numberThreads-1] = thread(&CoreL1::receiveInterlayerMessage, this);
+    //Get number of CPUs
+    unsigned int numberCores = thread::hardware_concurrency();
+    int errorCheck;
 
-    //Join all threads
-    for(int i=0;i<numberThreads;i++)
-        threads[i].join();
+    //Create CPUSET object
+    cpu_set_t cpuSet;
+
+    for(int i=0;i<numberSockets;i++){
+        threads[i] = thread(&CoreL1::decoding, this, macAddresses[i]);
+
+        //Assign core (6+i)%numberCores to decoding()
+        CPU_ZERO(&cpuSet);
+        CPU_SET((6+i)%numberCores,&cpuSet);
+        errorCheck = pthread_setaffinity_np(threads[i].native_handle(), sizeof(cpuSet), &cpuSet);
+        if(errorCheck!=0){
+            if(verbose) cout<<"[CoreL1] Error assigning thread decoding() to CPU "<<(6+i)%numberCores<<endl;
+        }
+        else
+            if(verbose) cout<<"[CoreL1] Thread decoding() assigned to CPU "<<(6+i)%numberCores<<endl;
+    }
+    threads[numberThreads-1] = thread(&CoreL1::receiveInterlayerMessage, this);
+    //Assign core (6+i)%numberCores to decoding()
+    CPU_ZERO(&cpuSet);
+    CPU_SET(5%numberCores,&cpuSet);
+    errorCheck = pthread_setaffinity_np(threads[numberThreads-1].native_handle(), sizeof(cpuSet), &cpuSet);
+    if(errorCheck!=0){
+        if(verbose) cout<<"[CoreL1] Error assigning thread receiveInterlayerMessages() to CPU "<<5%numberCores<<endl;
+    }
+    else
+        if(verbose) cout<<"[CoreL1] Thread receiveInterlayermessages() assigned to CPU "<<5%numberCores<<endl;
+    
+    //Detach all decoding and join receiveInterlayerMessages thread
+    for(int i=0;i<numberThreads-1;i++)
+        threads[i].detach();
+    threads[numberThreads-1].join();
 }
 
