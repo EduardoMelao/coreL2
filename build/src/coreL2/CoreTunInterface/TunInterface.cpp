@@ -51,8 +51,6 @@ TunInterface::TunInterface(
     mtu = _mtu;
     memset(deviceName,0,IFNAMSIZ+1);
     if(_deviceName!=NULL) strncpy(deviceName,_deviceName,sizeof(deviceName)-1);
-    timeout.tv_sec = 0;
-    timeout.tv_nsec = TIMEOUT_SELECT;
 }
 
 TunInterface::~TunInterface(){
@@ -80,6 +78,9 @@ TunInterface::allocTunInterface(){
     //Calls system in/out control to set interface active
     ioctl(fileDescriptor, TUNSETIFF, (void *) &interfaceRequirement);
     strncpy(deviceName,interfaceRequirement.ifr_name, IFNAMSIZ);
+
+    //Set no checksum
+    ioctl(fileDescriptor, TUNSETNOCSUM, 1);
 
     //Set up file descriptor set
     FD_ZERO(&fileDescriptorSet);
@@ -114,8 +115,10 @@ TunInterface::writeTunInterface(
     return true;
 }
 
-ssize_t 
+bool 
 TunInterface::isTunInterfaceReady()
 {
-    return pselect(1, &fileDescriptorSet, NULL, NULL, &timeout, NULL);
+    select(fileDescriptor+1, &fileDescriptorSet, NULL, NULL, NULL);
+
+    return FD_ISSET(fileDescriptor, &fileDescriptorSet) == 1;
 }

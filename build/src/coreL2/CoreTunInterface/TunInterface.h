@@ -28,7 +28,6 @@ private:
     int fileDescriptor;         //File descriptor of the interface
     uint16_t mtu;               //Maximum Transmission Unit for the interface
     char* deviceName;           //[optional] Name of the interface
-    struct timespec timeout;    //Timeout Struct with TIMEOUT_SELECT nanoseconds
     fd_set fileDescriptorSet;   //File descriptor Set
     bool verbose;               //Verbosity flag
 
@@ -89,6 +88,6 @@ public:
      * @brief Performs select() procedure on TUN interface and returns its state
      * @returns -1 for errors; 0 for TIMEOUT; >0 if interface has data to be read
      */
-    ssize_t isTunInterfaceReady();
+    bool isTunInterfaceReady();
 };
 #endif  //INCLUDED_TUN_INTERFACE_H

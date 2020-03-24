@@ -53,9 +53,9 @@ public:
 
     /**
      * @brief Performs select() procedure
-     * @returns -1 for errors; 0 for timeout; >0 if information is ready
+     * @returns FALSE for timeout; TRUE if information is ready
      */
-    ssize_t isL3Ready();
+    bool isL3Ready();
 
 };
 #endif  //INCLUDED_RECEPTION_PROTOCOL_H

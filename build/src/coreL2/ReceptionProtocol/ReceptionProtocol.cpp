@@ -53,7 +53,7 @@ ReceptionProtocol::receivePackageFromL3(
     return tunInterface->readTunInterface(buffer, maximumSize);
 }
 
-ssize_t
+bool
 ReceptionProtocol::isL3Ready()
 {
     return tunInterface->isTunInterfaceReady();

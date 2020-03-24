@@ -67,26 +67,20 @@ SduBuffers::enqueueingDataSdus(
 {
     char buffer[MAXIMUM_BUFFER_LENGTH];
     ssize_t numberBytesRead = 0;
-    ssize_t selectReturnValue = 0;
     
     //Mark current MAC Tun mode as ENABLED for reading TUN interface and enqueueing Data SDUs.
     currentMacTunMode = TUN_ENABLED;
 
     //Loop will execute until STOP mode is activated
     while(currentMacMode!=STOP_MODE){
-        //Read from TUN Interface
-        selectReturnValue = reception->isL3Ready();
 
         //Check if there is actually information to receive
-        if(!numberBytesRead){
+        if(!reception->isL3Ready()){
             continue;
         }
 
         else
         {
-            //Lock to write in the queue
-            lock_guard<mutex> lk(dataMutex);
-            
             //Clear buffer and receive Packet
             bzero(buffer, MAXIMUM_BUFFER_LENGTH);
             numberBytesRead = reception->receivePackageFromL3(buffer, MAXIMUM_BUFFER_LENGTH);
@@ -114,6 +108,9 @@ SduBuffers::enqueueingDataSdus(
                 if(verbose) cout<<"[SduBuffers] Dropped multicast packet."<<endl;
                 continue;
             }
+            
+            //Lock to write in the queue
+            lock_guard<mutex> lk(dataMutex);
             
             //Everything is ok, buffer can be added to queue
             //First, consult destination MAC address based on IP Address
