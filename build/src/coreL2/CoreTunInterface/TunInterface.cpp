@@ -7,7 +7,7 @@
 @Arquive name : TunInterface.cpp
 @Classification : TUN Interface
 @
-@Last alteration : January 20th, 2020
+@Last alteration : March 24th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -51,6 +51,8 @@ TunInterface::TunInterface(
     mtu = _mtu;
     memset(deviceName,0,IFNAMSIZ+1);
     if(_deviceName!=NULL) strncpy(deviceName,_deviceName,sizeof(deviceName)-1);
+    timeout.tv_sec = 0;
+    timeout.tv_nsec = TIMEOUT_SELECT;
 }
 
 TunInterface::~TunInterface(){
@@ -79,8 +81,9 @@ TunInterface::allocTunInterface(){
     ioctl(fileDescriptor, TUNSETIFF, (void *) &interfaceRequirement);
     strncpy(deviceName,interfaceRequirement.ifr_name, IFNAMSIZ);
 
-    //Set interface to be inblockable for reading
-    fcntl(fileDescriptor, F_SETFL, O_NONBLOCK);
+    //Set up file descriptor set
+    FD_ZERO(&fileDescriptorSet);
+    FD_SET(fileDescriptor, &fileDescriptorSet);
 
     //Forces interface to me initialized as "UP" with MTU
     char cmd[100];
@@ -109,4 +112,10 @@ TunInterface::writeTunInterface(
         return false;
     }
     return true;
+}
+
+ssize_t 
+TunInterface::isTunInterfaceReady()
+{
+    return select(1, &fileDescriptorSet, NULL, NULL, &timeout);
 }

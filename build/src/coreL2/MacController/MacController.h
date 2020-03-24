@@ -27,7 +27,8 @@
 
 using namespace std;
 
-#define MAXIMUM_BUFFER_LENGTH 102400     //Maximum buffer length in bytes
+#define MAXIMUM_BUFFER_LENGTH 102400    //Maximum buffer length in bytes
+#define TIMEOUT_SELECT 1                //select() procedure timeout in nanoseconds     
 
 
 //Initializing classes that will be defined in other .h files

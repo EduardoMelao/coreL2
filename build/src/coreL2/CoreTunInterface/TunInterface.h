@@ -15,16 +15,21 @@
 #include <sys/types.h>  //size_t
 #include <fcntl.h>      //open(), O_RDWR
 #include <sys/ioctl.h>  //ioctl()
+#include <sys/time.h>   //struct timeval
+#include <sys/types.h>  //select()
+
 
 /**
  * @brief Class to alloc, save the descriptor and manage operations of TUN interface
  */
 class TunInterface{
 private:
-    int fileDescriptor;     //File descriptor of the interface
-    uint16_t mtu;           //Maximum Transmission Unit for the interface
-    char* deviceName;       //[optional] Name of the interface
-    bool verbose;           //Verbosity flag
+    int fileDescriptor;         //File descriptor of the interface
+    uint16_t mtu;               //Maximum Transmission Unit for the interface
+    char* deviceName;           //[optional] Name of the interface
+    struct timespec timeout;    //Timeout Struct with TIMEOUT_SELECT nanoseconds
+    fd_set fileDescriptorSet;   //File descriptor Set
+    bool verbose;               //Verbosity flag
 
 public:
     /**
@@ -78,5 +83,11 @@ public:
      * @returns true if writing was successful, false otherwise
      */   
     bool writeTunInterface(char* buffer, size_t numberBytes);
+
+    /**
+     * @brief Performs select() procedure on TUN interface and returns its state
+     * @returns -1 for errors; 0 for TIMEOUT; >0 if interface has data to be read
+     */
+    ssize_t isTunInterfaceReady();
 };
 #endif  //INCLUDED_TUN_INTERFACE_H
