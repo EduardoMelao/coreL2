@@ -43,10 +43,6 @@ L1L2Interface::L1L2Interface(
     //Server Control Messages socket creation
     socketControlMessagesFromL1 = createServerSocketToReceiveMessages(CONTROL_MESSAGES_PORT_FROM_L1);
 
-    //Set Up file descriptor set
-    FD_ZERO(&fileDescriptorSet);
-    FD_SET(socketControlMessagesFromL1, &fileDescriptorSet);
-
     //Set upp timeout struct
     timeout.tv_nsec = TIMEOUT_SELECT;
     timeout.tv_sec = 0;
@@ -255,6 +251,10 @@ L1L2Interface::auxiliaryCalculationCRC(
 bool
 L1L2Interface::areThereControlMessages()
 {
+    //Set Up file descriptor set
+    FD_ZERO(&fileDescriptorSet);
+    FD_SET(socketControlMessagesFromL1, &fileDescriptorSet);
+    
     pselect(socketControlMessagesFromL1+1, &fileDescriptorSet, NULL, NULL, &timeout, NULL);
     return FD_ISSET(socketControlMessagesFromL1, &fileDescriptorSet) == 1;
 }
