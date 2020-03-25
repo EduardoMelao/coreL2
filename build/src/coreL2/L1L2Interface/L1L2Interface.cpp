@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : March 13th, 2020
+@Last alteration : March 25th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -42,6 +42,14 @@ L1L2Interface::L1L2Interface(
 
     //Server Control Messages socket creation
     socketControlMessagesFromL1 = createServerSocketToReceiveMessages(CONTROL_MESSAGES_PORT_FROM_L1);
+
+    //Set Up file descriptor set
+    FD_ZERO(&fileDescriptorSet);
+    FD_SET(socketControlMessagesFromL1, &fileDescriptorSet);
+
+    //Set upp timeout struct
+    timeout.tv_nsec = TIMEOUT_SELECT;
+    timeout.tv_sec = 0;
     
 }
 
@@ -197,7 +205,7 @@ L1L2Interface::receiveControlMessage(
     char* buffer,               //Buffer where message will be stored
     size_t maximumLength)       //Maximum message length in Bytes
 {
-    return recv(socketControlMessagesFromL1, buffer, maximumLength, MSG_DONTWAIT);
+    return recv(socketControlMessagesFromL1, buffer, maximumLength, MSG_WAITALL);
 }
 
 void 
@@ -242,4 +250,11 @@ L1L2Interface::auxiliaryCalculationCRC(
         if(bit) crc^=0x9299;
     }
     return crc;
+}
+
+bool
+L1L2Interface::areThereControlMessages()
+{
+    pselect(socketControlMessagesFromL1+1, &fileDescriptorSet, NULL, NULL, &timeout, NULL);
+    return FD_ISSET(socketControlMessagesFromL1, &fileDescriptorSet) == 1;
 }

@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : March 13th, 2020
+@Last alteration : March 25th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -118,16 +118,17 @@ ProtocolControl::receiveInterlayerMessages(
             //Change system Rx mode to ACTIVE_MODE_RX
             currentMacRxMode = ACTIVE_MODE_RX; 
 
+
+            //If it returns 0 or less, no information was received
+            if(!macController->l1l2Interface->areThereControlMessages())
+                continue;
+
+            vector<uint8_t> messageParametersBytes;     //Bytes of serialized message parameters
+
             //Clear buffer and message and receive next control message
             bzero(buffer, MAXIMUM_BUFFER_LENGTH);
             message.clear();
             ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
-
-            //If it returns 0 or less, no information was received
-            if(messageSize<=0)
-                continue;
-
-            vector<uint8_t> messageParametersBytes;     //Bytes of serialized message parameters
 
             if(buffer[0]=='C'){
                 if(messageSize>1){      //It means that RX metrics were received

@@ -11,6 +11,7 @@
 #define PORT_FROM_L1 8091
 #define CONTROL_MESSAGES_PORT_TO_L1 8092
 #define CONTROL_MESSAGES_PORT_FROM_L1 8093
+#define TIMEOUT_SELECT 1
 
 #include <iostream>
 #include <vector>
@@ -18,6 +19,8 @@
 #include <arpa/inet.h>  //struct sockaddr_in
 #include <string.h>     //bzero()
 #include <unistd.h>     //close()
+#include <sys/time.h>   //struct Timeval
+#include <sys/types.h>  //select()
 #include "../../common/lib5grange/lib5grange.h"
 
 using namespace std;
@@ -31,6 +34,8 @@ private:
     int socketControlMessagesToL1;              //File descriptor of socket used to SEND Control Messages to L1
     struct sockaddr_in serverPdusSocketAddress; //Address of server to which client will send PDUs
     struct sockaddr_in serverControlMessagesSocketAddress;  //Address of server to which client will send control messages
+    fd_set fileDescriptorSet;                   //File Descriptor Set for Interface of control messages from L1
+    struct timespec timeout;                    //Timeout struct with TIMEOUT_SELECT nanoseconds
     bool verbose;                               //Verbosity flag
 
     /**
@@ -111,5 +116,11 @@ public:
      * @returns True if CRC match; False otherwise
      */
     bool crcPackageChecking(char* buffer, int size);
+
+    /**
+     * @brief Checks if there are control messages from L1 to be read
+     * @returns FALSE if there are no control messages to receive; TRUE otherwise
+     */
+    bool areThereControlMessages();
 };
 #endif  //INCLUDED_L1_L2_INTERFACE_H
