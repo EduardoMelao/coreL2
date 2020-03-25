@@ -178,6 +178,9 @@ Scheduler::scheduleRequestUE(
     //Fill MCS struct
     macPDU->mcs_.modulation = mcsToModulation[currentParameters->getMcsUplink(0)];
 
+    //Fill Allocation
+    macPDU->allocation_ = currentParameters->getUlReservation(currentParameters->getCurrentMacAddress());
+
     //Calculate number of bits for next transmission
     size_t numberBits = get_bit_capacity(currentParameters->getNumerology(), macPDU->allocation_, macPDU->mimo_, macPDU->mcs_.modulation);
     if(verbose) cout<<"[Scheduler] Scheduled "<<numberBits/8<<" Bytes for PDU."<<endl;
