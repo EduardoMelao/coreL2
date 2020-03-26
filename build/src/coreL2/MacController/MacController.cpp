@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : March 13th, 2020
+@Last alteration : March 26th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -135,9 +135,8 @@ MacController::manager(){
                 /** Threads order:
                  * 0    ---> ProtocolData MACD SDU enqueueing (From L3)
                  * 1    ---> Reading control messages from PHY
-                 * 2    ---> Scheduling SDUs
                  */
-                threads = new thread[3];
+                threads = new thread[2];
 
                 //Create ProtocolControl to deal with MACC SDUs
                 protocolControl = new ProtocolControl(this, verbose);
@@ -154,7 +153,8 @@ MacController::manager(){
                     }
                 }
 
-                //#TODO: Send PHYConfig.Request here!
+                //Here, all system threads that don't execute only in IDLE_MODE are started.
+                startThreads();
 
                 //Set MAC mode to start mode
                 currentMacMode = START_MODE;
@@ -165,13 +165,12 @@ MacController::manager(){
 
             case START_MODE:
             {
-                //Here, all system threads that don't execute only in IDLE_MODE are started.
-                startThreads();
+                //Send PHYConfig.Request message to PHY (no parameters needed)
+                char configRequestMessage = 'A';
+                protocolControl->sendInterlayerMessages(&configRequestMessage, 1);
 
-                //Set MAC mode to start mode
-                currentMacMode = IDLE_MODE;
-
-                cout<<"\n\n[MacController] ___________ System entering IDLE mode. ___________\n"<<endl;
+                //Wait for PHY to be ready
+                this_thread::sleep_for(chrono::seconds(PHY_READY));
             }
             break;
 
@@ -191,19 +190,25 @@ MacController::manager(){
                     }
                     else{ 
                         if(cliL2Interface->getMacStopCommandSignal()){                //Mac Stop
-                            cliL2Interface->setMacStopCommandSignal(false);           //Reset flag
-                            currentMacMode = STOP_MODE;                                 //Change mode
+                            
+                            //Send PHYStop.Request message to PHY (no parameters needed)
+                            char stopRequestMessage = 'B';
+                            protocolControl->sendInterlayerMessages(&stopRequestMessage, 1);
 
-                            cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
+                            //Wait 1s for PHYConfig.Response Message
+                            this_thread::sleep_for(chrono::seconds(PHY_READY));
                         }
                     }
                 }
                 else{       //On UE
                     if(cliL2Interface->getMacStopCommandSignal()){                    //Mac Stop  
-                        cliL2Interface->setMacStopCommandSignal(false);               //Reset flag
-                        currentMacMode = STOP_MODE;                                     //Change mode
+                        
+                        //Send PHYStop.Request message to PHY (no parameters needed)
+                        char stopRequestMessage = 'B';
+                        protocolControl->sendInterlayerMessages(&stopRequestMessage, 1);
 
-                        cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
+                        //Wait 1s for PHYConfig.Response Message
+                        this_thread::sleep_for(chrono::seconds(PHY_READY));
                     }
                 }
             }
@@ -261,13 +266,17 @@ MacController::manager(){
             {
                 //To enter RECONFIG_MODE, TX, RX and Tun modes must be disabled
                 if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX && currentMacTunMode==TUN_DISABLED){
+                    //Reset flag
+                    cliL2Interface->setMacStopCommandSignal(false);
+                    
                     //Destroy all System environment variables
                     this->~MacController();
 
-                    //System will stand in STANDBY mode until it is started again
+                    //Set MAC mode back to idle mode
                     currentMacMode = STANDBY_MODE;
 
                     cout<<"\n\n[MacController] ___________ System entering STANDBY mode. ___________\n"<<endl;
+                
                 }
             }
             break;
@@ -290,11 +299,8 @@ MacController::startThreads(){
     //Control messages from PHY reading (only IDLE mode)
     threads[1] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl, ref(currentMacMode), ref(currentMacRxMode));
 
-    //#TODO: SCHEDULER
-    threads[2] = thread(&MacController::scheduling, this);
-
     //Join all threads
-    for(int i=0;i<3;i++){
+    for(int i=0;i<2;i++){
         //Join all threads IDLE mode 
         threads[i].detach();
     }
@@ -304,88 +310,79 @@ MacController::startThreads(){
 
 void
 MacController::scheduling(){
+    if(currentMacMode==IDLE_MODE){
+        currentMacTxMode = ACTIVE_MODE_TX;
+        if(sduBuffers->bufferStatusInformation()){
+            //Create array of 2 pointers to MacPDU objects
+            MacPDU* macPdus[2];
+            macPdus[0] = new MacPDU();
+            macPdus[1] = new MacPDU();  //In case it is BS, 2 MAC PDUs are required by the scheduler
 
-    while(currentMacMode!=STOP_MODE){
-        if(currentMacMode==IDLE_MODE){
-            currentMacTxMode = ACTIVE_MODE_TX;
-            if(sduBuffers->bufferStatusInformation()){
-                //Create array of 2 pointers to MacPDU objects
-                MacPDU* macPdus[2];
-                macPdus[0] = new MacPDU();
-                macPdus[1] = new MacPDU();  //In case it is BS, 2 MAC PDUs are required by the scheduler
-
-                //Schedule Spectrum and SDUs into PDU(s)
-                if(flagBS){
-                    scheduler->scheduleRequestBS(macPdus);
-                }
-                else
-                    scheduler->scheduleRequestUE(macPdus[0]);
-                
-                //Get number of PDUs
-                int numberPdus = macPdus[1]->mac_data_.size()==0 ? 1:2;
-
-                //Create SubframeTx.Start message
-                string messageParameters;		            //This string will contain the parameters of the message
-                vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
-
-                if(flagBS){     //Create BSSubframeTx.Start message
-                    BSSubframeTx_Start messageBS;	//Message parameters structure
-
-                    //Fill the structure with information
-                    messageBS.numUEs = currentParameters->getNumberUEs();
-                    messageBS.numPDUs = numberPdus;      //If seconds MACPDU is empty, there's just one MAC PDU
-                    messageBS.fLutDL = currentParameters->getFLUTMatrix();
-                    currentParameters->getUlReservations(messageBS.ulReservations);
-                    messageBS.numerology = currentParameters->getNumerology();
-                    messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
-                    messageBS.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
-
-                    //Serialize struct
-                    messageBS.serialize(messageParametersBytes);
-
-                }
-                else{       //Create UESubframeTx.Start message
-                    UESubframeTx_Start messageUE;	//Messages parameters structure
-
-                    //Fill the structure with information
-                    messageUE.ulReservation = currentParameters->getUlReservation(currentParameters->getMacAddress(0));
-                    messageUE.numerology = currentParameters->getNumerology();
-                    messageUE.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
-                    messageUE.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
-
-                    //Serialize struct
-                    messageUE.serialize(messageParametersBytes);
-                    }
-
-                //Copy structure bytes to message
-                for(uint i=0;i<messageParametersBytes.size();i++)
-                    messageParameters+=messageParametersBytes[i];
-
-                //Downlink routine:
-                string subFrameStartMessage = flagBS? "C":"D";
-                string subFrameEndMessage = "E";
-                
-                //Add parameters to original message
-                subFrameStartMessage+=messageParameters;
-
-                //Send interlayer messages and the PDU
-                protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
-                transmissionProtocol->sendPackagesToL1(macPdus, numberPdus);
-                protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
-
-                //Delete both Mac PDUs
-                delete macPdus[0];
-                delete macPdus[1];
+            //Schedule Spectrum and SDUs into PDU(s)
+            if(flagBS){
+                scheduler->scheduleRequestBS(macPdus);
             }
+            else
+                scheduler->scheduleRequestUE(macPdus[0]);
+            
+            //Get number of PDUs
+            int numberPdus = macPdus[1]->mac_data_.size()==0 ? 1:2;
+
+            //Create SubframeTx.Start message
+            string messageParameters;		            //This string will contain the parameters of the message
+            vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
+
+            if(flagBS){     //Create BSSubframeTx.Start message
+                BSSubframeTx_Start messageBS;	//Message parameters structure
+
+                //Fill the structure with information
+                messageBS.numUEs = currentParameters->getNumberUEs();
+                messageBS.numPDUs = numberPdus;      //If seconds MACPDU is empty, there's just one MAC PDU
+                messageBS.fLutDL = currentParameters->getFLUTMatrix();
+                currentParameters->getUlReservations(messageBS.ulReservations);
+                messageBS.numerology = currentParameters->getNumerology();
+                messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
+                messageBS.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
+
+                //Serialize struct
+                messageBS.serialize(messageParametersBytes);
+
+            }
+            else{       //Create UESubframeTx.Start message
+                UESubframeTx_Start messageUE;	//Messages parameters structure
+
+                //Fill the structure with information
+                messageUE.ulReservation = currentParameters->getUlReservation(currentParameters->getMacAddress(0));
+                messageUE.numerology = currentParameters->getNumerology();
+                messageUE.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
+                messageUE.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
+
+                //Serialize struct
+                messageUE.serialize(messageParametersBytes);
+                }
+
+            //Copy structure bytes to message
+            for(uint i=0;i<messageParametersBytes.size();i++)
+                messageParameters+=messageParametersBytes[i];
+
+            //Downlink routine:
+            string subFrameStartMessage = flagBS? "C":"D";
+            string subFrameEndMessage = "E";
+            
+            //Add parameters to original message
+            subFrameStartMessage+=messageParameters;
+
+            //Send interlayer messages and the PDU
+            protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
+            transmissionProtocol->sendPackagesToL1(macPdus, numberPdus);
+            protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
+
+            //Delete both Mac PDUs
+            delete macPdus[0];
+            delete macPdus[1];
         }
-        else{
-            //Change MAC Tx Mode to DISABLED_MODE_TX
-            currentMacTxMode = DISABLED_MODE_TX;
-        }
-        this_thread::sleep_for(chrono::nanoseconds(1));
     }
-    if(verbose) cout<<"[MacController - Scheduling] Entering STOP_MODE."<<endl;    
-    //Change MAC Tx Mode to DISABLED_MODE_TX before stopping System
+    //Change MAC Tx Mode to DISABLED_MODE_TX
     currentMacTxMode = DISABLED_MODE_TX;
 }
 
