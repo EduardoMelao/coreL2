@@ -157,5 +157,10 @@ public:
      * @brief Declares and starts all threads necessary for CoreL1
      */
     void startThreads();
+
+    /**
+     * @brief Sends PHYTx.Indication periodically to MAC to get Transport Block for transmission
+     */
+    void sendTxIndication();
 };
 #endif //INCLUDED_CORE_L1_H
