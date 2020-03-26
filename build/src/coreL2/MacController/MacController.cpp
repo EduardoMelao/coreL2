@@ -153,9 +153,6 @@ MacController::manager(){
                     }
                 }
 
-                //Here, all system threads that don't execute only in IDLE_MODE are started.
-                startThreads();
-
                 //Set MAC mode to start mode
                 currentMacMode = START_MODE;
 
@@ -165,6 +162,9 @@ MacController::manager(){
 
             case START_MODE:
             {
+                //Here, all system threads that don't execute only in IDLE_MODE are started.
+                startThreads();
+
                 //Send PHYConfig.Request message to PHY (no parameters needed)
                 char configRequestMessage = 'A';
                 protocolControl->sendInterlayerMessages(&configRequestMessage, 1);
