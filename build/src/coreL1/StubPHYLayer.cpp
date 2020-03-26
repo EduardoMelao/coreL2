@@ -32,7 +32,6 @@ CoreL1::CoreL1(
     numberSockets = 0;
     subFrameCounter = 0;    
     rxMetricsPeriodicity = 0;   //Unnactivated
-    phyActive = false;          //Initialized as false
 
     //PDUs Client socket creation
     socketToL2 = createClientSocketToSendMessages(PORT_TO_L2, &serverPdusSocketAddress, "127.0.0.1");
@@ -393,7 +392,6 @@ CoreL1::receiveInterlayerMessage(){
                 if(verbose) cout<<"[CoreL1] Received PHYConfig.Request Message."<<endl;
                 char configResponseMessage[] = "AA";
                 sendInterlayerMessage(configResponseMessage, 2);
-                phyActive = true;
             }
             break;
             case 'B':
@@ -401,7 +399,6 @@ CoreL1::receiveInterlayerMessage(){
                 //Tread PHYStop.Request message and return PHYStop.Response
                 if(verbose) cout<<"[CoreL1] Received PHYStop.Request Message."<<endl;
                 char stopResponseMessage[] = "BA";
-                phyActive = false;
                 sendInterlayerMessage(stopResponseMessage, 2);
             }
             break;
@@ -466,9 +463,7 @@ CoreL1::sendTxIndication()
 
     //Infinite loop
     while(1){
-        if(phyActive){
-            sendInterlayerMessage(&txIndication, 1);
-            this_thread::sleep_for(chrono::nanoseconds(4600));
-        }
+        sendInterlayerMessage(&txIndication, 1);
+        this_thread::sleep_for(chrono::nanoseconds(4600));
     }
 }

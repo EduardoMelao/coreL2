@@ -48,7 +48,6 @@ private:
     struct sockaddr_in serverControlMessagesSocketAddress;  //Address of server to which client will send control messages
     int subFrameCounter;                    //Counter to trigger RX Metrics sending to MAC
     uint8_t rxMetricsPeriodicity;           //Periodicity to send Rx metrics to MAC, in number of Subframes
-    bool phyActive;                         //Flag to control PHY activation and deactivation
     bool verbose;                           //Verbosity flag
 
     /**
