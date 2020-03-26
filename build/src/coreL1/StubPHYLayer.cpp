@@ -461,6 +461,6 @@ CoreL1::sendTxIndication()
     //Infinite loop
     while(1){
         sendInterlayerMessage(&txIndication, 1);
-        this_thread::sleep_for(chrono::nanoseconds(4600));
+        this_thread::sleep(chrono::nanoseconds(4600));
     }
 }

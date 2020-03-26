@@ -170,7 +170,7 @@ MacController::manager(){
                 protocolControl->sendInterlayerMessages(&configRequestMessage, 1);
 
                 //Wait for PHY to be ready
-                this_thread::sleep_for(chrono::seconds(PHY_READY));
+                this_thread::sleep(chrono::seconds(PHY_READY));
             }
             break;
 
@@ -268,7 +268,7 @@ MacController::manager(){
                     protocolControl->sendInterlayerMessages(&stopRequestMessage, 1);
 
                     //Wait 1s for PHYConfig.Response Message
-                    this_thread::sleep_for(chrono::seconds(PHY_READY));
+                    this_thread::sleep(chrono::seconds(PHY_READY));
                 }
             }
             break;
