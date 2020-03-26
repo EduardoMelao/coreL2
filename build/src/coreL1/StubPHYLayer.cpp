@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : March 26th, 2020
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -304,7 +304,6 @@ CoreL1::decoding(
 
     //Downlink routine:
     string subFrameStartMessage = flagBS? "C":"D";    //SubframeRx.Start control message
-    char subFrameEndMessage = 'E';
     
     if(flagBS){     //Create BSSubframeRx.Start message
         BSSubframeRx_Start messageBS;	//Message parameters structure
@@ -351,9 +350,6 @@ CoreL1::decoding(
         //Send PDUs
         sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
         
-        //Send SubframeRx.End message
-        sendto(socketControlMessagesToL2, &subFrameEndMessage, 1 MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
-
         //Receive next PDUs
         bzero(buffer, MAXIMUMSIZE);
         size = receivePdus(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
@@ -386,19 +382,6 @@ CoreL1::receiveInterlayerMessage(){
 
         switch(buffer[0])
         {
-            case 'A':
-                //Treat PHYConfig.Request message and return PHYConfig.Response
-                if(verbose) cout<<"[CoreL1] Received PHYConfig.Request Message."<<endl;
-                char configResponseMessage[] = "AA";
-                sendInterlayerMessage(configResponseMessage, 2);
-
-            break;
-            case 'B':
-                //Tread PHYStop.Request message and return PHYStop.Response
-                if(verbose) cout<<"[CoreL1] Received PHYStop.Request Message."<<endl;
-                char stopResponseMessage[] = "BA";
-                sendInterlayerMessage(stopResponseMessage, 2);
-            break;
             case 'C':
                 //Treat BSSubframeTx.Start parameters and trigger encoding MAC PDU to UE procedure
                 for(int i=1;i<messageSize;i++)
@@ -436,7 +419,7 @@ CoreL1::receiveInterlayerMessage(){
 
 void
 CoreL1::startThreads(){
-    int numberThreads = 2+numberSockets;    //Number of threads
+    int numberThreads = 1+numberSockets;    //Number of threads
     /** Thread list:
      *  0 .. numberSockets-1    --> decoding
      *  numberSockets           --> receiving Interlayer messages
@@ -445,22 +428,10 @@ CoreL1::startThreads(){
 
     for(int i=0;i<numberSockets;i++)
         threads[i] = thread(&CoreL1::decoding, this, macAddresses[i]);
-    threads[numberThreads-2] = thread(&CoreL1::receiveInterlayerMessage, this);
-    threads[numberThreads-1] = thread(&CoreL1::sendTxIndication, this);
+    threads[numberThreads-1] = thread(&CoreL1::receiveInterlayerMessage, this);
 
     //Join all threads
     for(int i=0;i<numberThreads;i++)
         threads[i].join();
 }
 
-void
-CoreL1::sendTxIndication()
-{
-    char txIndication = 'F';    //Tx Indication character
-
-    //Infinite loop
-    while(1){
-        sendInterlayerMessage(&txIndication, 1);
-        this_thread::sleep(chrono::nanoseconds(4600));
-    }
-}
