@@ -190,25 +190,19 @@ MacController::manager(){
                     }
                     else{ 
                         if(cliL2Interface->getMacStopCommandSignal()){                //Mac Stop
-                            
-                            //Send PHYStop.Request message to PHY (no parameters needed)
-                            char stopRequestMessage = 'B';
-                            protocolControl->sendInterlayerMessages(&stopRequestMessage, 1);
+                            cliL2Interface->setMacStopCommandSignal(false);           //Reset flag
+                            currentMacMode = STOP_MODE;                                 //Change mode
 
-                            //Wait 1s for PHYConfig.Response Message
-                            this_thread::sleep_for(chrono::seconds(PHY_READY));
+                            cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
                         }
                     }
                 }
                 else{       //On UE
                     if(cliL2Interface->getMacStopCommandSignal()){                    //Mac Stop  
-                        
-                        //Send PHYStop.Request message to PHY (no parameters needed)
-                        char stopRequestMessage = 'B';
-                        protocolControl->sendInterlayerMessages(&stopRequestMessage, 1);
+                        cliL2Interface->setMacStopCommandSignal(false);               //Reset flag
+                        currentMacMode = STOP_MODE;                                     //Change mode
 
-                        //Wait 1s for PHYConfig.Response Message
-                        this_thread::sleep_for(chrono::seconds(PHY_READY));
+                        cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
                     }
                 }
             }
@@ -266,17 +260,15 @@ MacController::manager(){
             {
                 //To enter RECONFIG_MODE, TX, RX and Tun modes must be disabled
                 if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX && currentMacTunMode==TUN_DISABLED){
-                    //Reset flag
-                    cliL2Interface->setMacStopCommandSignal(false);
-                    
                     //Destroy all System environment variables
                     this->~MacController();
 
-                    //Set MAC mode back to idle mode
-                    currentMacMode = STANDBY_MODE;
+                    //Send PHYStop.Request message to PHY (no parameters needed)
+                    char stopRequestMessage = 'B';
+                    protocolControl->sendInterlayerMessages(&stopRequestMessage, 1);
 
-                    cout<<"\n\n[MacController] ___________ System entering STANDBY mode. ___________\n"<<endl;
-                
+                    //Wait 1s for PHYConfig.Response Message
+                    this_thread::sleep_for(chrono::seconds(PHY_READY));
                 }
             }
             break;

@@ -137,9 +137,10 @@ ProtocolControl::receiveInterlayerMessages(
                     cout<<"\n\n[ProtocolControl] ___________ System entering IDLE mode. ___________\n"<<endl;
                 break;
                 case 'B':    //Treat PHYStop.Response message
-                    currentMacMode = STOP_MODE;                                 //Change mode
+                    //System will stand in STANDBY mode until it is started again
+                    currentMacMode = STANDBY_MODE;
 
-                    cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
+                    cout<<"\n\n[ProtocolControl] ___________ System entering STANDBY mode. ___________\n"<<endl;
                 break;
                 case 'C':    //Treat BSSubframeRX.Start message
                     if(messageSize>1){      //It means that RX metrics were received
@@ -205,18 +206,20 @@ ProtocolControl::receiveInterlayerMessages(
                     if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
                     macController->decoding();
                 break;
+                case 'E':   //Treat SubframeRX.End message
+                    if(verbose) cout<<"[ProtocolControl] Received SubframeRx.End from PHY."<<endl;
+
+                    //Change MAC Rx Mode to DISABLED_MODE_RX
+                    currentMacRxMode = DISABLED_MODE_RX;
+                break;
                 case 'F':    //Treat PHYTx.Indication message
                     macController->scheduling();
                 break;
-                case 'E':    //Treat SubframeRX.End message
-                    if(verbose) cout<<"[ProtocolControl] Received SubframeRx.End from PHY."<<endl;
                 default: 
                     //Change MAC Rx Mode to DISABLED_MODE_RX
                     currentMacRxMode = DISABLED_MODE_RX;
                 break;
             }
-            //Change MAC Rx Mode to DISABLED_MODE_RX
-            currentMacRxMode = DISABLED_MODE_RX;
         }
     }
 
@@ -242,7 +245,7 @@ ProtocolControl::managerDynamicParameters(
     //Change state to RECONFIG_MODE to apply changes in parameters
     currentMacMode = RECONFIG_MODE;
 
-    cout<<"\n\n[ProtocolControl] ___________ System entering RECONFIG mode by MACC SDU received by UE. ___________\n"<<endl;
+    cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by MACC SDU received by UE. ___________\n"<<endl;
 }
 
 void 
