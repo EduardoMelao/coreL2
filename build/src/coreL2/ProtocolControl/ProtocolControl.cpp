@@ -114,7 +114,7 @@ ProtocolControl::receiveInterlayerMessages(
     //Control message stream
     while(currentMacMode!=STOP_MODE){
 
-        if(currentMacMode==IDLE_MODE){
+        if(currentMacMode==IDLE_MODE||currentMacMode==START_MODE){
             //Change system Rx mode to ACTIVE_MODE_RX
             currentMacRxMode = ACTIVE_MODE_RX; 
 
@@ -174,7 +174,7 @@ ProtocolControl::receiveInterlayerMessages(
                     if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
                     sourceMacAddress = macController->decoding();
                 break;
-                case 'D':    //Treat BSSubframeRX.Start message
+                case 'D':    //Treat UESubframeRX.Start message
                     if(messageSize>1){      //It means that RX metrics were received
                         UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
                         //Copy buffer to vector
