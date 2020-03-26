@@ -352,7 +352,7 @@ CoreL1::decoding(
         sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
         
         //Send SubframeRx.End message
-        sendto(socketControlMessagesToL2, &subFrameEndMessage, 1 MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
+        sendto(socketControlMessagesToL2, &subFrameEndMessage, 1, MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
 
         //Receive next PDUs
         bzero(buffer, MAXIMUMSIZE);
@@ -387,17 +387,20 @@ CoreL1::receiveInterlayerMessage(){
         switch(buffer[0])
         {
             case 'A':
+            {
                 //Treat PHYConfig.Request message and return PHYConfig.Response
                 if(verbose) cout<<"[CoreL1] Received PHYConfig.Request Message."<<endl;
                 char configResponseMessage[] = "AA";
                 sendInterlayerMessage(configResponseMessage, 2);
-
+            }
             break;
             case 'B':
+            {
                 //Tread PHYStop.Request message and return PHYStop.Response
                 if(verbose) cout<<"[CoreL1] Received PHYStop.Request Message."<<endl;
                 char stopResponseMessage[] = "BA";
                 sendInterlayerMessage(stopResponseMessage, 2);
+            }
             break;
             case 'C':
                 //Treat BSSubframeTx.Start parameters and trigger encoding MAC PDU to UE procedure
