@@ -26,6 +26,12 @@ class CurrentParameters : public DynamicParameters{
 private:
 	bool flagBS;					//Flag to indicate if current equipment is BS or UE
 	bool flagUesOutdated;			//Flag to indicate if it is necessary to send current parameters to UE
+	
+    //Control Variables - Mac Modes
+    MacModes currentMacMode;        //Current execution mode of MAC
+    MacTxModes currentMacTxMode;    //Current execution Tx mode of MAC
+    MacRxModes currentMacRxMode;    //Current execution Rx mode of MAC
+    MacTunModes currentMacTunMode;  //Current execution Tun mode of MAC
 
 	//Static(only) information as described on spreadsheet L1-L2_InterfaceDefinition.xlsx
 	uint8_t numberUEs;				//[4 bits] Number of UserEquipments attached (ignore in case of UEs);
@@ -137,6 +143,26 @@ public:
 	 */
 	bool areUesOutdated();
 
+	/**
+	 * @brief Gets current MAC Execution mode
+	 */
+	MacModes getMacMode();
+
+	/**
+	 * @brief Gets current Tx sub-execution mode from MAC
+	 */
+	MacTxModes getMacTxMode();
+
+	/**
+	 * @brief Gets current Rx sub-execution mode from MAC
+	 */
+	MacRxModes getMacRxMode();
+
+	/**
+	 * @brief Gets current Tun sub-execution mode from MAC
+	 */
+	MacTunModes getMacTunMode();
+
 	//SETTERS
 
 	/**
@@ -162,6 +188,30 @@ public:
 	 * @param _flagUesOutdated New flag value
 	 */
 	void setFlagUesOutdated(bool _flagUesOutdated);
+
+	/**
+	 * @brief Sets current MAC Execution mode
+	 * @param macMode New MAC execution mode
+	 */
+	void setMacMode(MacModes macMode);
+
+	/**
+	 * @brief Sets current Tx sub-execution mode from MAC
+	 * @param macTxMode New MAC Tx sub-execution mode
+	 */
+	void setMacTxMode(MacTxModes macTxMode);
+
+	/**
+	 * @brief Sets current Rx sub-execution mode from MAC
+	 * @param macRxMode New MAC Rx sub-execution mode
+	 */
+	void setMacRxMode(MacRxModes macRxMode);
+
+	/**
+	 * @brief Sets current Tun sub-execution mode from MAC
+	 * @param macTunMode New MAC Tun sub-execution mode
+	 */
+	void setMacTunMode(MacTunModes macTunMode);
 };
 
 
