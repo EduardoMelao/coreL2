@@ -78,7 +78,7 @@ ProtocolControl::decodeControlSdus(
                 //Changes current MAC mode to RECONFIG
                 macController->currentParameters->setMacMode(RECONFIG_MODE);
 
-                if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+                cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
             }
 
             //Perform Fusion calculation
@@ -167,7 +167,7 @@ ProtocolControl::receiveInterlayerMessages()
                             //Set flag to indicate that UEs are out-of-date
                             macController->currentParameters->setFlagUesOutdated(true);
 
-                            if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+                            cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
                         }
                     }
                     if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
