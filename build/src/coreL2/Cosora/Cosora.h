@@ -28,7 +28,6 @@ private:
     uint8_t fusionLookupTable;              //Fusion Lookup table with 4bits of information
     DynamicParameters* dynamicParameters;   //Dynamic Parameters from Basestation
     CurrentParameters* currentParameters;   //Current System Parameters
-    MacModes
     mutex fusionMutex;                      //Mutex to control Fusion calculation while waiting
     bool verbose;                           //Verbosity flag
 
