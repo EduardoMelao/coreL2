@@ -24,6 +24,7 @@
 #include "../SystemParameters/CurrentParameters.h"
 #include "../CLIL2Interface/CLIL2Interface.h"
 #include "../Scheduler/Scheduler.h"
+#include "../Cosora/Cosora.h"
 
 using namespace std;
 
@@ -41,12 +42,6 @@ class Scheduler;
  */
 class MacController{
 private:
-    //Control Variables
-    MacModes currentMacMode;        //Current execution mode of MAC
-    MacTxModes currentMacTxMode;    //Current execution Tx mode of MAC
-    MacRxModes currentMacRxMode;    //Current execution Rx mode of MAC
-    MacTunModes currentMacTunMode;  //Current execution Tun mode of MAC
-
     uint8_t currentMacAddress;              //MAC Address of current equipment
     const char* deviceNameTun;              //TUN device name
     TunInterface* tunInterface;             //TunInterface object to perform L3 packet capture
@@ -57,14 +52,15 @@ private:
     bool verbose;                           //Verbosity flag
 
 public:
-    SduBuffers* sduBuffers;                 //Queues to receive and enqueue Data Sdus (L3 packets) and Control SDUs
-    bool flagBS;                    //BaseStation flag: 1 for BS; 0 for UE
-    ReceptionProtocol* receptionProtocol;           //Object to receive packets from L1 and L3
-    TransmissionProtocol* transmissionProtocol;     //Object to transmit packets to L1 and L3
-    L1L2Interface* l1l2Interface;   //Object to manage interface with L1
-    CurrentParameters* currentParameters;           //Object with static/default parameters read from a file
+    SduBuffers* sduBuffers;                     //Queues to receive and enqueue Data Sdus (L3 packets) and Control SDUs
+    bool flagBS;                                //BaseStation flag: 1 for BS; 0 for UE
+    ReceptionProtocol* receptionProtocol;       //Object to receive packets from L1 and L3
+    TransmissionProtocol* transmissionProtocol; //Object to transmit packets to L1 and L3
+    L1L2Interface* l1l2Interface;               //Object to manage interface with L1
+    CurrentParameters* currentParameters;       //Object with static/default parameters read from a file
     CLIL2Interface* cliL2Interface;             //Object to configure dynamic parameters 
-    
+    Cosora* cosora;                             //Object to perform COSORA functions on cognitive cycle
+
     /**
      * @brief Initializes a MacController object to manage all 5G RANGE MAC Operations
      * @param _deviceNameTun Customized name for TUN Interface

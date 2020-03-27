@@ -43,12 +43,11 @@ public:
 
     /**
      * @brief Receives and treat Control SDUs on decoding
-     * @param currentMacMode Current MAC execution mode
      * @param buffer Buffer containing Control SDU
      * @param numberDecodingBytes Size of Control SDU in Bytes
      * @param macAddress Source MAC Address
      */
-    void decodeControlSdus(MacModes & currentMacMode, char* buffer, size_t numberDecodingBytes, uint8_t macAddress);
+    void decodeControlSdus(char* buffer, size_t numberDecodingBytes, uint8_t macAddress);
 
     /**
      * @brief Perform transmission of Interlayer Control Messages to PHY
@@ -59,18 +58,15 @@ public:
 
     /**
      * @brief Perform reception of Interlayer Control Messages from PHY and decides what to do
-     * @param currentMacMode Actual MAC Mode to control enqueueing while system is in another modes, e.g. RECONFIG_MODE or STOP_MODE
-     * @param currentMacRxMode Actual MAC Rx Mode to signal to system if it is in an active mode, e.g. ACTIVE_MODE_RX
-     */
-    void receiveInterlayerMessages(MacModes & currentMacMode, MacRxModes & currentMacRxMode);
+    */
+    void receiveInterlayerMessages();
 
     /**
      * @brief [UE] Receives bytes referring to Dynamic Parameters coming by MACC SDU and updates class with new information
-     * @param currentMacMode Current MAC execution Mode
      * @param bytesDynamicParameters Serialized bytes from CLIL2Interface object
      * @param size Number of bytes of serialized information
      */ 
-    void managerDynamicParameters(MacModes & currentMacMode, uint8_t* bytesDynamicParameters, size_t numberBytes);
+    void managerDynamicParameters(uint8_t* bytesDynamicParameters, size_t numberBytes);
 
     /**
      * @brief (Only UE) Periodically sends RxMetrics Report to BS

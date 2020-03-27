@@ -57,10 +57,8 @@ public:
     
     /**
      * @brief Procedure that executes forever, receiving packets from L3 and storing them in the data queue
-     * @param currentMacMode Actual MAC Mode to control enqueueing while system is in another modes, e.g. RECONFIG_MODE or STOP_MODE
-     * @param currentMacTunMode Actual MAC Tun Mode to signal to system if it is in an active mode, e.g. TUN_DISABLED
      */
-    void enqueueingDataSdus(MacModes & currentMacMode, MacTunModes & currentMacTunMode);
+    void enqueueingDataSdus();
 
     /**
      * @brief Given the SDU, open it and look for its IP in Mac Address Table

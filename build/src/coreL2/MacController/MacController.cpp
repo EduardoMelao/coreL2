@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : March 26th, 2020
+@Last alteration : March 27th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -49,6 +49,7 @@ MacController::MacController(
 }
 
 MacController::~MacController(){
+    delete cosora;
     delete scheduler;
     delete protocolControl;
     delete sduBuffers;
@@ -61,15 +62,15 @@ MacController::~MacController(){
 
     //Delete current system parameters only shutting down MAC
     //In STOP_MODE, there's no need to destroy system parameters and CLI interface
-    if(currentMacMode!=STOP_MODE){
-    	delete cliL2Interface;
-    	delete currentParameters;
+    if(currentParameters->getMacMode()!=STOP_MODE){
+        delete cliL2Interface;
+        delete currentParameters;
     }
 }
 
 void
 MacController::initialize(){
-    currentMacMode = STANDBY_MODE;      //Initializes MAC in STANDBY_MODE 
+    currentParameters->setMacMode(STANDBY_MODE);      //Initializes MAC in STANDBY_MODE 
     cout<<"\n\n[MacController] ___________ System entering STANDBY mode. ___________\n"<<endl;
     manager();
 }
@@ -78,13 +79,13 @@ void
 MacController::manager(){
     //Infinite loop
     while(1){
-        switch(currentMacMode){
+        switch(currentParameters->getMacMode()){
             case STANDBY_MODE:
             {
                 //System waits for MacStartCommand
                 if(cliL2Interface->getMacStartCommandSignal()){
                     cliL2Interface->setMacStartCommandSignal(false);
-                    currentMacMode = CONFIG_MODE;
+                    currentParameters->setMacMode(CONFIG_MODE);
                     cout<<"\n\n[MacController] ___________ System entering CONFIG mode. ___________\n"<<endl;
                 }
             }
@@ -131,6 +132,9 @@ MacController::manager(){
                 //Create Scheduler to make Spectrum and SDU scheduling
                 scheduler = new Scheduler(currentParameters, sduBuffers, verbose);
 
+                //Create COSORA modure for Fusion calculation
+                cosora = new Cosora(cliL2Interface->dynamicParameters, currentParameters, verbose);
+
                 //Threads definition
                 /** Threads order:
                  * 0    ---> ProtocolData MACD SDU enqueueing (From L3)
@@ -157,7 +161,7 @@ MacController::manager(){
                 startThreads();
 
                 //Set MAC mode to start mode
-                currentMacMode = START_MODE;
+                currentParameters->setMacMode(START_MODE);
 
                 cout<<"\n\n[MacController] ___________ System entering START mode. ___________\n"<<endl;
             }
@@ -181,7 +185,7 @@ MacController::manager(){
                 //In BS, check for ConfigRequest or Stop commands. In UE, check onlu for Stop commands
                 if(flagBS){     //On BS
                     if(cliL2Interface->getMacConfigRequestCommandSignal()){           //MacConfigRequest
-                        currentMacMode = RECONFIG_MODE;                                 //Change mode
+                        currentParameters->setMacMode(RECONFIG_MODE);                                 //Change mode
 
                         //Set flag to indicate that UEs are out-of-date
                         currentParameters->setFlagUesOutdated(true);
@@ -217,7 +221,7 @@ MacController::manager(){
             case RECONFIG_MODE:
             {
                 //To enter RECONFIG_MODE, TX and RX must be disabled
-                if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX){
+                if(currentParameters->getMacRxMode()==DISABLED_MODE_RX && currentParameters->getMacTxMode()==DISABLED_MODE_TX){
 
                     //System will update current parameters with dynamic parameters
                     if(!flagBS){    //If it is UE, parameters to update are CLI's and ULMCS
@@ -228,7 +232,7 @@ MacController::manager(){
                         if(cliL2Interface->getMacConfigRequestCommandSignal())  //CLI parameters changed
                             currentParameters->setCLIParameters(cliL2Interface->dynamicParameters);
                         else    //System parameters changed           
-                           currentParameters->setSystemParameters(cliL2Interface->dynamicParameters);
+                            currentParameters->setSystemParameters(cliL2Interface->dynamicParameters);
                         
                         if(currentParameters->areUesOutdated()){
                             //Perform MACC SDU construction to send to UE
@@ -253,7 +257,7 @@ MacController::manager(){
                     cliL2Interface->setMacConfigRequestCommandSignal(false);
 
                     //Set MAC mode back to idle mode
-                    currentMacMode = IDLE_MODE;
+                    currentParameters->setMacMode(IDLE_MODE);
 
                     if(verbose) cout<<"[MacController] Current Parameters updated correctly."<<endl;
 
@@ -264,8 +268,8 @@ MacController::manager(){
 
             case STOP_MODE:
             {
-                //To enter RECONFIG_MODE, TX, RX and Tun modes must be disabled
-                if(currentMacRxMode==DISABLED_MODE_RX && currentMacTxMode==DISABLED_MODE_TX && currentMacTunMode==TUN_DISABLED){
+                //To enter RECONFIG_MODE, TX, RX and Tun modes must be disabled and COSORA must not be waiting for SSR
+                if(currentParameters->getMacRxMode()==DISABLED_MODE_RX && currentParameters->getMacTxMode()==DISABLED_MODE_TX && currentParameters->getMacTunMode()==TUN_DISABLED && !cosora->isBusy()){
                     //Reset flag
                     cliL2Interface->setMacStopCommandSignal(false);
                     
@@ -273,7 +277,7 @@ MacController::manager(){
                     this->~MacController();
 
                     //Set MAC mode back to idle mode
-                    currentMacMode = STANDBY_MODE;
+                    currentParameters->setMacMode(STANDBY_MODE);
 
                     cout<<"\n\n[MacController] ___________ System entering STANDBY mode. ___________\n"<<endl;
                 
@@ -294,10 +298,10 @@ void
 MacController::startThreads(){
 
     //TUN queue control thread (only IDLE mode)
-    threads[0] = thread(&SduBuffers::enqueueingDataSdus, sduBuffers,  ref(currentMacMode), ref(currentMacTunMode));
+    threads[0] = thread(&SduBuffers::enqueueingDataSdus, sduBuffers);
 
     //Control messages from PHY reading (only IDLE mode)
-    threads[1] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl, ref(currentMacMode), ref(currentMacRxMode));
+    threads[1] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl);
 
     //Join all threads
     for(int i=0;i<2;i++){
@@ -310,8 +314,8 @@ MacController::startThreads(){
 
 void
 MacController::scheduling(){
-    if(currentMacMode==IDLE_MODE){
-        currentMacTxMode = ACTIVE_MODE_TX;
+    if(currentParameters->getMacMode()==IDLE_MODE){
+        currentParameters->setMacTxMode(ACTIVE_MODE_TX);
         if(sduBuffers->bufferStatusInformation()){
             //Create array of 2 pointers to MacPDU objects
             MacPDU* macPdus[2];
@@ -383,7 +387,7 @@ MacController::scheduling(){
         }
     }
     //Change MAC Tx Mode to DISABLED_MODE_TX
-    currentMacTxMode = DISABLED_MODE_TX;
+    currentParameters->setMacTxMode(DISABLED_MODE_TX);
 }
 
 uint8_t 
@@ -413,7 +417,7 @@ MacController::decoding()
         while((numberBytesSdu = multiplexer->getSDU(bufferSdu))>0){
             //Test if it is Control SDU
             if(multiplexer->getCurrentDataControlFlag()==0)
-                protocolControl->decodeControlSdus(currentMacMode, bufferSdu, numberBytesSdu, macAddress);
+                protocolControl->decodeControlSdus(bufferSdu, numberBytesSdu, macAddress);
             else{    //Data SDU
             if(verbose) cout<<"[MacController] Data SDU received. Forwarding to L3."<<endl; 
                 transmissionProtocol->sendPackageToL3(bufferSdu, numberBytesSdu);
