@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : March 13th, 2020
+@Last alteration : March 27th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -61,18 +61,16 @@ SduBuffers::~SduBuffers(){
 }
 
 void 
-SduBuffers::enqueueingDataSdus(
-    MacModes & currentMacMode,          //Current MAC execution mode
-    MacTunModes & currentMacTunMode)    //Current MAC execution Tun mode
+SduBuffers::enqueueingDataSdus()
 {
     char buffer[MAXIMUM_BUFFER_LENGTH];
     ssize_t numberBytesRead = 0;
     
     //Mark current MAC Tun mode as ENABLED for reading TUN interface and enqueueing Data SDUs.
-    currentMacTunMode = TUN_ENABLED;
+    currentParameters->setMacTunMode(TUN_ENABLED);
 
     //Loop will execute until STOP mode is activated
-    while(currentMacMode!=STOP_MODE){
+    while(currentParameters->getMacMode()!=STOP_MODE){
         //Allocate buffer
         bzero(buffer, MAXIMUM_BUFFER_LENGTH);
 
@@ -138,7 +136,7 @@ SduBuffers::enqueueingDataSdus(
     if(verbose) cout<<"[SduBuffers] Entering STOP_MODE."<<endl;
 
     //Mark current MAC Tun mode as DISABLED for reading TUN interface and enqueueing Data SDUs.
-    currentMacTunMode = TUN_DISABLED;
+    currentParameters->setMacTunMode(TUN_DISABLED);
 }
 
 uint8_t

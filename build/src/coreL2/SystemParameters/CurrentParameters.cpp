@@ -7,7 +7,7 @@
 @Arquive name : CurrentParameters.cpp
 @Classification : System Parameters - Current Parameters
 @
-@Last alteration : March 10th, 2020
+@Last alteration : March 27th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -315,6 +315,30 @@ CurrentParameters::areUesOutdated(){
 	return flagUesOutdated;
 }
 
+MacModes
+CurrentParameters::getMacMode()
+{
+	return currentMacMode;
+}
+
+MacTxModes
+CurrentParameters::getMacTxMode()
+{
+	return currentMacTxMode;
+}
+
+MacRxModes
+CurrentParameters::getMacRxMode()
+{
+	return currentMacRxMode;
+}
+
+MacTunModes
+CurrentParameters::getMacTunMode()
+{
+	return currentMacTunMode;
+}
+
 void 
 CurrentParameters::setSystemParameters(
 	DynamicParameters* dynamicParameters)	//Pointer to DynamicParameters object, which stores parameters modified
@@ -370,4 +394,32 @@ CurrentParameters::setFlagUesOutdated(
     lock_guard<mutex> lk(dynamicParametersMutex);
     
 	flagUesOutdated = _flagUesOutdated;
+}
+
+void 
+CurrentParameters::setMacMode(
+	MacModes macMode)			//New Mac execution mode
+{
+	currentMacMode = macMode;
+}
+
+void 
+CurrentParameters::setMacTxMode(
+	MacTxModes macTxMode)			//New Mac Tx sub-execution mode
+{
+	currentMacTxMode = macTxMode;
+}
+
+void 
+CurrentParameters::setMacRxMode(
+	MacRxModes macRxMode)			//New Mac Rx sub-execution mode
+{
+	currentMacRxMode = macRxMode;
+}
+
+void 
+CurrentParameters::setMacTunMode(
+	MacTunModes macTunMode)			//New Mac Tun sub-execution mode
+{
+	currentMacTunMode = macTunMode;
 }

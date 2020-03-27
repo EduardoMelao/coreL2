@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : March 26th, 2020
+@Last alteration : March 27th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -40,7 +40,6 @@ ProtocolControl::~ProtocolControl() {
 
 void 
 ProtocolControl::decodeControlSdus(
-    MacModes & currentMacMode,      //Current MAC execution mode
     char* buffer,                   //Buffer containing Control SDU
     size_t numberDecodingBytes,     //Size of Control SDU in Bytes
     uint8_t macAddress)             //Source MAC Address
@@ -67,7 +66,7 @@ ProtocolControl::decodeControlSdus(
             rxMetrics[index].deserialize(rxMetricsBytes);
 
             //Calculate new DLMCS
-            macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress,rxMetrics[index].snr);
+            macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress,LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr));
 
             if(verbose){
                 cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received.";
@@ -77,14 +76,17 @@ ProtocolControl::decodeControlSdus(
             //If new MCS is different from old, enter RECONFIG mode
             if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
                 //Changes current MAC mode to RECONFIG
-                currentMacMode = RECONFIG_MODE;
+                macController->currentParameters->setMacMode(RECONFIG_MODE);
 
                 if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
             }
+
+            //Perform Fusion calculation
+            macController->cosora->fusionAlgorithm(rxMetrics[index].ssReport);
         }   
     }
     else{    //UE needs to set its Dynamic Parameters and return ACK to BS
-        managerDynamicParameters(currentMacMode, (uint8_t*) buffer, numberDecodingBytes);
+        managerDynamicParameters((uint8_t*) buffer, numberDecodingBytes);
         if(verbose) cout<<"[ProtocolControl] UE Configured correctly. Returning ACK to BS..."<<endl;
 
         // ACK
@@ -103,20 +105,18 @@ ProtocolControl::sendInterlayerMessages(
 }
 
 void
-ProtocolControl::receiveInterlayerMessages(
-    MacModes & currentMacMode,          //Current MAC execution mode
-    MacRxModes & currentMacRxMode)      //Current MAC execution Rx mode
+ProtocolControl::receiveInterlayerMessages()
 {
     char buffer[MAXIMUM_BUFFER_LENGTH]; //Buffer where message will be stored
     string message;                     //String containing message converted from char*
     uint8_t sourceMacAddress;           //Source MAC Address
 
     //Control message stream
-    while(currentMacMode!=STOP_MODE){
+    while(macController->currentParameters->getMacMode()!=STOP_MODE){
 
-        if(currentMacMode==IDLE_MODE||currentMacMode==START_MODE){
+        if(macController->currentParameters->getMacMode()==IDLE_MODE||macController->currentParameters->getMacMode()==START_MODE){
             //Change system Rx mode to ACTIVE_MODE_RX
-            currentMacRxMode = ACTIVE_MODE_RX; 
+            macController->currentParameters->setMacRxMode(ACTIVE_MODE_RX); 
 
             //Clear buffer and message and receive next control message
             bzero(buffer, MAXIMUM_BUFFER_LENGTH);
@@ -132,12 +132,12 @@ ProtocolControl::receiveInterlayerMessages(
             switch(buffer[0]){
                 case 'A':    //Treat PHYConfig.Response message
                     //System will stand in IDLE mode
-                    currentMacMode = IDLE_MODE;
+                    macController->currentParameters->setMacMode(IDLE_MODE);
 
                     cout<<"\n\n[ProtocolControl] ___________ System entering IDLE mode. ___________\n"<<endl;
                 break;
                 case 'B':    //Treat PHYStop.Response message
-                    currentMacMode = STOP_MODE;                                 //Change mode
+                    macController->currentParameters->setMacMode(STOP_MODE);                                 //Change mode
 
                     cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
                 break;
@@ -162,7 +162,7 @@ ProtocolControl::receiveInterlayerMessages(
                         //If new MCS is different from old, enter RECONFIG mode
                         if(macController->cliL2Interface->dynamicParameters->getMcsUplink(sourceMacAddress)!=macController->currentParameters->getMcsUplink(sourceMacAddress)){
                             //Changes current MAC mode to RECONFIG
-                            currentMacMode = RECONFIG_MODE;
+                            macController->currentParameters->setMacMode(RECONFIG_MODE);
 
                             //Set flag to indicate that UEs are out-of-date
                             macController->currentParameters->setFlagUesOutdated(true);
@@ -212,22 +212,21 @@ ProtocolControl::receiveInterlayerMessages(
                     if(verbose) cout<<"[ProtocolControl] Received SubframeRx.End from PHY."<<endl;
                 default: 
                     //Change MAC Rx Mode to DISABLED_MODE_RX
-                    currentMacRxMode = DISABLED_MODE_RX;
+                    macController->currentParameters->setMacRxMode(DISABLED_MODE_RX);
                 break;
             }
             //Change MAC Rx Mode to DISABLED_MODE_RX
-            currentMacRxMode = DISABLED_MODE_RX;
+            macController->currentParameters->setMacRxMode(DISABLED_MODE_RX);;
         }
     }
 
     if(verbose) cout<<"[ProtocolControl] Entering STOP_MODE."<<endl;    
     //Change MAC Rx Mode to DISABLED_MODE_RX before stopping System
-    currentMacRxMode = DISABLED_MODE_RX;
+    macController->currentParameters->setMacRxMode(DISABLED_MODE_RX);
 }
 
 void 
 ProtocolControl::managerDynamicParameters(
-    MacModes& currentMacMode,           //Current MAC execution mode
     uint8_t* bytesDynamicParameters,    //Serialized bytes from CLIL2Interface object
     size_t numberBytes)                 //Number of bytes of serialized information
 {
@@ -240,7 +239,7 @@ ProtocolControl::managerDynamicParameters(
     macController->cliL2Interface->dynamicParameters->deserialize(serializedBytes);
 
     //Change state to RECONFIG_MODE to apply changes in parameters
-    currentMacMode = RECONFIG_MODE;
+    macController->currentParameters->setMacMode(RECONFIG_MODE);
 
     cout<<"\n\n[ProtocolControl] ___________ System entering RECONFIG mode by MACC SDU received by UE. ___________\n"<<endl;
 }
@@ -259,5 +258,4 @@ ProtocolControl::rxMetricsReport(){     //This procedure executes only on UE
 
     //Enqueue MACC SDU
     macController->sduBuffers->enqueueControlSdu(&(rxMetricsBytes[0]), rxMetricsBytes.size(), 0);
-	
 }
