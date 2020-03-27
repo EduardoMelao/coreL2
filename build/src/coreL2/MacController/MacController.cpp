@@ -277,7 +277,7 @@ MacController::manager(){
                     this->~MacController();
 
                     //Set MAC mode back to idle mode
-                    currentParameters->getMacMode(STANDBY_MODE);
+                    currentParameters->setMacMode(STANDBY_MODE);
 
                     cout<<"\n\n[MacController] ___________ System entering STANDBY mode. ___________\n"<<endl;
                 
