@@ -71,6 +71,8 @@ Cosora::spectrumSensingTimeout(){
     //Wait for timeout nanoseconds
     this_thread::sleep_for(chrono::nanoseconds(timeout));
 
+    if(verbose) cout<<"[Cosora] Timeout! Executing Fusion Algorithm"<<endl;
+
     //Lock fusion mutex to change System FLUT value
     lock_guard<mutex> lk(fusionMutex);
 
@@ -81,6 +83,7 @@ Cosora::spectrumSensingTimeout(){
     if(fusionLookupTable!=currentParameters->getFLUTMatrix()){
         dynamicParameters->setFLutMatrix(fusionLookupTable);
 
+        if(verbose) cout<<"[Cosora] New fusion LUT value: "<<(int)fusionLookupTable<<endl;
         //Set MAC Mode to RECONFIG_MODE if it is not entering STOP_MODE
         if(currentParameters->getMacMode()!=STOP_MODE)
             currentParameters->setMacMode(RECONFIG_MODE);
