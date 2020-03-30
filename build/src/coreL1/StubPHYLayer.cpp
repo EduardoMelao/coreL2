@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : March 26th, 2020
+@Last alteration : March 30th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -468,7 +468,7 @@ CoreL1::sendTxIndication()
     while(1){
         if(phyActive){
             sendInterlayerMessage(&txIndication, 1);
-            this_thread::sleep_for(chrono::nanoseconds(4600));
+            this_thread::sleep_for(chrono::microseconds(4600));
         }
     }
 }

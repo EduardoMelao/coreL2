@@ -333,11 +333,14 @@ SduBuffers::dataSduTimeoutChecking(){
         stop = timerSubframe->getSubframeNumber();    //Get current Subframe
 
         for(int index=0;index<currentParameters->getNumberUEs();index++){
-            //Check if there are Data SDUs to analyze
-            if(!dataSduQueue[index].size()>0)
-                break;
-
             dataMutex.lock();   //Lock Data SDU Buffer mutex to possibly make alterarions on queue
+            //Check if there are Data SDUs to analyze
+            if(!(dataSduQueue[index].size()>0)){
+                dataMutex.unlock();
+                this_thread::sleep_for(chrono::microseconds(SUBFRAME_DURATION));
+                break;
+            }
+
             
             //Calculate Subframe difference
             if(dataTimestamp[index][0]>stop){   
@@ -346,12 +349,12 @@ SduBuffers::dataSduTimeoutChecking(){
             }
             else 
                 diff = stop - dataTimestamp[index][0];
-            
+                
             //Verify timeout
             if(diff<currentParameters->getIpTimeout()){
                 //Nothing to do: unlock mutex and sleep for a subframe dutation
                 dataMutex.unlock();
-                this_thread::sleep_for(chrono::nanoseconds(SUBFRAME_DURATION));
+                this_thread::sleep_for(chrono::microseconds(SUBFRAME_DURATION));
             }
             else{
                 if(verbose) cout<<"[SduBuffers] IP Packet timeout"<<endl;

@@ -7,7 +7,7 @@
 @Arquive name : Cosora.cpp
 @Classification : Cosora
 @
-@Last alteration : March 27th, 2020
+@Last alteration : March 30th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -40,7 +40,7 @@ Cosora::Cosora(
     //Initialize isWaiting flag , fusionLookupTable value and timeout value
     isWaiting = false;
     fusionLookupTable = 15;     //00001111: all 4 channels idle
-    timeout = 4600*currentParameters->getSSReportWaitTimeout();    //timeout value in nanoseconds
+    timeout = 4600*currentParameters->getSSReportWaitTimeout();    //timeout value in microseconds
     
 
 }
@@ -68,8 +68,8 @@ Cosora::spectrumSensingConvertToRBIdle(
 
 void 
 Cosora::spectrumSensingTimeout(){
-    //Wait for timeout nanoseconds
-    this_thread::sleep_for(chrono::nanoseconds(timeout));
+    //Wait for timeout microseconds
+    this_thread::sleep_for(chrono::microseconds(timeout));
 
     if(verbose) cout<<"[Cosora] Timeout! Executing Fusion Algorithm"<<endl;
 

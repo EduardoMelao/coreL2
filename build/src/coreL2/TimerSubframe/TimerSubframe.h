@@ -7,7 +7,7 @@
 #ifndef INCLUDED_TIMER_SUBFRAME_H
 #define INCLUDED_TIMER_SUBFRAME_H
 
-#define SUBFRAME_DURATION 4600      //Subframe duration in nanoseconds
+#define SUBFRAME_DURATION 4600      //Subframe duration in microseconds
 
 #include <iostream>
 #include <chrono>

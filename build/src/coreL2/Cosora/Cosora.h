@@ -8,7 +8,7 @@
 #define INCLUDED_COSORA_H
 
 #include <stdint.h>     //uint8_t
-#include <chrono>       //chrono::nanoseconds()
+#include <chrono>       //chrono::microseconds()
 #include <thread>       //thread() ; this_thread namespace
 #include <mutex>        //mutex
 
@@ -24,7 +24,7 @@ class Cosora{
 private:
     bool isActive;                          //Flag that indicates if Fusion is activated
     bool isWaiting;                         //Flag that indicates that Cosora is waiting for SS Reports from UEs
-    unsigned int timeout;                   //Spectrum Sensing Wait timeout in nanoseconds
+    unsigned int timeout;                   //Spectrum Sensing Wait timeout in microseconds
     uint8_t fusionLookupTable;              //Fusion Lookup table with 4bits of information
     DynamicParameters* dynamicParameters;   //Dynamic Parameters from Basestation
     CurrentParameters* currentParameters;   //Current System Parameters
