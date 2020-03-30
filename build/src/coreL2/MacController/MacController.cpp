@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : March 27th, 2020
+@Last alteration : March 30th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -59,6 +59,7 @@ MacController::~MacController(){
     delete l1l2Interface;
     delete [] threads;
     delete ipMacTable;
+    delete timerSubframe;
 
     //Delete current system parameters only shutting down MAC
     //In STOP_MODE, there's no need to destroy system parameters and CLI interface
@@ -101,7 +102,10 @@ MacController::manager(){
                 currentMacAddress = currentParameters->getCurrentMacAddress();
                 
             	//Fill dynamic Parameters with current parameters (updating system)
-            	currentParameters->loadDynamicParametersDefaultInformation(cliL2Interface->dynamicParameters);
+                currentParameters->loadDynamicParametersDefaultInformation(cliL2Interface->dynamicParameters);
+
+                //Create Timer Subframe module for Subframe-time counting
+                timerSubframe = new TimerSubframe();
 
                 //Define IP-MAC correlation table creating and initializing a MacAddressTable with static informations (HARDCODE)
                 ipMacTable = new MacAddressTable(verbose);
@@ -127,20 +131,22 @@ MacController::manager(){
                 transmissionProtocol = new TransmissionProtocol(l1l2Interface,tunInterface, verbose);
 
                 //Create SduBuffers to store MACD and MACC SDUs
-                sduBuffers = new SduBuffers(receptionProtocol, currentParameters, ipMacTable, verbose);
+                sduBuffers = new SduBuffers(receptionProtocol, currentParameters, ipMacTable, timerSubframe, verbose);
 
                 //Create Scheduler to make Spectrum and SDU scheduling
                 scheduler = new Scheduler(currentParameters, sduBuffers, verbose);
 
-                //Create COSORA modure for Fusion calculation
+                //Create COSORA module for Fusion calculation
                 cosora = new Cosora(cliL2Interface->dynamicParameters, currentParameters, verbose);
 
                 //Threads definition
                 /** Threads order:
                  * 0    ---> ProtocolData MACD SDU enqueueing (From L3)
                  * 1    ---> Reading control messages from PHY
+                 * 2    ---> Counting Subframe time-intervals
+                 * 3    ---> Checking for IP packets timeout
                  */
-                threads = new thread[2];
+                threads = new thread[4];
 
                 //Create ProtocolControl to deal with MACC SDUs
                 protocolControl = new ProtocolControl(this, verbose);
@@ -182,7 +188,7 @@ MacController::manager(){
             {
                 //System will continue to execute idle threads (receiving from L1 or L3) and wait for other commands e.g MacConfigRequestCommand or MacStopCommand
 
-                //In BS, check for ConfigRequest or Stop commands. In UE, check onlu for Stop commands
+                //In BS, check for ConfigRequest or Stop commands. In UE, check only for Stop commands
                 if(flagBS){     //On BS
                     if(cliL2Interface->getMacConfigRequestCommandSignal()){           //MacConfigRequest
                         currentParameters->setMacMode(RECONFIG_MODE);                                 //Change mode
@@ -303,8 +309,14 @@ MacController::startThreads(){
     //Control messages from PHY reading (only IDLE mode)
     threads[1] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl);
 
+    //Counting Subframe time-intervals
+    threads[2] = thread(&TimerSubframe::countingThread, timerSubframe);
+
+    //Checking for IP packets timeout
+    threads[3] = thread(&SduBuffers::dataSduTimeoutChecking, sduBuffers);
+
     //Join all threads
-    for(int i=0;i<2;i++){
+    for(int i=0;i<4;i++){
         //Join all threads IDLE mode 
         threads[i].detach();
     }

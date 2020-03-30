@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : March 27th, 2020
+@Last alteration : March 30th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -30,12 +30,14 @@ SduBuffers::SduBuffers(
     ReceptionProtocol* _reception,          //Object to receive packets from L3
     CurrentParameters* _currentParameters,  //Object with the parameters that are currently being used by the system
     MacAddressTable* _ipMacTable,           //Table of correlation of IP Addresses and MAC5GR Addresses
+    TimerSubframe* _timerSubframe,          //Timer with Subframe indication to support IP timeout control
     bool _verbose)                          //Verbosity flag
 {
     //Assign class variables
     reception = _reception;
     currentParameters = _currentParameters;
     ipMacTable = _ipMacTable;
+    timerSubframe = _timerSubframe;
     verbose = _verbose;
 
     //Resize vectors
@@ -43,6 +45,7 @@ SduBuffers::SduBuffers(
     controlSduQueue.resize(currentParameters->getNumberUEs());
     dataSizes.resize(currentParameters->getNumberUEs());
     controlSizes.resize(currentParameters->getNumberUEs());
+    dataTimestamp.resize(currentParameters->getNumberUEs());
 }
 
 SduBuffers::~SduBuffers(){
@@ -61,7 +64,9 @@ SduBuffers::~SduBuffers(){
 }
 
 void 
-SduBuffers::enqueueingDataSdus()
+SduBuffers::enqueueingDataSdus(
+    TimerSubframe* timerSubframe    //Timer with Subframe indication to support IP timeout control
+)
 {
     char buffer[MAXIMUM_BUFFER_LENGTH];
     ssize_t numberBytesRead = 0;
@@ -90,7 +95,7 @@ SduBuffers::enqueueingDataSdus()
             //Check EOF
             if(numberBytesRead==0){
                 if(verbose) cout<<"[SduBuffers] End of Transmission."<<endl;
-            	break;
+                break;
             }
 
             //Check ipv4
@@ -125,6 +130,7 @@ SduBuffers::enqueueingDataSdus()
                 
                 dataSduQueue[index].push_back(bufferDataSdu);
                 dataSizes[index].push_back(numberBytesRead);
+                dataTimestamp[index].push_back(timerSubframe->getSubframe());
             }
             else
                 if(verbose) cout<<"[SduBuffers] Data SDU could not be added to queue: index not found."<<endl;
@@ -246,6 +252,7 @@ SduBuffers::getNextDataSdu(
     //Delete front positions
     dataSizes[index].erase(dataSizes[index].begin());
     dataSduQueue[index].erase(dataSduQueue[index].begin());
+    dataTimestamp[index].emplace(dataTimestamp[index].begin());
 
     if(verbose) cout<<"[SduBuffers] Got SDU from L3 queue."<<endl;
 
@@ -316,4 +323,42 @@ SduBuffers::getNextControlSduSize(
 
     //Get front values from the vectors
     return controlSizes[index].front();
+}
+
+void 
+SduBuffers::dataSduTimeoutChecking(){
+    unsigned long long stop;    //Mark current Subframe to calculate 
+    unsigned long long diff;    //Subframe difference
+
+    //Execute until withing STOP_MODE
+    while(currentParameters->getMacMode()!=STOP_MODE){
+        stop = timerSubframe->getSubframeNumber();    //Get current Subframe
+        dataMutex.lock();   //Lock Data SDU Buffer mutex to possibly make alterarions on queue
+        
+        //Calculate Subframe difference
+        if(dataTimestamp[0][0]>stop){   
+            diff = (18446744073709551615ULL - dataTimestamp[0][0]);
+            diff += stop;
+        }
+        else 
+            diff = stop - dataTimestamp[0][0];
+        
+        //Verify timeout
+        if(diff<currentParameters->getIpTimeout()){
+            //Nothing to do: unlock mutex and sleep for a subframe dutation
+            dataMutex.unlock();
+            this_thread::sleep_for(chrono::nanoseconds(SUBFRAME_DURATION));
+        }
+        else{
+            if(verbose) cout<<"[SduBuffers] IP Packet timeout"<<endl;
+            
+            //Delete front positions
+            dataSizes[index].erase(dataSizes[index].begin());
+            dataSduQueue[index].erase(dataSduQueue[index].begin());
+            dataTimestamp[index].emplace(dataTimestamp[index].begin());
+
+            //Unlock Mutex
+            dataMutex.unlock();
+        }
+    }
 }

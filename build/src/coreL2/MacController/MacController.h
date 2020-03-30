@@ -25,6 +25,7 @@
 #include "../CLIL2Interface/CLIL2Interface.h"
 #include "../Scheduler/Scheduler.h"
 #include "../Cosora/Cosora.h"
+#include "../TimerSubframe/TimerSubframe.h"
 
 using namespace std;
 
@@ -49,6 +50,7 @@ private:
     ProtocolControl* protocolControl;       //Object to deal with enqueueing CONTROL SDUS
 	thread *threads;                        //Threads array
     Scheduler* scheduler;                   //Scheduler object to make Spectrum and SDU scheduling procedures
+    TimerSubframe* timerSubframe;           //Object to store time elapsed in subframe time units
     bool verbose;                           //Verbosity flag
 
 public:
