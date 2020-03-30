@@ -64,9 +64,7 @@ SduBuffers::~SduBuffers(){
 }
 
 void 
-SduBuffers::enqueueingDataSdus(
-    TimerSubframe* timerSubframe    //Timer with Subframe indication to support IP timeout control
-)
+SduBuffers::enqueueingDataSdus()
 {
     char buffer[MAXIMUM_BUFFER_LENGTH];
     ssize_t numberBytesRead = 0;
@@ -130,7 +128,7 @@ SduBuffers::enqueueingDataSdus(
                 
                 dataSduQueue[index].push_back(bufferDataSdu);
                 dataSizes[index].push_back(numberBytesRead);
-                dataTimestamp[index].push_back(timerSubframe->getSubframe());
+                dataTimestamp[index].push_back(timerSubframe->getSubframeNumber());
             }
             else
                 if(verbose) cout<<"[SduBuffers] Data SDU could not be added to queue: index not found."<<endl;
@@ -333,32 +331,39 @@ SduBuffers::dataSduTimeoutChecking(){
     //Execute until withing STOP_MODE
     while(currentParameters->getMacMode()!=STOP_MODE){
         stop = timerSubframe->getSubframeNumber();    //Get current Subframe
-        dataMutex.lock();   //Lock Data SDU Buffer mutex to possibly make alterarions on queue
-        
-        //Calculate Subframe difference
-        if(dataTimestamp[0][0]>stop){   
-            diff = (18446744073709551615ULL - dataTimestamp[0][0]);
-            diff += stop;
-        }
-        else 
-            diff = stop - dataTimestamp[0][0];
-        
-        //Verify timeout
-        if(diff<currentParameters->getIpTimeout()){
-            //Nothing to do: unlock mutex and sleep for a subframe dutation
-            dataMutex.unlock();
-            this_thread::sleep_for(chrono::nanoseconds(SUBFRAME_DURATION));
-        }
-        else{
-            if(verbose) cout<<"[SduBuffers] IP Packet timeout"<<endl;
-            
-            //Delete front positions
-            dataSizes[index].erase(dataSizes[index].begin());
-            dataSduQueue[index].erase(dataSduQueue[index].begin());
-            dataTimestamp[index].emplace(dataTimestamp[index].begin());
 
-            //Unlock Mutex
-            dataMutex.unlock();
+        for(int index=0;index<currentParameters->getNumberUEs();index++){
+            //Check if there are Data SDUs to analyze
+            if(!dataSduQueue[index].size()>0)
+                break;
+
+            dataMutex.lock();   //Lock Data SDU Buffer mutex to possibly make alterarions on queue
+            
+            //Calculate Subframe difference
+            if(dataTimestamp[index][0]>stop){   
+                diff = (18446744073709551615ULL - dataTimestamp[index][0]);
+                diff += stop;
+            }
+            else 
+                diff = stop - dataTimestamp[index][0];
+            
+            //Verify timeout
+            if(diff<currentParameters->getIpTimeout()){
+                //Nothing to do: unlock mutex and sleep for a subframe dutation
+                dataMutex.unlock();
+                this_thread::sleep_for(chrono::nanoseconds(SUBFRAME_DURATION));
+            }
+            else{
+                if(verbose) cout<<"[SduBuffers] IP Packet timeout"<<endl;
+                
+                //Delete front positions
+                dataSizes[index].erase(dataSizes[index].begin());
+                dataSduQueue[index].erase(dataSduQueue[index].begin());
+                dataTimestamp[index].emplace(dataTimestamp[index].begin());
+
+                //Unlock Mutex
+                dataMutex.unlock();
+            }
         }
     }
 }

@@ -274,6 +274,9 @@ MacController::manager(){
 
             case STOP_MODE:
             {
+                //Stop counting Subframes
+                timerSubframe->stopCounting();
+
                 //To enter RECONFIG_MODE, TX, RX and Tun modes must be disabled and COSORA must not be waiting for SSR
                 if(currentParameters->getMacRxMode()==DISABLED_MODE_RX && currentParameters->getMacTxMode()==DISABLED_MODE_TX && currentParameters->getMacTunMode()==TUN_DISABLED && !cosora->isBusy()){
                     //Reset flag

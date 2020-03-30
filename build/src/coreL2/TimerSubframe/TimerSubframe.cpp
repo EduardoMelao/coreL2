@@ -36,7 +36,7 @@ void
 TimerSubframe::countingThread(){
     while(!killThread){
         //Sleep for Subframe duration
-        this_thread::sleep_for(chrono::nanoseconds(SUBFRAME_DURATION));
+        std::this_thread::sleep_for(std::chrono::nanoseconds(SUBFRAME_DURATION));
 
         //Increase counter value
         subframeCounter++;

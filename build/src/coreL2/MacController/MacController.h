@@ -7,12 +7,7 @@
 #ifndef INCLUDED_MAC_CONTROLLER_H
 #define INCLUDED_MAC_CONTROLLER_H
 
-#include <iostream>             //std::cout
-#include <future>               //std::async, std::future
-#include <chrono>               //std::chrono::milliseconds
-#include <mutex>                //std::mutex
-#include <condition_variable>   //std::condition_variable
-
+#include "../TimerSubframe/TimerSubframe.h"
 #include "../SduBuffers/SduBuffers.h"
 #include "../SduBuffers/MacAddressTable/MacAddressTable.h"
 #include "../Multiplexer/Multiplexer.h"
@@ -25,7 +20,12 @@
 #include "../CLIL2Interface/CLIL2Interface.h"
 #include "../Scheduler/Scheduler.h"
 #include "../Cosora/Cosora.h"
-#include "../TimerSubframe/TimerSubframe.h"
+
+#include <iostream>             //std::cout
+#include <future>               //std::async, std::future
+#include <chrono>               //std::chrono::milliseconds
+#include <mutex>                //std::mutex
+#include <condition_variable>   //std::condition_variable
 
 using namespace std;
 
