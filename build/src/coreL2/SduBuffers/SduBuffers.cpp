@@ -298,7 +298,7 @@ SduBuffers::getNextDataSduSize(
     //Lock mutex to remove SDU from the head of the queue
     lock_guard<mutex> lk(dataMutex);
     if(dataSduQueue[index].size()==0){
-        if(verbose) cout<<"[SduBuffers] Tried to get empty SDU from L3."<<endl;
+        if(verbose) cout<<"[SduBuffers] Tried to get size of empty SDU from L3."<<endl;
         return -1;
     }
 
@@ -315,7 +315,7 @@ SduBuffers::getNextControlSduSize(
     //Lock mutex to remove SDU from the head of the queue
     lock_guard<mutex> lk(controlMutex);
     if(controlSduQueue[index].size()==0){
-        if(verbose) cout<<"[SduBuffers] Tried to get empty SDU from L3."<<endl;
+        if(verbose) cout<<"[SduBuffers] Tried to get size of empty SDU from Control SDU queue."<<endl;
         return -1;
     }
 

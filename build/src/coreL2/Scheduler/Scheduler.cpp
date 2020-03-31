@@ -7,7 +7,7 @@
 @Arquive name : Scheduler.cpp
 @Classification : Scheduler
 @
-@Last alteration : March 18th, 2020
+@Last alteration : March 31st, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -76,7 +76,7 @@ Scheduler::scheduleRequestBS(
     //For each PDU:
     for(int i=0;i<ueIds.size();i++){
     	//Assign MAC PDU UEID
-    	macPDUs[i]->allocation_.target_ue_id = ueIds[i];
+        macPDUs[i]->allocation_.target_ue_id = ueIds[i];
 
         //Fill MAC - PHY control struct
         macPDUs[i]->macphy_ctl_.first_tb_in_subframe = i==0;
@@ -119,8 +119,12 @@ Scheduler::scheduleRequestBS(
             bzero(sduBuffer, MAXIMUM_BUFFER_LENGTH);
 
             //Get SDU from queue
-            sduSize = sduBuffers->getNextControlSdu(ueIds[i], sduBuffer);
+            sduSize = sduBuffers->getNextDataSdu(ueIds[i], sduBuffer);
 
+            //Test if valid SDU was received
+            if(sduSize==-1)
+                break;
+                
             //Add SDU to multiplexer
             multiplexer->addSDU(sduBuffer, sduSize, 0);
         }
@@ -144,6 +148,10 @@ Scheduler::scheduleRequestBS(
 
             //Get SDU from queue
             sduSize = sduBuffers->getNextDataSdu(ueIds[i], sduBuffer);
+
+            //Test if valid SDU was received
+            if(sduSize==-1)
+                break;
 
             //Add SDU to multiplexer
             multiplexer->addSDU(sduBuffer, sduSize, 1);
@@ -208,6 +216,10 @@ Scheduler::scheduleRequestUE(
         //Get SDU from queue
         sduSize = sduBuffers->getNextControlSdu(0, sduBuffer);
 
+        //Test if valid SDU was received
+        if(sduSize==-1)
+            break;
+
         //Add SDU to multiplexer
         multiplexer->addSDU(sduBuffer, sduSize, 0);
     }
@@ -231,6 +243,10 @@ Scheduler::scheduleRequestUE(
 
         //Get SDU from queue
         sduSize = sduBuffers->getNextDataSdu(0, sduBuffer);
+
+        //Test if valid SDU was received
+        if(sduSize==-1)
+            break;
 
         //Add SDU to multiplexer
         multiplexer->addSDU(sduBuffer, sduSize, 1);

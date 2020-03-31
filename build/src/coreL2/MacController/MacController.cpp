@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : March 30th, 2020
+@Last alteration : March 31st, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -346,57 +346,60 @@ MacController::scheduling(){
             
             //Get number of PDUs
             int numberPdus = macPdus[1]->mac_data_.size()==0 ? 1:2;
-
-            //Create SubframeTx.Start message
-            string messageParameters;		            //This string will contain the parameters of the message
-            vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
-
-            if(flagBS){     //Create BSSubframeTx.Start message
-                BSSubframeTx_Start messageBS;	//Message parameters structure
-
-                //Fill the structure with information
-                messageBS.numUEs = currentParameters->getNumberUEs();
-                messageBS.numPDUs = numberPdus;      //If seconds MACPDU is empty, there's just one MAC PDU
-                messageBS.fLutDL = currentParameters->getFLUTMatrix();
-                currentParameters->getUlReservations(messageBS.ulReservations);
-                messageBS.numerology = currentParameters->getNumerology();
-                messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
-                messageBS.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
-
-                //Serialize struct
-                messageBS.serialize(messageParametersBytes);
-
-            }
-            else{       //Create UESubframeTx.Start message
-                UESubframeTx_Start messageUE;	//Messages parameters structure
-
-                //Fill the structure with information
-                messageUE.ulReservation = currentParameters->getUlReservation(currentParameters->getMacAddress(0));
-                messageUE.numerology = currentParameters->getNumerology();
-                messageUE.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
-                messageUE.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
-
-                //Serialize struct
-                messageUE.serialize(messageParametersBytes);
-                }
-
-            //Copy structure bytes to message
-            for(uint i=0;i<messageParametersBytes.size();i++)
-                messageParameters+=messageParametersBytes[i];
-
-            //Downlink routine:
-            string subFrameStartMessage = flagBS? "C":"D";
-            string subFrameEndMessage = "E";
             
-            //Add parameters to original message
-            subFrameStartMessage+=messageParameters;
+            //Test if there is actualy information to send
+            if(macPdus[0]->mac_data_.size() != 0){
+                //Create SubframeTx.Start message
+                string messageParameters;		            //This string will contain the parameters of the message
+                vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
 
-            //Send interlayer messages and the PDU
-            protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
-            transmissionProtocol->sendPackagesToL1(macPdus, numberPdus);
-            protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
+                if(flagBS){     //Create BSSubframeTx.Start message
+                    BSSubframeTx_Start messageBS;	//Message parameters structure
 
-            //Delete both Mac PDUs
+                    //Fill the structure with information
+                    messageBS.numUEs = currentParameters->getNumberUEs();
+                    messageBS.numPDUs = numberPdus;      //If seconds MACPDU is empty, there's just one MAC PDU
+                    messageBS.fLutDL = currentParameters->getFLUTMatrix();
+                    currentParameters->getUlReservations(messageBS.ulReservations);
+                    messageBS.numerology = currentParameters->getNumerology();
+                    messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
+                    messageBS.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
+
+                    //Serialize struct
+                    messageBS.serialize(messageParametersBytes);
+
+                }
+                else{       //Create UESubframeTx.Start message
+                    UESubframeTx_Start messageUE;	//Messages parameters structure
+
+                    //Fill the structure with information
+                    messageUE.ulReservation = currentParameters->getUlReservation(currentParameters->getMacAddress(0));
+                    messageUE.numerology = currentParameters->getNumerology();
+                    messageUE.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
+                    messageUE.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
+
+                    //Serialize struct
+                    messageUE.serialize(messageParametersBytes);
+                    }
+
+                //Copy structure bytes to message
+                for(uint i=0;i<messageParametersBytes.size();i++)
+                    messageParameters+=messageParametersBytes[i];
+
+                //Downlink routine:
+                string subFrameStartMessage = flagBS? "C":"D";
+                string subFrameEndMessage = "E";
+                
+                //Add parameters to original message
+                subFrameStartMessage+=messageParameters;
+
+                //Send interlayer messages and the PDU
+                protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
+                transmissionProtocol->sendPackagesToL1(macPdus, numberPdus);
+                protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
+            }
+
+            //Finally, delete both Mac PDUs
             delete macPdus[0];
             delete macPdus[1];
         }
