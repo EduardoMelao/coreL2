@@ -7,7 +7,7 @@
 @Arquive name : Cosora.cpp
 @Classification : Cosora
 @
-@Last alteration : March 30th, 2020
+@Last alteration : March 31st, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -79,7 +79,7 @@ Cosora::spectrumSensingTimeout(){
     //Redefine isWaiting flag
     isWaiting = false;
 
-    //Verify is FLUT value changed, change DynamicParameters value and change Mac Mode
+    //Verify if FLUT value changed, change DynamicParameters value and change Mac Mode
     if(fusionLookupTable!=currentParameters->getFLUTMatrix()){
         dynamicParameters->setFLutMatrix(fusionLookupTable);
 
