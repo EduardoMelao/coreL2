@@ -250,7 +250,7 @@ SduBuffers::getNextDataSdu(
     //Delete front positions
     dataSizes[index].erase(dataSizes[index].begin());
     dataSduQueue[index].erase(dataSduQueue[index].begin());
-    dataTimestamp[index].emplace(dataTimestamp[index].begin());
+    dataTimestamp[index].erase(dataTimestamp[index].begin());
 
     if(verbose) cout<<"[SduBuffers] Got SDU from L3 queue."<<endl;
 
@@ -349,7 +349,7 @@ SduBuffers::dataSduTimeoutChecking(){
             }
             else 
                 diff = stop - dataTimestamp[index][0];
-                
+
             //Verify timeout
             if(diff<currentParameters->getIpTimeout()){
                 //Nothing to do: unlock mutex and sleep for a subframe dutation
@@ -357,12 +357,12 @@ SduBuffers::dataSduTimeoutChecking(){
                 this_thread::sleep_for(chrono::microseconds(SUBFRAME_DURATION));
             }
             else{
-                if(verbose) cout<<"[SduBuffers] IP Packet timeout"<<endl;
+                if(verbose) cout<<"[SduBuffers] IP Packet timeout with "<<diff<<" subframes as difference."<<endl;
                 
                 //Delete front positions
                 dataSizes[index].erase(dataSizes[index].begin());
                 dataSduQueue[index].erase(dataSduQueue[index].begin());
-                dataTimestamp[index].emplace(dataTimestamp[index].begin());
+                dataTimestamp[index].erase(dataTimestamp[index].begin());
 
                 //Unlock Mutex
                 dataMutex.unlock();
