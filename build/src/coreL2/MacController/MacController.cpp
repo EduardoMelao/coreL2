@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : March 27th, 2020
+@Last alteration : March 31st, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -59,6 +59,7 @@ MacController::~MacController(){
     delete l1l2Interface;
     delete [] threads;
     delete ipMacTable;
+    delete timerSubframe;
 
     //Delete current system parameters only shutting down MAC
     //In STOP_MODE, there's no need to destroy system parameters and CLI interface
@@ -101,7 +102,10 @@ MacController::manager(){
                 currentMacAddress = currentParameters->getCurrentMacAddress();
                 
             	//Fill dynamic Parameters with current parameters (updating system)
-            	currentParameters->loadDynamicParametersDefaultInformation(cliL2Interface->dynamicParameters);
+                currentParameters->loadDynamicParametersDefaultInformation(cliL2Interface->dynamicParameters);
+
+                //Create Timer Subframe module for Subframe-time counting
+                timerSubframe = new TimerSubframe();
 
                 //Define IP-MAC correlation table creating and initializing a MacAddressTable with static informations (HARDCODE)
                 ipMacTable = new MacAddressTable(verbose);
@@ -127,20 +131,22 @@ MacController::manager(){
                 transmissionProtocol = new TransmissionProtocol(l1l2Interface,tunInterface, verbose);
 
                 //Create SduBuffers to store MACD and MACC SDUs
-                sduBuffers = new SduBuffers(receptionProtocol, currentParameters, ipMacTable, verbose);
+                sduBuffers = new SduBuffers(receptionProtocol, currentParameters, ipMacTable, timerSubframe, verbose);
 
                 //Create Scheduler to make Spectrum and SDU scheduling
                 scheduler = new Scheduler(currentParameters, sduBuffers, verbose);
 
-                //Create COSORA modure for Fusion calculation
+                //Create COSORA module for Fusion calculation
                 cosora = new Cosora(cliL2Interface->dynamicParameters, currentParameters, verbose);
 
                 //Threads definition
                 /** Threads order:
                  * 0    ---> ProtocolData MACD SDU enqueueing (From L3)
                  * 1    ---> Reading control messages from PHY
+                 * 2    ---> Counting Subframe time-intervals
+                 * 3    ---> Checking for IP packets timeout
                  */
-                threads = new thread[2];
+                threads = new thread[4];
 
                 //Create ProtocolControl to deal with MACC SDUs
                 protocolControl = new ProtocolControl(this, verbose);
@@ -182,7 +188,7 @@ MacController::manager(){
             {
                 //System will continue to execute idle threads (receiving from L1 or L3) and wait for other commands e.g MacConfigRequestCommand or MacStopCommand
 
-                //In BS, check for ConfigRequest or Stop commands. In UE, check onlu for Stop commands
+                //In BS, check for ConfigRequest or Stop commands. In UE, check only for Stop commands
                 if(flagBS){     //On BS
                     if(cliL2Interface->getMacConfigRequestCommandSignal()){           //MacConfigRequest
                         currentParameters->setMacMode(RECONFIG_MODE);                                 //Change mode
@@ -268,6 +274,9 @@ MacController::manager(){
 
             case STOP_MODE:
             {
+                //Stop counting Subframes
+                timerSubframe->stopCounting();
+
                 //To enter RECONFIG_MODE, TX, RX and Tun modes must be disabled and COSORA must not be waiting for SSR
                 if(currentParameters->getMacRxMode()==DISABLED_MODE_RX && currentParameters->getMacTxMode()==DISABLED_MODE_TX && currentParameters->getMacTunMode()==TUN_DISABLED && !cosora->isBusy()){
                     //Reset flag
@@ -303,8 +312,14 @@ MacController::startThreads(){
     //Control messages from PHY reading (only IDLE mode)
     threads[1] = thread(&ProtocolControl::receiveInterlayerMessages, protocolControl);
 
+    //Counting Subframe time-intervals
+    threads[2] = thread(&TimerSubframe::countingThread, timerSubframe);
+
+    //Checking for IP packets timeout
+    threads[3] = thread(&SduBuffers::dataSduTimeoutChecking, sduBuffers);
+
     //Join all threads
-    for(int i=0;i<2;i++){
+    for(int i=0;i<4;i++){
         //Join all threads IDLE mode 
         threads[i].detach();
     }
@@ -331,57 +346,60 @@ MacController::scheduling(){
             
             //Get number of PDUs
             int numberPdus = macPdus[1]->mac_data_.size()==0 ? 1:2;
-
-            //Create SubframeTx.Start message
-            string messageParameters;		            //This string will contain the parameters of the message
-            vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
-
-            if(flagBS){     //Create BSSubframeTx.Start message
-                BSSubframeTx_Start messageBS;	//Message parameters structure
-
-                //Fill the structure with information
-                messageBS.numUEs = currentParameters->getNumberUEs();
-                messageBS.numPDUs = numberPdus;      //If seconds MACPDU is empty, there's just one MAC PDU
-                messageBS.fLutDL = currentParameters->getFLUTMatrix();
-                currentParameters->getUlReservations(messageBS.ulReservations);
-                messageBS.numerology = currentParameters->getNumerology();
-                messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
-                messageBS.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
-
-                //Serialize struct
-                messageBS.serialize(messageParametersBytes);
-
-            }
-            else{       //Create UESubframeTx.Start message
-                UESubframeTx_Start messageUE;	//Messages parameters structure
-
-                //Fill the structure with information
-                messageUE.ulReservation = currentParameters->getUlReservation(currentParameters->getMacAddress(0));
-                messageUE.numerology = currentParameters->getNumerology();
-                messageUE.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
-                messageUE.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
-
-                //Serialize struct
-                messageUE.serialize(messageParametersBytes);
-                }
-
-            //Copy structure bytes to message
-            for(uint i=0;i<messageParametersBytes.size();i++)
-                messageParameters+=messageParametersBytes[i];
-
-            //Downlink routine:
-            string subFrameStartMessage = flagBS? "C":"D";
-            string subFrameEndMessage = "E";
             
-            //Add parameters to original message
-            subFrameStartMessage+=messageParameters;
+            //Test if there is actualy information to send
+            if(macPdus[0]->mac_data_.size() != 0){
+                //Create SubframeTx.Start message
+                string messageParameters;		            //This string will contain the parameters of the message
+                vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
 
-            //Send interlayer messages and the PDU
-            protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
-            transmissionProtocol->sendPackagesToL1(macPdus, numberPdus);
-            protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
+                if(flagBS){     //Create BSSubframeTx.Start message
+                    BSSubframeTx_Start messageBS;	//Message parameters structure
 
-            //Delete both Mac PDUs
+                    //Fill the structure with information
+                    messageBS.numUEs = currentParameters->getNumberUEs();
+                    messageBS.numPDUs = numberPdus;      //If seconds MACPDU is empty, there's just one MAC PDU
+                    messageBS.fLutDL = currentParameters->getFLUTMatrix();
+                    currentParameters->getUlReservations(messageBS.ulReservations);
+                    messageBS.numerology = currentParameters->getNumerology();
+                    messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
+                    messageBS.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
+
+                    //Serialize struct
+                    messageBS.serialize(messageParametersBytes);
+
+                }
+                else{       //Create UESubframeTx.Start message
+                    UESubframeTx_Start messageUE;	//Messages parameters structure
+
+                    //Fill the structure with information
+                    messageUE.ulReservation = currentParameters->getUlReservation(currentParameters->getMacAddress(0));
+                    messageUE.numerology = currentParameters->getNumerology();
+                    messageUE.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
+                    messageUE.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
+
+                    //Serialize struct
+                    messageUE.serialize(messageParametersBytes);
+                    }
+
+                //Copy structure bytes to message
+                for(uint i=0;i<messageParametersBytes.size();i++)
+                    messageParameters+=messageParametersBytes[i];
+
+                //Downlink routine:
+                string subFrameStartMessage = flagBS? "C":"D";
+                string subFrameEndMessage = "E";
+                
+                //Add parameters to original message
+                subFrameStartMessage+=messageParameters;
+
+                //Send interlayer messages and the PDU
+                protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
+                transmissionProtocol->sendPackagesToL1(macPdus, numberPdus);
+                protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
+            }
+
+            //Finally, delete both Mac PDUs
             delete macPdus[0];
             delete macPdus[1];
         }
