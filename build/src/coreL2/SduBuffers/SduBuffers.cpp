@@ -354,7 +354,7 @@ SduBuffers::dataSduTimeoutChecking(){
             if(diff<currentParameters->getIpTimeout()){
                 //Nothing to do: unlock mutex and sleep for a subframe dutation
                 dataMutex.unlock();
-                this_thread::sleep_for(chrono::microseconds(SUBFRAME_DURATION));
+                this_thread::sleep_for(chrono::microseconds((currentParameters->getIpTimeout()-diff)*SUBFRAME_DURATION));
             }
             else{
                 if(verbose) cout<<"[SduBuffers] IP Packet timeout with "<<diff<<" subframes as difference."<<endl;
