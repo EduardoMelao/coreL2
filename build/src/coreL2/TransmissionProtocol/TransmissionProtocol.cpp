@@ -7,7 +7,7 @@
 @Arquive name : TransmissionProtocol.cpp
 @Classification : Transmission Protocol
 @
-@Last alteration : March 13th, 2019
+@Last alteration : March 13th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015

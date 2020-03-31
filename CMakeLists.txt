@@ -21,7 +21,8 @@ src/coreL2/SduBuffers/SduBuffers.cpp
 src/coreL2/SystemParameters/CurrentParameters.cpp
 src/coreL2/SystemParameters/DynamicParameters.cpp
 src/coreL2/TransmissionProtocol/TransmissionProtocol.cpp
-src/coreL2/Scheduler/Scheduler.cpp)
+src/coreL2/Scheduler/Scheduler.cpp
+src/coreL2/TimerSubframe/TimerSubframe.cpp)
 
 target_link_libraries(coreL2.o
 pthread)
