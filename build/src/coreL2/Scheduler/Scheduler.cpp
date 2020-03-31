@@ -119,7 +119,7 @@ Scheduler::scheduleRequestBS(
             bzero(sduBuffer, MAXIMUM_BUFFER_LENGTH);
 
             //Get SDU from queue
-            sduSize = sduBuffers->getNextDataSdu(ueIds[i], sduBuffer);
+            sduSize = sduBuffers->getNextControlSdu(ueIds[i], sduBuffer);
 
             //Test if valid SDU was received
             if(sduSize==-1)
