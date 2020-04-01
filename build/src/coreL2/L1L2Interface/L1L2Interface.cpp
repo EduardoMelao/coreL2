@@ -154,7 +154,7 @@ L1L2Interface::receivePdus(
         buffer[buffer.size()-1] = new MacPDU(receptionBufferBytes);
 
         //Drop PDU if CRC does not check
-        if(!crcPackageChecking(&(buffer[buffer.size()-1]->mac_data_[0]), buffer[buffer.size()-1]->mac_data_.size())){
+        if(!crcPackageChecking((char*)&(buffer[buffer.size()-1]->mac_data_[0]), buffer[buffer.size()-1]->mac_data_.size())){
             if(verbose) cout<<"Drop Package due to CRC error"<<endl;
             buffer.erase(buffer.end());
         }
