@@ -35,7 +35,7 @@ int main(int argc, char** argv){
     int numberEquipments;           //Number of attached equipments
     int counter = 0;                //Counter to help assigning threads
     bool verbose = false;
-    if(argc<5){
+    if(argc<6){
         cout<<"Usage: ./a.out macAddress numberEquipments ip1 port1 mac1 ... ipN portN macN --v"<<endl;
         exit(1);
     }

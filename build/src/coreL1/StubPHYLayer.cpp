@@ -197,6 +197,7 @@ CoreL1::sendPdus(
             return true;
         }
     }
+
     if(verbose) cout<<"[CoreL1] Could not send Pdu."<<endl;
     return false;
 }
@@ -286,11 +287,9 @@ CoreL1::encoding(
         delete macPdu;
     }
 
-    //#TODO: Remove this part of code because PHY will not send MAC PDUs via sockets
-	macAddress = ((bufferPdu[0])&15);
-
-    //Send PDU through correct port  
-    sendPdus((const char*) &(bufferPdu[0]), bufferPdu.size(), ports[getSocketIndex(macAddress)]);
+    //Send PDU through all ports
+    for(int i=0;i<numberSockets;i++)
+        sendPdus((const char*) &(bufferPdu[0]), bufferPdu.size(), ports[i]);
 }
 
 void 
