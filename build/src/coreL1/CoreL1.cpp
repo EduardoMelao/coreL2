@@ -44,7 +44,7 @@ int main(int argc, char** argv){
 
     numberEquipments = argv[2][0]-48;
 
-    verbose = (argc==2+numberEquipments*3+);
+    verbose = (argc==2+numberEquipments*3+2);
     CoreL1* l1 = new CoreL1(macAddress, verbose);   //Create object CoreL1 with no verbose
 
     for(int i=0;i<numberEquipments;i++)
