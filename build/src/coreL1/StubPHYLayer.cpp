@@ -367,7 +367,7 @@ CoreL1::decoding(
 
             //Verify if destination is correct
             if(currentMacAddress!=(buffer[offset-sizePdu]&15)){
-                cout<<"[CoreL1] Drop PDU destinated to UE "<<(int)(buffer[offset-sizePdu]&15)<<endl;
+                if(verbose) cout<<"[CoreL1] Drop PDU destinated to UE "<<(int)(buffer[offset-sizePdu]&15)<<endl;
                 continue;
             }
 
