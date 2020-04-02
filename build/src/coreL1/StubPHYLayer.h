@@ -38,6 +38,7 @@ private:
     struct sockaddr_in *socketNames;        //Array of socket address structs
     const char **ipServers;                 //Array of IP addresses to which messages will be sent
     uint16_t *ports;                        //Array of ports used to define IN and OUT sockets 
+    uint8_t currentMacAddress;              //MAC address of this equipment
     uint8_t *macAddresses;                  //Array of MAC addresses of each destination
     int numberSockets;                      //Number of actual sockets stored
     int socketFromL2;                       //File descriptor of socket used to RECEIVE from L2
@@ -71,9 +72,10 @@ public:
 
     /**
      * @brief Initializes a new instance of CoreL1 with 0 sockets
+     * @param _macAddress MAC Address of this equipment
      * @param _verbose Verbosity flag
      */
-    CoreL1(bool _verbose);
+    CoreL1(uint8_t _macAddress, bool _verbose);
 
     /**
      * @brief Destructor of CoreL1 object

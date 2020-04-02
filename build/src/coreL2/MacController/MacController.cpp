@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : March 31st, 2020
+@Last alteration : April 1st, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -414,7 +414,7 @@ MacController::decoding()
     uint8_t macAddress;                         //Source MAC address
     ssize_t numberBytesSdu;                     //Number of bytes of SDU incoming
     char bufferSdu[MAXIMUM_BUFFER_LENGTH];      //Buffer to store SDU incoming
-    vector<vector<uint8_t>> bufferPdus;         //Buffer to store PDUs incoming
+    vector<MacPDU*> bufferPdus;                 //Buffer to store PDUs incoming
 
     //Read packet from Socket
     receptionProtocol->receivePackageFromL1(bufferPdus, MAXIMUM_BUFFER_LENGTH);
@@ -422,12 +422,12 @@ MacController::decoding()
     //Decode PDUs
     while(bufferPdus.size()>0){
         //Get MAC Address from MAC header
-        macAddress = (bufferPdus[0][1]>>4)&15;
+        macAddress = (bufferPdus[0]->mac_data_[0]>>4)&15;
 
         if(verbose) cout<<"[MacController] Decoding MAC Address "<<(int)macAddress<<": in progress..."<<endl;
 
         //Create Multiplexer object to help unstacking SDUs contained in the PDU
-        Multiplexer *multiplexer = new Multiplexer(&(bufferPdus[0][0]), verbose);
+        Multiplexer *multiplexer = new Multiplexer(&(bufferPdus[0]->mac_data_[0]), verbose);
 
         //Remove MAC Header
         multiplexer->removeMacHeader();
@@ -445,6 +445,7 @@ MacController::decoding()
 
         //Delete multiplexer and erase first position of vector
         delete multiplexer;
+        delete bufferPdus[0];
         bufferPdus.erase(bufferPdus.begin());
     }
 

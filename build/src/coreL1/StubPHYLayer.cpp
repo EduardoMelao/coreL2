@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : March 30th, 2020
+@Last alteration : April 1st, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -26,8 +26,10 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 #include "StubPHYLayer.h"
 
 CoreL1::CoreL1(
-    bool _verbose)  //Verbosity flag
+    uint8_t _macAddress,    //MAC Address of this equipment
+    bool _verbose)          //Verbosity flag
 {
+    currentMacAddress = _macAddress;
     verbose = _verbose;
     numberSockets = 0;
     subFrameCounter = 0;    
@@ -195,6 +197,7 @@ CoreL1::sendPdus(
             return true;
         }
     }
+
     if(verbose) cout<<"[CoreL1] Could not send Pdu."<<endl;
     return false;
 }
@@ -284,11 +287,9 @@ CoreL1::encoding(
         delete macPdu;
     }
 
-    //#TODO: Remove this part of code because PHY will not send MAC PDUs via sockets
-	macAddress = ((bufferPdu[0])&15);
-
-    //Send PDU through correct port  
-    sendPdus((const char*) &(bufferPdu[0]), bufferPdu.size(), ports[getSocketIndex(macAddress)]);
+    //Send PDU through all ports
+    for(int i=0;i<numberSockets;i++)
+        sendPdus((const char*) &(bufferPdu[0]), bufferPdu.size(), ports[i]);
 }
 
 void 
@@ -328,6 +329,14 @@ CoreL1::decoding(
     //Add parameters
     subFrameStartMessage+=messageParameters;
 
+    //Declare variables to be used in demultiplexing PDU(s) received
+    size_t offset = 0;          //Offset location decoding buffer
+    uint8_t numberSDUs;         //Number of SDUs in actual PDU
+    int sizeSdus = 0;           //Total size of SDUs into PDU
+    int sizePdu;                //Total size of actual PDU
+    vector<MacPDU> macPDUs;     //Array of MACPDUs to be sent to L2
+    vector<uint8_t> bytesPDUs;  //Array of bytes corresponding to MAC PDUs serialized
+
     //Clear buffer
     bzero(buffer, MAXIMUMSIZE);
 
@@ -336,9 +345,51 @@ CoreL1::decoding(
     //Communication Stream
     while(size>0){
         if(verbose) cout<<"[CoreL1] PDU with size "<<(int)size<<" received."<<endl;
+        
+        //Demultiplex PDUs received, verifying if destination is correct
+        offset = 0; //Reset offset
 
+        while(offset<size){
+            //Reset counter of total size of SDUs
+            sizeSdus = 0;
 
-        //Send control messages and PDU to L2 and RX Metrics if it is time
+            //Read PDU size
+            numberSDUs = (uint8_t) buffer[offset+1];
+
+            //Calculate total Size of SDUs into PDU
+            for(int i=0;i<numberSDUs;i++){
+                sizeSdus += (((buffer[offset+2+2*i]&127)<<8)|((buffer[offset+3+2*i])&255));
+            }
+
+            //Set offset to PDU total size
+            sizePdu = 2+ 2*numberSDUs + sizeSdus + 2;  //2 bytes: SA, DA, numPDUs;2 bytes for each: D/C flag and size; 2 bytes at end: CRC
+            offset += sizePdu;
+
+            //Verify if destination is correct
+            if(currentMacAddress!=(buffer[offset-sizePdu]&15)){
+                if(verbose) cout<<"[CoreL1] Drop PDU destinated to UE "<<(int)(buffer[offset-sizePdu]&15)<<endl;
+                continue;
+            }
+
+            //Drop PDU if CRC does not check
+            macPDUs.resize(macPDUs.size()+1);
+            macPDUs[macPDUs.size()-1].mac_data_.assign(&(buffer[offset-sizePdu]), &(buffer[offset-sizePdu])+sizePdu);
+        }
+
+        //Test if all PDU(s) was(were) droped
+        if(macPDUs.size()==0){
+                //Receive next PDUs
+            bzero(buffer, MAXIMUMSIZE);
+            macPDUs.clear();
+            size = receivePdus(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
+            continue;
+        }
+
+        //Create a vector of Bytes to be sent to L2
+        for(int i=0;i<macPDUs.size();i++)
+            macPDUs[i].serialize(bytesPDUs);
+
+        //Send SubframeRx.Start control message to L2 and RX Metrics if it is time
         if(rxMetricsPeriodicity && subFrameCounter==rxMetricsPeriodicity){
             sendto(socketControlMessagesToL2, &(subFrameStartMessage[0]), subFrameStartMessage.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
             subFrameCounter = 0;
@@ -350,13 +401,15 @@ CoreL1::decoding(
         if(rxMetricsPeriodicity) subFrameCounter ++;
         
         //Send PDUs
-        sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
+        sendto(socketToL2, &bytesPDUs[0], bytesPDUs.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
         
         //Send SubframeRx.End message
         sendto(socketControlMessagesToL2, &subFrameEndMessage, 1, MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
 
         //Receive next PDUs
         bzero(buffer, MAXIMUMSIZE);
+        macPDUs.clear();
+        bytesPDUs.clear();
         size = receivePdus(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
     }
 }

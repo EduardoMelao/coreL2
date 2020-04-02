@@ -41,7 +41,7 @@ public:
      * @param buffer Buffer where packet will be stored
      * @param maximumSize Maximum size of buffer in Bytes
      */
-    void receivePackageFromL1(vector<vector<uint8_t>> & buffer, int maximumSize);
+    void receivePackageFromL1(vector<MacPDU*> & buffer, int maximumSize);
 
     /**
      * @brief Receives packet from Linux IP Layer

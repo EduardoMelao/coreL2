@@ -77,10 +77,10 @@ public:
 
     /**
      * @brief Receives PDUs from PHY Layer
-     * @param buffer Buffer where PDUs are going to be store
+     * @param buffer Buffer where PDUs are going to be stored
      * @param maximumSize Maximum size of PDU
      */
-    void receivePdus(vector<vector<uint8_t>> & buffer, size_t maximumSize);
+    void receivePdus(vector<MacPDU*> & buffer, size_t maximumSize);
 
     /**
      * @brief Sends Control Message to PHY
