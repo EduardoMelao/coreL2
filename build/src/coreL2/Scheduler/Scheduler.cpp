@@ -138,7 +138,7 @@ Scheduler::scheduleRequestBS(
         
         for(int j=0;j<numberDataSDUs;j++){
             //Verify if it is possivel to enqueue next SDU
-            if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextDataSduSize(ueIds[0]))>numberBits/8){
+            if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextDataSduSize(ueIds[i]))>numberBits/8){
                 if(verbose) cout<<"[Scheduler] End of scheduling data SDUs: extrapolated bit capacity."<<endl;
                 break;
             }
