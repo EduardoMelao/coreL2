@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : April 1st, 2020
+@Last alteration : April 6th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -481,6 +481,9 @@ CoreL1::receiveInterlayerMessage(){
             case 'E':
                 if(verbose) cout<<"[CoreL1] Received SubframeTx.End message."<<endl;
                 break;
+
+            case 'F':
+                if(verbose) cout<<"[CoreL1] Receive new FLUT value: "<<(int)buffer[1]<<endl;
             
             default:
                 if(verbose) cout<<"[CoreL1] Unknown Control Message received."<<endl;

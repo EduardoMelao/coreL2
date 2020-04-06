@@ -237,8 +237,16 @@ MacController::manager(){
                     {
                         if(cliL2Interface->getMacConfigRequestCommandSignal())  //CLI parameters changed
                             currentParameters->setCLIParameters(cliL2Interface->dynamicParameters);
-                        else    //System parameters changed           
+                        else{   //System parameters changed           
+                            if(cliL2Interface->dynamicParameters->getFLUTMatrix()!=currentParameters->getFLUTMatrix()){
+                                if(verbose) cout<<"[MacController] Fusion Lookup Table values changed. Sending new value to PHY..."<<endl;
+                                char buffer[2];
+                                buffer[1] = 'F';
+                                buffer[2] = cliL2Interface->dynamicParameters->getFLUTMatrix();
+                                protocolControl->sendInterlayerMessages(buffer, 2);
+                            }
                             currentParameters->setSystemParameters(cliL2Interface->dynamicParameters);
+                        }
                         
                         if(currentParameters->areUesOutdated()){
                             //Perform MACC SDU construction to send to UE
