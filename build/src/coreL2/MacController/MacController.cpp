@@ -451,6 +451,9 @@ MacController::decoding()
             }
         }
         else{   //If it is BS, send report to BS
+
+            protocolControl->rxMetrics->rankIndicator = bufferPdus[0]->rankIndicator_;
+            protocolControl->rxMetrics->snr_avg = bufferPdus[0]->snr_avg_;
             protocolControl->rxMetricsReport(true);
         }
 
