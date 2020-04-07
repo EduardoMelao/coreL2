@@ -115,7 +115,5 @@ namespace lib5grange{
 		allocation_.deserialize(bytes);
 		macphy_ctl_.deserialize(bytes);
 		pop_bytes(numID_, bytes);
-		snr_avg_ = 10;
-		rankIndicator_ = 10;
 	}
 }//namespace lib5grange
