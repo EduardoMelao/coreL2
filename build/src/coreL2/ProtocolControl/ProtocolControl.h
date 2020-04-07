@@ -70,8 +70,9 @@ public:
 
     /**
      * @brief (Only UE) Periodically sends RxMetrics Report to BS
+     * @param snrRiOrSnrSsm flag to indicate if it is a Snr_Avg and RI our Full Snr and Spectrum Sensing report 
      */
-    void rxMetricsReport();
+    void rxMetricsReport(bool snrRiOrSnrSsm);
 };
 
 

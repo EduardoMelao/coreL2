@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : April 6th, 2020
+@Last alteration : April 7th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -301,33 +301,24 @@ CoreL1::decoding(
     bool flagBS = (macAddress!=0);  //Flag to indicate if it is BaseStation (true) or UserEquipment (false)   
 
     //Create SubframeRx.Start message
-    string messageParameters;		            //This string will contain the parameters of the message
-	vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
+	vector<uint8_t> subFrameStartMessage;	            //Vector to receive serialized parameters structure SubframeRx.Start
+    subFrameStartMessage.push_back(flagBS? 'C':'D');    //SubframeRx.Start control message
+    char subFrameEndMessage = 'E';                      
 
-    //Downlink routine:
-    string subFrameStartMessage = flagBS? "C":"D";    //SubframeRx.Start control message
-    char subFrameEndMessage = 'E';
     
     if(flagBS){     //Create BSSubframeRx.Start message
         BSSubframeRx_Start messageBS;	//Message parameters structure
-        messageBS.snr = 10;    
-        messageBS.serialize(messageParametersBytes);
-        for(uint i=0;i<messageParametersBytes.size();i++)
-            messageParameters+=messageParametersBytes[i];
+        for(int i=0;i<132;i++)
+            messageBS.snr[i] = 10; 
+        messageBS.serialize(subFrameStartMessage);
     }
     else{       //Create UESubframeRx.Start message
         UESubframeRx_Start messageUE;	//Messages parameters structure
-        messageUE.snr = 11;
-        messageUE.pmi = 1;
-        messageUE.ri = 2;
+        for(int i=0;i<132;i++)
+            messageUE.snr[i] = 11;
         messageUE.ssm = 3;
-        messageUE.serialize(messageParametersBytes);
-        for(uint i=0;i<messageParametersBytes.size();i++)
-            messageParameters+=messageParametersBytes[i];
+        messageUE.serialize(subFrameStartMessage);
     }
-
-    //Add parameters
-    subFrameStartMessage+=messageParameters;
 
     //Declare variables to be used in demultiplexing PDU(s) received
     size_t offset = 0;          //Offset location decoding buffer
@@ -373,7 +364,9 @@ CoreL1::decoding(
 
             //Drop PDU if CRC does not check
             macPDUs.resize(macPDUs.size()+1);
-            macPDUs[macPDUs.size()-1].mac_data_.assign(&(buffer[offset-sizePdu]), &(buffer[offset-sizePdu])+sizePdu);
+            macPDUs.back().mac_data_.assign(&(buffer[offset-sizePdu]), &(buffer[offset-sizePdu])+sizePdu);
+            macPDUs.back().rankIndicator_ = 10;
+            macPDUs.back().snr_avg_ = 10;
         }
 
         //Test if all PDU(s) was(were) droped

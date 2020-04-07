@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : March 31st, 2020
+@Last alteration : April 7th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -36,7 +36,7 @@ ProtocolControl::ProtocolControl(
 
 ProtocolControl::~ProtocolControl() {
     delete[] rxMetrics;
- }
+}
 
 void 
 ProtocolControl::decodeControlSdus(
@@ -46,43 +46,73 @@ ProtocolControl::decodeControlSdus(
 {
     //If it is BS, it can receive ACKs or Rx Metrics
     if(macController->currentParameters->isBaseStation()){
-        if(buffer[0]=='2'){     //It is an "ACK"
-            if(verbose) cout<<"[ProtocolControl] Received ACK from UE."<<endl;
+        switch(buffer[0]){
+            case '1':   //RxMetrics: snr_avg and rankIndicator
+            {
+                //Verify index
+                int index = macController->currentParameters->getIndex(macAddress);
+                if(index == -1){
+                    if(verbose) cout<<"[ProtocolControl] Error decoding RxMetrics."<<endl;
+                    exit(1);
+                }
+
+                //Decode Bytes
+                vector<uint8_t> rxMetricsBytes;         //Serialized Rx Metrics bytes
+                rxMetricsBytes.assign(buffer[1],buffer[1]+(numberDecodingBytes-1));
+
+                //Deserialize Bytes
+                rxMetrics[index].snr_avg_ri_deserialize(rxMetricsBytes);
+
+                //Calculate new DLMCS
+                macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress,LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr_avg));
+
+                if(verbose){
+                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received.";
+                    cout<<"RI: "<<(int)rxMetrics[index].rankIndicator<<endl;
+                }
+
+                //If new MCS is different from old, enter RECONFIG mode
+                if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
+                    //Changes current MAC mode to RECONFIG
+                    macController->currentParameters->setMacMode(RECONFIG_MODE);
+
+                    if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+                }
+                break;
+            }
+            case '2':   //RxMetrics: snr per RB and Spectrum Sensing Report
+            {
+                //Verify index
+                int index = macController->currentParameters->getIndex(macAddress);
+                if(index == -1){
+                    if(verbose) cout<<"[ProtocolControl] Error decoding RxMetrics."<<endl;
+                    exit(1);
+                }
+
+                //Decode Bytes
+                vector<uint8_t> rxMetricsBytes;         //Serialized Rx Metrics bytes
+                rxMetricsBytes.assign(buffer[1],buffer[1]+(numberDecodingBytes-1));
+
+                //Deserialize Bytes
+                rxMetrics[index].snr_ssr_deserialize(rxMetricsBytes);
+
+                //Perform Fusion calculation
+                macController->cosora->fusionAlgorithm(rxMetrics[index].ssReport);
+
+                break;
+            }
+            case '3':   //It is an "ACK"
+            {
+                if(verbose) cout<<"[ProtocolControl] Received ACK from UE."<<endl;
+                break;
+            }
+            default:
+                break;
+        }
+        if(buffer[0]=='3'){     
         }
         else if(buffer[0]=='1'){   //RxMetrics received from UE
-            //Verify index
-            int index = macController->currentParameters->getIndex(macAddress);
-            if(index == -1){
-                if(verbose) cout<<"[ProtocolControl] Error decoding RxMetrics."<<endl;
-                exit(1);
-            }
-
-            //Decode Bytes
-            vector<uint8_t> rxMetricsBytes;         //Serialized Rx Metrics bytes
-            for(int i=0;i<numberDecodingBytes;i++)
-                rxMetricsBytes.push_back(buffer[i]);
-
-            //Deserialize Bytes
-            rxMetrics[index].deserialize(rxMetricsBytes);
-
-            //Calculate new DLMCS
-            macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress,LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr));
-
-            if(verbose){
-                cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received.";
-                cout<<"RBS idle: "<<Cosora::spectrumSensingConvertToRBIdle(rxMetrics[index].ssReport)<<endl;
-            }
-
-            //If new MCS is different from old, enter RECONFIG mode
-            if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
-                //Changes current MAC mode to RECONFIG
-                macController->currentParameters->setMacMode(RECONFIG_MODE);
-
-                if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
-            }
-
-            //Perform Fusion calculation
-            macController->cosora->fusionAlgorithm(rxMetrics[index].ssReport);
+            
         }   
     }
     else{    //UE needs to set its Dynamic Parameters and return ACK to BS
@@ -90,7 +120,7 @@ ProtocolControl::decodeControlSdus(
         if(verbose) cout<<"[ProtocolControl] UE Configured correctly. Returning ACK to BS..."<<endl;
 
         // ACK
-        char ackBuffer = '2';
+        char ackBuffer = '3';
 
         macController->sduBuffers->enqueueControlSdu((uint8_t*) &ackBuffer, 3, 0);
     }    
@@ -146,29 +176,13 @@ ProtocolControl::receiveInterlayerMessages()
                         BSSubframeRx_Start messageParametersBS;     //Define struct for BS paremeters
 
                         //Copy buffer to vector
-                        for(int i=1;i<messageSize;i++)
-                            messageParametersBytes.push_back(buffer[i]);
+                        messageParametersBytes.assign(buffer[1], buffer[1]+(messageSize-1));
                         
                         //Deserialize message
                         messageParametersBS.deserialize(messageParametersBytes);
 
                         if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start with Rx Metrics message. Receiving PDU from L1..."<<endl;
 
-                        //Receive source MAC Address from decoding function
-
-                        //Calculates new UL MCS and sets it based on SNR received
-                        macController->cliL2Interface->dynamicParameters->setMcsUplink(sourceMacAddress, LinkAdaptation::getSnrConvertToMcs(messageParametersBS.snr));
-                        
-                        //If new MCS is different from old, enter RECONFIG mode
-                        if(macController->cliL2Interface->dynamicParameters->getMcsUplink(sourceMacAddress)!=macController->currentParameters->getMcsUplink(sourceMacAddress)){
-                            //Changes current MAC mode to RECONFIG
-                            macController->currentParameters->setMacMode(RECONFIG_MODE);
-
-                            //Set flag to indicate that UEs are out-of-date
-                            macController->currentParameters->setFlagUesOutdated(true);
-
-                            if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
-                        }
                     }
                     if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
                     sourceMacAddress = macController->decoding();
@@ -176,9 +190,9 @@ ProtocolControl::receiveInterlayerMessages()
                 case 'D':    //Treat UESubframeRX.Start message
                     if(messageSize>1){      //It means that RX metrics were received
                         UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
+
                         //Copy buffer to vector
-                        for(int i=1;i<messageSize;i++)
-                            messageParametersBytes.push_back(buffer[i]);
+                        messageParametersBytes.assign(buffer[1], buffer[1]+(messageSize-1));
 
                         //Deserialize message
                         messageParametersUE.deserialize(messageParametersBytes);
@@ -187,19 +201,13 @@ ProtocolControl::receiveInterlayerMessages()
                         //Perform Spctrum Sensing Report calculation
                         uint8_t ssReport = Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm);     //SSM->SSReport calculation
 
-                        //Verify if RX metrics changed
-                        bool rxMetricsOutdated = (rxMetrics->snr!=messageParametersUE.snr)||(rxMetrics->ssReport!=ssReport);
-                        rxMetricsOutdated = rxMetricsOutdated||(rxMetrics->pmi!=messageParametersUE.pmi)||(rxMetrics->ri!=messageParametersUE.ri);
-
                         //Assign new values and enqueue a control SDU to BS with updated information
-                        if(rxMetricsOutdated){
-                            rxMetrics->snr = messageParametersUE.snr;
-                            rxMetrics->ssReport = ssReport;
-                            rxMetrics->pmi = messageParametersUE.pmi;
-                            rxMetrics->ri = messageParametersUE.ri;
+                        for(int i=0;i<132;i++)
+                            rxMetrics->snr[i] = messageParametersUE.snr[i];
+                        rxMetrics->ssReport = ssReport;
 
-                            rxMetricsReport();
-                        }
+                        //Send Report to BS
+                        rxMetricsReport(false);
                     }
 
                     if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
@@ -245,15 +253,22 @@ ProtocolControl::managerDynamicParameters(
 }
 
 void 
-ProtocolControl::rxMetricsReport(){     //This procedure executes only on UE
+ProtocolControl::rxMetricsReport(
+    bool snrRiOrSnrSsm)                 //True if SNR_AVG and RI; False if SNR per RB and SSM
+{     
+    //This procedure executes only on UE
     vector<uint8_t> rxMetricsBytes;     //Array of bytes where RX Metrics will be stored
 
     //Serialize Rx Metrics in the first position (because it is an UE)
-    rxMetrics[0].serialize(rxMetricsBytes);
-    
-    //Add Rx Metrics MACC SDU code to the beggining of the SDU
-    rxMetricsBytes.insert(rxMetricsBytes.begin(), '1');
-    
+    if(snrRiOrSnrSsm){
+        rxMetrics[0].snr_avg_ri_serialize(rxMetricsBytes);
+        rxMetricsBytes.insert(rxMetricsBytes.begin(), '1');     //Add Rx Metrics MACC SDU code to the beggining of the SDU
+    }
+    else{
+        rxMetrics[0].snr_ssr_serialize(rxMetricsBytes);
+        rxMetricsBytes.insert(rxMetricsBytes.begin(), '2');     //Add Rx Metrics MACC SDU code to the beggining of the SDU
+    }
+
     if(verbose) cout<<"[MacController] RxMetrics report with size "<<rxMetricsBytes.size()<<" enqueued to BS."<<endl;
 
     //Enqueue MACC SDU

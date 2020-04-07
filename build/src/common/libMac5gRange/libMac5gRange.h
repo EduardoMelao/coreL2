@@ -117,7 +117,7 @@ typedef struct{
  * @brief Struct for BSSubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    float snr;         //Signal to Noise Ratio //#TODO: define range.
+    float snr[132];     //Signal to Noise Ratio //#TODO: define range.
     
     /**
      * @brief Serialization method for the struct
@@ -128,13 +128,15 @@ typedef struct{
      */
     void serialize(vector<uint8_t> & bytes)
     {
-        push_bytes(bytes, snr);
+        for(int i=0;i<132;i++)
+            push_bytes(bytes, snr[i]);
     }
 
     /** deserializatyion method for the struct (inverse order)**/
     void deserialize(vector<uint8_t> & bytes)
     {
-        pop_bytes(snr, bytes);
+        for(int i=0131;i>=0;i--)
+            pop_bytes(snr[i], bytes);
     }
 }BSSubframeRx_Start;
 
@@ -142,10 +144,8 @@ typedef struct{
  * @brief Struct for UESubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    float snr;          //Signal to Noise Ratio                                 //#TODO: define range
-    uint8_t ri;         //RI (Rank Indicator), part of RxMetrics.               //#TODO: define range
-    uint8_t pmi;        //PMI: Pre-Coding Matrix Indicator, part of RxMetrics.  //#TODO: define range
-    uint8_t ssm;    //SSM: Spectrum Sensing Measurement. Array of 4 bits
+    float snr[132];     //Signal to Noise Ratio per Resource Block //#TODO: define range
+    uint8_t ssm;        //SSM: Spectrum Sensing Measurement. Array of 4 bits
     
     /**
      * @brief Serialization method for the struct
@@ -156,24 +156,17 @@ typedef struct{
      **/
     void serialize(vector<uint8_t> & bytes)
     {
-        uint8_t auxiliary;
-        push_bytes(bytes, snr);
-        push_bytes(bytes, pmi);
-        auxiliary = (ri<<4)|(ssm&15);
-        push_bytes(bytes, auxiliary);
+        for(int i=0;i<132;i++)
+            push_bytes(bytes, snr[i]);
+        push_bytes(bytes,(ssm&15));
     }
 
     /** deserializatyion method for the struct (inverse order)**/
     void deserialize(vector<uint8_t> & bytes)
     {
-        uint8_t auxiliary;
-        pop_bytes(auxiliary, bytes);
-        ri = (auxiliary>>4)&15;
-        ssm = auxiliary&15;
-        
-        pop_bytes(pmi, bytes);
-
-        pop_bytes(snr, bytes);
+        pop_bytes(ssm, bytes);
+        for(int i=0131;i>=0;i--)
+            pop_bytes(snr[i], bytes);
     }
 }UESubframeRx_Start;
 
@@ -181,38 +174,51 @@ typedef struct{
  * @brief Struct for RxMetrics, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    float snr;              //Channel Signal to Noise Ratio
-    uint8_t ri;             //RI (Rank Indicator), part of RxMetrics.               //#TODO: define range
-    uint8_t pmi;            //PMI: Pre-Coding Matrix Indicator, part of RxMetrics.  //#TODO: define range
+    float snr[132];         //Channel Signal to Noise Ratio per Resource Block
+    float snr_avg;          //Average Signal to Noise Ratio
+    uint8_t rankIndicator;  //Rank Indicator
     uint8_t ssReport;       //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 4 bits
     
     /**
      * @brief Serialization method for the struct
-     * This method convert all menbers of the struct to a sequance of bytes and appends at the end
+     * This method convert only snr_avg and rankIndicator menbers of the struct to a sequance of bytes and appends at the end
      * of the vector given as argument
      *
      * @param bytes: vector of bytes where the struct will be serialized
      **/
-    void serialize(vector<uint8_t> & bytes)
+    void snr_avg_ri_serialize(vector<uint8_t> & bytes)
     {
-        uint8_t auxiliary;
-        push_bytes(bytes, snr);
-        push_bytes(bytes, pmi);
-        auxiliary = (ri<<4)|(ssReport&15);
-        push_bytes(bytes, auxiliary);
+        push_bytes(bytes, snr_avg);
+        push_bytes(bytes, rankIndicator);
     }
 
-    /** deserializatyion method for the struct (inverse order)**/
-    void deserialize(vector<uint8_t> & bytes)
+    /**
+     * @brief Serialization method for the struct
+     * This method convert snr and ssr menbers of the struct to a sequance of bytes and appends at the end
+     * of the vector given as argument
+     *
+     * @param bytes: vector of bytes where the struct will be serialized
+     **/
+    void snr_ssr_serialize(vector<uint8_t> & bytes)
     {
-        uint8_t auxiliary;
-        pop_bytes(auxiliary, bytes);
-        ri = (auxiliary>>4)&15;
-        ssReport = auxiliary&15;
-        
-        pop_bytes(pmi, bytes);
+        for(int i=0;i<132;i++)
+            push_bytes(bytes, snr[i]);
+        push_bytes(bytes, ssReport&15);
+    }
 
-        pop_bytes(snr, bytes);
+    /** Deserialization method for the struct (inverse order)**/
+    void snr_avg_ri_deserialize(vector<uint8_t> & bytes)
+    {
+        pop_bytes(rankIndicator, bytes);
+        pop_bytes(snr_avg, bytes);
+    }
+
+    /** Deserialization method for the struct (inverse order)**/
+    void snr_ssr_deserialize(vector<uint8_t> & bytes)
+    {
+        pop_bytes(ssReport, bytes);
+        for(int i=131;1>=0;i--)
+            pop_bytes(snr[i], bytes);
     }
 }RxMetrics;
 #endif  //INCLUDED_LIB_MAC_5G_RANGE_H

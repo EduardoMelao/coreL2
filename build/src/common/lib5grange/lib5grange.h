@@ -439,7 +439,8 @@ namespace lib5grange {
             allocation_cfg_t allocation_;       /**< allocation: Struct with the configuration of the resource allocation (see: allocation_cfg_t). **/
             mimo_cfg_t mimo_;                   /**< Struct with the configuration of the MIMO (see: mimo_cfg_t). **/
             mcs_cfg_t  mcs_;                    /**< /** Struct with the regarding Modulation and coding configuration (see: mcs_cfg_t) **/
-
+            uint8_t rankIndicator_;              /**<  Rank indicator **/ 
+            float snr_avg_;                      /**< Average SNR measured **/
             // Data section
             vector<uint8_t> mac_data_ {};       /**< Uncoded information bits from MAC. **/
 

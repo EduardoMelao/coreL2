@@ -96,12 +96,16 @@ namespace lib5grange{
 		allocation_.serialize(bytes);
 		mimo_.serialize(bytes);
 		mcs_.serialize(bytes);
+		push_bytes(bytes, snr_avg_);
+		push_bytes(bytes, rankIndicator_);
 		serialize_vector(bytes, mac_data_);
 	}
 
 	MacPDU::MacPDU(vector<uint8_t> & bytes)
 	{
 		deserialize_vector(mac_data_, bytes);
+		pop_bytes(snr_avg_, bytes);
+		pop_bytes(rankIndicator_, bytes);
 		mcs_.deserialize(bytes);
 		mimo_.deserialize(bytes);
 		allocation_.deserialize(bytes);
