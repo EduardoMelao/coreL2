@@ -135,7 +135,7 @@ typedef struct{
     /** deserializatyion method for the struct (inverse order)**/
     void deserialize(vector<uint8_t> & bytes)
     {
-        for(int i=0131;i>=0;i--)
+        for(int i=131;i>=0;i--)
             pop_bytes(snr[i], bytes);
     }
 }BSSubframeRx_Start;

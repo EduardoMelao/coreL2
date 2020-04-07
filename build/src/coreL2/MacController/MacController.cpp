@@ -440,7 +440,7 @@ MacController::decoding()
             cliL2Interface->dynamicParameters->setMcsUplink(macAddress, LinkAdaptation::getSnrConvertToMcs(bufferPdus[0]->snr_avg_));
             
             //If new MCS is different from old, enter RECONFIG mode
-            if(cliL2Interface->dynamicParameters->getMcsUplink(macAddress)!=macController->currentParameters->getMcsUplink(macAddress)){
+            if(cliL2Interface->dynamicParameters->getMcsUplink(macAddress)!=currentParameters->getMcsUplink(macAddress)){
                 //Changes current MAC mode to RECONFIG
                 currentParameters->setMacMode(RECONFIG_MODE);
 
