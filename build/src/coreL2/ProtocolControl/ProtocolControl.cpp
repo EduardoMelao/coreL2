@@ -59,7 +59,7 @@ ProtocolControl::decodeControlSdus(
                 //Decode Bytes
                 vector<uint8_t> rxMetricsBytes;         //Serialized Rx Metrics bytes
                 rxMetricsBytes.resize(numberDecodingBytes-1);
-                rxMetricsBytes.assign(buffer[1],buffer[1]+(numberDecodingBytes-1));
+                rxMetricsBytes.assign(&(buffer[1]),&(buffer[1])+(numberDecodingBytes-1));
 
                 //Deserialize Bytes
                 rxMetrics[index].snr_avg_ri_deserialize(rxMetricsBytes);
@@ -68,7 +68,7 @@ ProtocolControl::decodeControlSdus(
                 macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress,LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr_avg));
 
                 if(verbose){
-                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received.";
+                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received."<<endl;
                     cout<<"RI: "<<(int)rxMetrics[index].rankIndicator<<endl;
                 }
 
@@ -93,7 +93,7 @@ ProtocolControl::decodeControlSdus(
                 //Decode Bytes
                 vector<uint8_t> rxMetricsBytes;         //Serialized Rx Metrics bytes
                 rxMetricsBytes.resize(numberDecodingBytes-1);
-                rxMetricsBytes.assign(buffer[1],buffer[1]+(numberDecodingBytes-1));
+                rxMetricsBytes.assign(&(buffer[1]),&(buffer[1])+(numberDecodingBytes-1));
 
                 //Deserialize Bytes
                 rxMetrics[index].snr_ssr_deserialize(rxMetricsBytes);
@@ -111,11 +111,6 @@ ProtocolControl::decodeControlSdus(
             default:
                 break;
         }
-        if(buffer[0]=='3'){     
-        }
-        else if(buffer[0]=='1'){   //RxMetrics received from UE
-            
-        }   
     }
     else{    //UE needs to set its Dynamic Parameters and return ACK to BS
         managerDynamicParameters((uint8_t*) buffer, numberDecodingBytes);
@@ -179,7 +174,7 @@ ProtocolControl::receiveInterlayerMessages()
 
                         //Copy buffer to vector
                         messageParametersBytes.resize(messageSize-1);
-                        messageParametersBytes.assign(buffer[1], buffer[1]+(messageSize-1));
+                        messageParametersBytes.assign(&(buffer[1]), &(buffer[1])+(messageSize-1));
                         
                         //Deserialize message
                         messageParametersBS.deserialize(messageParametersBytes);
@@ -196,7 +191,7 @@ ProtocolControl::receiveInterlayerMessages()
 
                         //Copy buffer to vector
                         messageParametersBytes.resize(messageSize-1);
-                        messageParametersBytes.assign(buffer[1], buffer[1]+(messageSize-1));
+                        messageParametersBytes.assign(&(buffer[1]), &(buffer[1])+(messageSize-1));
 
                         //Deserialize message
                         messageParametersUE.deserialize(messageParametersBytes);
