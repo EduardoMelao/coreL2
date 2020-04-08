@@ -58,6 +58,7 @@ ProtocolControl::decodeControlSdus(
 
                 //Decode Bytes
                 vector<uint8_t> rxMetricsBytes;         //Serialized Rx Metrics bytes
+                rxMetricsBytes.resize(numberDecodingBytes-1);
                 rxMetricsBytes.assign(buffer[1],buffer[1]+(numberDecodingBytes-1));
 
                 //Deserialize Bytes
@@ -91,6 +92,7 @@ ProtocolControl::decodeControlSdus(
 
                 //Decode Bytes
                 vector<uint8_t> rxMetricsBytes;         //Serialized Rx Metrics bytes
+                rxMetricsBytes.resize(numberDecodingBytes-1);
                 rxMetricsBytes.assign(buffer[1],buffer[1]+(numberDecodingBytes-1));
 
                 //Deserialize Bytes
@@ -176,6 +178,7 @@ ProtocolControl::receiveInterlayerMessages()
                         BSSubframeRx_Start messageParametersBS;     //Define struct for BS paremeters
 
                         //Copy buffer to vector
+                        messageParametersBytes.resize(messageSize-1);
                         messageParametersBytes.assign(buffer[1], buffer[1]+(messageSize-1));
                         
                         //Deserialize message
@@ -192,6 +195,7 @@ ProtocolControl::receiveInterlayerMessages()
                         UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
 
                         //Copy buffer to vector
+                        messageParametersBytes.resize(messageSize-1);
                         messageParametersBytes.assign(buffer[1], buffer[1]+(messageSize-1));
 
                         //Deserialize message
