@@ -368,7 +368,6 @@ CoreL1::decoding(
             macPDUs.back().mac_data_.assign(&(buffer[offset-sizePdu]), &(buffer[offset-sizePdu])+sizePdu);
             macPDUs.back().rankIndicator_ = 10;
             macPDUs.back().snr_avg_ = 10;
-            cout<<(int)macPDUs[macPDUs.size()-1].snr_avg_<<endl;
         }
 
         //Test if all PDU(s) was(were) droped
