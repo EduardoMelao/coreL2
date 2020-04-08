@@ -158,14 +158,15 @@ typedef struct{
     {
         for(int i=0;i<132;i++)
             push_bytes(bytes, snr[i]);
-        push_bytes(bytes,(ssm&15));
+        ssm=ssm&15;
+        push_bytes(bytes,ssm);
     }
 
     /** deserializatyion method for the struct (inverse order)**/
     void deserialize(vector<uint8_t> & bytes)
     {
         pop_bytes(ssm, bytes);
-        for(int i=0131;i>=0;i--)
+        for(int i=131;i>=0;i--)
             pop_bytes(snr[i], bytes);
     }
 }UESubframeRx_Start;
