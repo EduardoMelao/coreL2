@@ -108,8 +108,8 @@ namespace lib5grange{
 	MacPDU::MacPDU(vector<uint8_t> & bytes)
 	{
 		deserialize_vector(mac_data_, bytes);
-		pop_bytes(snr_avg_, bytes);
 		pop_bytes(rankIndicator_, bytes);
+		pop_bytes(snr_avg_, bytes);
 		mcs_.deserialize(bytes);
 		mimo_.deserialize(bytes);
 		allocation_.deserialize(bytes);
