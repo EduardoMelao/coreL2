@@ -156,7 +156,7 @@ typedef struct{
      **/
     void serialize(vector<uint8_t> & bytes)
     {
-        push_bytes(bytes,(ssm&15));
+        push_bytes(bytes,(uint8_t)(ssm&15));
         for(int i=0;i<132;i++)
             push_bytes(bytes, snr[i]);
     }
