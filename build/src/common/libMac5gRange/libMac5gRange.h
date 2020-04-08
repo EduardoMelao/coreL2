@@ -189,7 +189,7 @@ typedef struct{
     void snr_avg_ri_serialize(vector<uint8_t> & bytes)
     {
         push_bytes(bytes, snr_avg);
-        push_bytes(bytes, rankIndicator);
+        push_bytes(bytes, (uint8_t)rankIndicator);
     }
 
     /**
@@ -203,7 +203,7 @@ typedef struct{
     {
         for(int i=0;i<132;i++)
             push_bytes(bytes, snr[i]);
-        push_bytes(bytes, ssReport&15);
+        push_bytes(bytes, (uint8_t)ssReport&15);
     }
 
     /** Deserialization method for the struct (inverse order)**/
@@ -217,7 +217,7 @@ typedef struct{
     void snr_ssr_deserialize(vector<uint8_t> & bytes)
     {
         pop_bytes(ssReport, bytes);
-        for(int i=131;1>=0;i--)
+        for(int i=131;i>=0;i--)
             pop_bytes(snr[i], bytes);
     }
 }RxMetrics;
