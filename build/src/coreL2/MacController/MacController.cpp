@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : April 1st, 2020
+@Last alteration : April 7th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -237,8 +237,16 @@ MacController::manager(){
                     {
                         if(cliL2Interface->getMacConfigRequestCommandSignal())  //CLI parameters changed
                             currentParameters->setCLIParameters(cliL2Interface->dynamicParameters);
-                        else    //System parameters changed           
+                        else{   //System parameters changed           
+                            if(cliL2Interface->dynamicParameters->getFLUTMatrix()!=currentParameters->getFLUTMatrix()){
+                                if(verbose) cout<<"[MacController] Fusion Lookup Table values changed. Sending new value to PHY..."<<endl;
+                                char buffer[2];
+                                buffer[1] = 'F';
+                                buffer[2] = cliL2Interface->dynamicParameters->getFLUTMatrix();
+                                protocolControl->sendInterlayerMessages(buffer, 2);
+                            }
                             currentParameters->setSystemParameters(cliL2Interface->dynamicParameters);
+                        }
                         
                         if(currentParameters->areUesOutdated()){
                             //Perform MACC SDU construction to send to UE
@@ -424,7 +432,30 @@ MacController::decoding()
         //Get MAC Address from MAC header
         macAddress = (bufferPdus[0]->mac_data_[0]>>4)&15;
 
-        if(verbose) cout<<"[MacController] Decoding MAC Address "<<(int)macAddress<<": in progress..."<<endl;
+        if(flagBS){ //If it is BS, analyze SNR and verify if it is needed to change MCSUL
+            if(verbose) cout<<"[MacController] Decoding MAC Address "<<(int)macAddress<<": in progress..."<<endl;
+
+            //Analyze Average SNR from MACPDU to see if it is necessary to update MCSDL
+            //Calculates new UL MCS and sets it based on SNR received
+            cliL2Interface->dynamicParameters->setMcsUplink(macAddress, LinkAdaptation::getSnrConvertToMcs(bufferPdus[0]->snr_avg_));
+            
+            //If new MCS is different from old, enter RECONFIG mode
+            if(cliL2Interface->dynamicParameters->getMcsUplink(macAddress)!=currentParameters->getMcsUplink(macAddress)){
+                //Changes current MAC mode to RECONFIG
+                currentParameters->setMacMode(RECONFIG_MODE);
+
+                //Set flag to indicate that UEs are out-of-date
+                currentParameters->setFlagUesOutdated(true);
+
+                if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+            }
+        }
+        else{   //If it is BS, send report to BS
+
+            protocolControl->rxMetrics->rankIndicator = bufferPdus[0]->rankIndicator_;
+            protocolControl->rxMetrics->snr_avg = bufferPdus[0]->snr_avg_;
+            protocolControl->rxMetricsReport(true);
+        }
 
         //Create Multiplexer object to help unstacking SDUs contained in the PDU
         Multiplexer *multiplexer = new Multiplexer(&(bufferPdus[0]->mac_data_[0]), verbose);

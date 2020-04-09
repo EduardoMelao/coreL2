@@ -139,6 +139,7 @@ L1L2Interface::receivePdus(
 
     //Turn reception buffer into vector of Bytes for MAC PDU deserialization
     vector<uint8_t> receptionBufferBytes;
+    receptionBufferBytes.resize(totalSize);
     receptionBufferBytes.assign(receptionBuffer, receptionBuffer+totalSize);
 
     //Test if Received information is valid
