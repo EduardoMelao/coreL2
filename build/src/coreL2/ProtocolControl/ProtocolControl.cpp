@@ -206,7 +206,7 @@ ProtocolControl::receiveInterlayerMessages()
                         rxMetrics->ssReport = ssReport;
 
                         //Send Report to BS
-                        rxMetricsReport(false);
+                        //rxMetricsReport(false);
                     }
 
                     if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;

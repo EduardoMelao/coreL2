@@ -76,7 +76,7 @@ CoreL1::createClientSocketToSendMessages(
     int socketDescriptor;
 
     //Client socket creation
-    socketDescriptor = socket(AF_INET, SOCK_DGRAM, 0);
+    socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
     if(socketDescriptor==-1) perror("[CoreL1] Socket to send information creation failed.");
     else if(verbose) cout<<"[CoreL1] Client socket to send info created successfully."<<endl;
     bzero(serverReceiverOfMessage, sizeof(*serverReceiverOfMessage));
@@ -84,6 +84,8 @@ CoreL1::createClientSocketToSendMessages(
     serverReceiverOfMessage->sin_family = AF_INET;
     serverReceiverOfMessage->sin_port = htons(port);
     serverReceiverOfMessage->sin_addr.s_addr = inet_addr(serverIp);  //Localhost
+    
+    connect(socketDescriptor, (const sockaddr*)(serverReceiverOfMessage), sizeof(*serverReceiverOfMessage));
     return socketDescriptor;
 }
 
@@ -94,7 +96,7 @@ CoreL1::createServerSocketToReceiveMessages(
     struct sockaddr_in sockname;        //Struct to configure which address server will bind to
     int socketDescriptor;
 
-    socketDescriptor = socket(AF_INET, SOCK_DGRAM, 0);
+    socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
     if(socketDescriptor==-1) perror("[CoreL1] Socket to receive information creation failed.");
 
     bzero(&sockname, sizeof(sockname));
@@ -109,6 +111,12 @@ CoreL1::createServerSocketToReceiveMessages(
         perror("[CoreL1] Bind error.\n");
     else
         if(verbose) cout<<"[CoreL1] Bind successfully to listen to messages."<<endl;
+
+    listen(socketDescriptor, 5);
+
+    socklen_t length = sizeof(sockname);
+
+    accept(socketDescriptor, (sockaddr*)(&sockname), &length);
     return socketDescriptor;
 }
 

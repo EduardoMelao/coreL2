@@ -14,7 +14,7 @@
 
 #include <iostream>
 #include <vector>
-#include <sys/socket.h> //socket(), AF_INET, SOCK_DGRAM
+#include <sys/socket.h> //socket(), AF_INET, SOCK_STREAM
 #include <arpa/inet.h>  //struct sockaddr_in
 #include <string.h>     //bzero()
 #include <unistd.h>     //close()
