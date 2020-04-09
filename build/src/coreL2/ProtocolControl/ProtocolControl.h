@@ -25,10 +25,11 @@ class MacController;
 class ProtocolControl{
 private:
     MacController* macController;           //MacController object with all system modules
-    RxMetrics* rxMetrics;                   //Object to handle RxMetrics collected in UE and sent to BS
     bool verbose;                           //Verbosity flag
 
 public:
+    RxMetrics* rxMetrics;                   //Object to handle RxMetrics collected in UE and sent to BS
+    
     /**
      * @brief Constructs a new ProtocolControl object
      * @param _macController MacController object with all system modules
@@ -70,8 +71,9 @@ public:
 
     /**
      * @brief (Only UE) Periodically sends RxMetrics Report to BS
+     * @param snrRiOrSnrSsm flag to indicate if it is a Snr_Avg and RI our Full Snr and Spectrum Sensing report 
      */
-    void rxMetricsReport();
+    void rxMetricsReport(bool snrRiOrSnrSsm);
 };
 
 
