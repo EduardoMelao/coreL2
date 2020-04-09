@@ -134,6 +134,16 @@ DynamicParameters::deserialize(
     //Lock mutex till the end of procedure
     lock_guard<mutex> lk(dynamicParametersMutex);
 
+    //Clear all vectors before deserializing
+    transmissionPowerControl.clear();
+    mimoPrecoding.clear();
+    mimoOpenLoopClosedLoop.clear();
+    mimoAntenna.clear();
+    mimoDiversityMultiplexing.clear();
+    mimoConf.clear();
+    ulReservation.clear();
+    mcsUplink.clear();
+
     uint8_t auxiliary;          //Auxiliary variable to store temporary information
 
     pop_bytes(auxiliary, bytes);
