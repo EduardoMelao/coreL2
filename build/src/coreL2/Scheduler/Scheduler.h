@@ -23,12 +23,6 @@ private:
     SduBuffers* sduBuffers;                 //Buffers storing MACC and MACD SDUs
     bool verbose;                           //Verbosity flag
 
-    /**
-     * @brief Selects the UE(s) for next transmission, based on Buffer Status Information (BSI)
-     * @returns Array of indexes of UEs into Current Parameters arrays
-     */
-    vector<int> selectUEs();
-
 public:
     /**
      * @brief Constructor for Scheduler module. Initializes class variables with system attributes

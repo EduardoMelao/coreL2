@@ -38,20 +38,6 @@ Scheduler::Scheduler(
 
 Scheduler::~Scheduler() {}
 
-vector<int>
-Scheduler::selectUEs()
-{
-    vector<int> indexUEs;   //Array of UEIDs
-
-    //Verify all UEs for data for transmission
-    for(int i=0;i<currentParameters->getNumberUEs();i++){
-        if(sduBuffers->bufferStatusInformation(currentParameters->getMacAddress(i)))
-            indexUEs.push_back(currentParameters->getMacAddress(i));
-    }
-
-    return indexUEs;
-}
-
 void 
 Scheduler::scheduleRequest(
     vector<uint8_t> ueIds,                  //Vector of Ue identifications for next transmission
@@ -128,26 +114,26 @@ Scheduler::fillMacPdus(
         destinationUeId = macPdus[i].allocation_.target_ue_id;
 
         //Fill MAC - PHY control struct
-        macPdus[i]->macphy_ctl_.first_tb_in_subframe = i==0;
-        macPdus[i]->macphy_ctl_.last_tb_in_subframe = i==(macPdus.size()-1);
-        macPdus[i]->macphy_ctl_.sequence_number = i;
+        macPdus[i].macphy_ctl_.first_tb_in_subframe = i==0;
+        macPdus[i].macphy_ctl_.last_tb_in_subframe = i==(macPdus.size()-1);
+        macPdus[i].macphy_ctl_.sequence_number = i;
 
         //Fill MIMO struct
-        macPdus[i]->mimo_.scheme = (currentParameters->getMimoConf(destinationUeId))? ((currentParameters->getMimoDiversityMultiplexing(destinationUeId))? DIVERSITY:MULTIPLEXING):NONE;
-        macPdus[i]->mimo_.num_tx_antenas = currentParameters->getMimoAntenna(destinationUeId);
-        macPdus[i]->mimo_.precoding_mtx = currentParameters->getMimoPrecoding(destinationUeId);
+        macPdus[i].mimo_.scheme = (currentParameters->getMimoConf(destinationUeId))? ((currentParameters->getMimoDiversityMultiplexing(destinationUeId))? DIVERSITY:MULTIPLEXING):NONE;
+        macPdus[i].mimo_.num_tx_antenas = currentParameters->getMimoAntenna(destinationUeId);
+        macPdus[i].mimo_.precoding_mtx = currentParameters->getMimoPrecoding(destinationUeId);
 
         //Fill MCS struct
         if(currentParameters->isBaseStation())  
-            macPdus[i]->mcs_.modulation = mcsToModulation[currentParameters->getMcsDownlink(destinationUeId)];
+            macPdus[i].mcs_.modulation = mcsToModulation[currentParameters->getMcsDownlink(destinationUeId)];
         else
-            macPdus[i]->mcs_.modulation = mcsToModulation[currentParameters->getMcsUplink(destinationUeId)];
+            macPdus[i].mcs_.modulation = mcsToModulation[currentParameters->getMcsUplink(destinationUeId)];
         
         //Fill Numerology
-        macPdus[i]->numID_ = currentParameters->getNumerology();
+        macPdus[i].numID_ = currentParameters->getNumerology();
 
         //Calculate number of bits for next transmission
-        size_t numberBits = get_bit_capacity(macPdus[i]->numID_, macPdus[i]->allocation_, macPdus[i]->mimo_, macPdus[i]->mcs_.modulation);
+        size_t numberBits = get_bit_capacity(macPdus[i].numID_, macPdus[i].allocation_, macPdus[i].mimo_, macPdus[i].mcs_.modulation);
         if(verbose) cout<<"[Scheduler] Scheduled "<<numberBits/8<<" Bytes for PDU "<<i<<endl;
 
         //Create a new Multiplexer object to aggregate SDUs
@@ -211,7 +197,7 @@ Scheduler::fillMacPdus(
 
         //Retreive full PDU from multiplexer if not empty
         if(!multiplexer->isEmpty())
-            multiplexer->getPDU(macPdus[i]->mac_data_);
+            multiplexer->getPDU(macPdus[i].mac_data_);
 
         //Delete multiplexer
         delete multiplexer;

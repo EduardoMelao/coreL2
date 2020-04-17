@@ -360,7 +360,7 @@ MacController::scheduling(){
                 scheduler->scheduleRequest(ueIds, bufferSize , allocations);
             else{
                 allocations.resize(1);
-                allocations = currentParameters->getUlReservation(currentParameters->getCurrentMacAddress());
+                allocations[0] = currentParameters->getUlReservation(currentParameters->getCurrentMacAddress());
             }
 
             //Create MacPDU structures and populate allocations
