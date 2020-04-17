@@ -36,8 +36,7 @@
 .cproject 
 .project
 .settings/
-build/CMakeFiles
-build/Testing
+build/
 
 #Cmake
 *.cmake

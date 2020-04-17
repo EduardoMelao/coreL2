@@ -41,7 +41,7 @@ public:
      * @param macPdus MAC PDU structures containing all information PHY needs
      * @param numberPdus Number of PDUs for transmission
      */
-    void sendPackagesToL1(MacPDU** macPdus, int numberPdus);
+    void sendPackagesToL1(vector<MacPDU> macPdus);
     
     /**
      * @param controlBuffer Buffer with Control message
