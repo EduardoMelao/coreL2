@@ -7,12 +7,7 @@
 #ifndef INCLUDED_MAC_CONTROLLER_H
 #define INCLUDED_MAC_CONTROLLER_H
 
-#include <iostream>             //std::cout
-#include <future>               //std::async, std::future
-#include <chrono>               //std::chrono::milliseconds
-#include <mutex>                //std::mutex
-#include <condition_variable>   //std::condition_variable
-
+#include "../TimerSubframe/TimerSubframe.h"
 #include "../SduBuffers/SduBuffers.h"
 #include "../SduBuffers/MacAddressTable/MacAddressTable.h"
 #include "../Multiplexer/Multiplexer.h"
@@ -24,10 +19,18 @@
 #include "../SystemParameters/CurrentParameters.h"
 #include "../CLIL2Interface/CLIL2Interface.h"
 #include "../Scheduler/Scheduler.h"
+#include "../Cosora/Cosora.h"
+
+#include <iostream>             //std::cout
+#include <future>               //std::async, std::future
+#include <chrono>               //std::chrono::milliseconds
+#include <mutex>                //std::mutex
+#include <condition_variable>   //std::condition_variable
 
 using namespace std;
 
 #define MAXIMUM_BUFFER_LENGTH 102400     //Maximum buffer length in bytes
+#define PHY_READY 1                     //Timeout, in seconds, to wait for PHY to be ready (Start/stop)
 
 
 //Initializing classes that will be defined in other .h files
@@ -40,12 +43,6 @@ class Scheduler;
  */
 class MacController{
 private:
-    //Control Variables
-    MacModes currentMacMode;        //Current execution mode of MAC
-    MacTxModes currentMacTxMode;    //Current execution Tx mode of MAC
-    MacRxModes currentMacRxMode;    //Current execution Rx mode of MAC
-    MacTunModes currentMacTunMode;  //Current execution Tun mode of MAC
-
     uint8_t currentMacAddress;              //MAC Address of current equipment
     const char* deviceNameTun;              //TUN device name
     TunInterface* tunInterface;             //TunInterface object to perform L3 packet capture
@@ -53,17 +50,19 @@ private:
     ProtocolControl* protocolControl;       //Object to deal with enqueueing CONTROL SDUS
 	thread *threads;                        //Threads array
     Scheduler* scheduler;                   //Scheduler object to make Spectrum and SDU scheduling procedures
+    TimerSubframe* timerSubframe;           //Object to store time elapsed in subframe time units
     bool verbose;                           //Verbosity flag
 
 public:
-    SduBuffers* sduBuffers;                 //Queues to receive and enqueue Data Sdus (L3 packets) and Control SDUs
-    bool flagBS;                    //BaseStation flag: 1 for BS; 0 for UE
-    ReceptionProtocol* receptionProtocol;           //Object to receive packets from L1 and L3
-    TransmissionProtocol* transmissionProtocol;     //Object to transmit packets to L1 and L3
-    L1L2Interface* l1l2Interface;   //Object to manage interface with L1
-    CurrentParameters* currentParameters;           //Object with static/default parameters read from a file
+    SduBuffers* sduBuffers;                     //Queues to receive and enqueue Data Sdus (L3 packets) and Control SDUs
+    bool flagBS;                                //BaseStation flag: 1 for BS; 0 for UE
+    ReceptionProtocol* receptionProtocol;       //Object to receive packets from L1 and L3
+    TransmissionProtocol* transmissionProtocol; //Object to transmit packets to L1 and L3
+    L1L2Interface* l1l2Interface;               //Object to manage interface with L1
+    CurrentParameters* currentParameters;       //Object with static/default parameters read from a file
     CLIL2Interface* cliL2Interface;             //Object to configure dynamic parameters 
-    
+    Cosora* cosora;                             //Object to perform COSORA functions on cognitive cycle
+
     /**
      * @brief Initializes a MacController object to manage all 5G RANGE MAC Operations
      * @param _deviceNameTun Customized name for TUN Interface

@@ -7,7 +7,7 @@
 @Arquive name : TransmissionProtocol.cpp
 @Classification : Transmission Protocol
 @
-@Last alteration : March 13th, 2019
+@Last alteration : April 17th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -38,11 +38,10 @@ TransmissionProtocol::~TransmissionProtocol() {}
 
 void 
 TransmissionProtocol::sendPackagesToL1(
-    MacPDU** macPdus,       //MAC PDU structures
-    int numberPdus)         //Number of PDUs
+    vector<MacPDU> macPdus)     //MAC PDU structures
 {
     if(verbose) cout<<"[TransmissionProtocol] Sending packet to L1."<<endl;
-    l1l2Interface->sendPdus(macPdus, numberPdus);
+    l1l2Interface->sendPdus(macPdus);
 }
 
 void 

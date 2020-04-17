@@ -68,6 +68,8 @@ namespace lib5grange{
 	MacPDU::MacPDU(){
 		numID_ = 0;
 		mac_data_   = {};
+		snr_avg_ = 10;
+		rankIndicator_ = 10;
 	}
 
 
@@ -83,6 +85,8 @@ namespace lib5grange{
 		allocation_ = allocation;
 		mimo_ = mimo_cfg;
 		mcs_ = mcs_cfg;
+		snr_avg_ = 10;
+		rankIndicator_ = 10;
 
 	} /*MacPDU()*/
 
@@ -96,12 +100,16 @@ namespace lib5grange{
 		allocation_.serialize(bytes);
 		mimo_.serialize(bytes);
 		mcs_.serialize(bytes);
+		push_bytes(bytes, snr_avg_);
+		push_bytes(bytes, rankIndicator_);
 		serialize_vector(bytes, mac_data_);
 	}
 
 	MacPDU::MacPDU(vector<uint8_t> & bytes)
 	{
 		deserialize_vector(mac_data_, bytes);
+		pop_bytes(rankIndicator_, bytes);
+		pop_bytes(snr_avg_, bytes);
 		mcs_.deserialize(bytes);
 		mimo_.deserialize(bytes);
 		allocation_.deserialize(bytes);

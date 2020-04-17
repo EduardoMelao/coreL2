@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : March 13th, 2020
+@Last alteration : April 17th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -30,12 +30,14 @@ SduBuffers::SduBuffers(
     ReceptionProtocol* _reception,          //Object to receive packets from L3
     CurrentParameters* _currentParameters,  //Object with the parameters that are currently being used by the system
     MacAddressTable* _ipMacTable,           //Table of correlation of IP Addresses and MAC5GR Addresses
+    TimerSubframe* _timerSubframe,          //Timer with Subframe indication to support IP timeout control
     bool _verbose)                          //Verbosity flag
 {
     //Assign class variables
     reception = _reception;
     currentParameters = _currentParameters;
     ipMacTable = _ipMacTable;
+    timerSubframe = _timerSubframe;
     verbose = _verbose;
 
     //Resize vectors
@@ -43,6 +45,7 @@ SduBuffers::SduBuffers(
     controlSduQueue.resize(currentParameters->getNumberUEs());
     dataSizes.resize(currentParameters->getNumberUEs());
     controlSizes.resize(currentParameters->getNumberUEs());
+    dataTimestamp.resize(currentParameters->getNumberUEs());
 }
 
 SduBuffers::~SduBuffers(){
@@ -61,18 +64,16 @@ SduBuffers::~SduBuffers(){
 }
 
 void 
-SduBuffers::enqueueingDataSdus(
-    MacModes & currentMacMode,          //Current MAC execution mode
-    MacTunModes & currentMacTunMode)    //Current MAC execution Tun mode
+SduBuffers::enqueueingDataSdus()
 {
     char buffer[MAXIMUM_BUFFER_LENGTH];
     ssize_t numberBytesRead = 0;
     
     //Mark current MAC Tun mode as ENABLED for reading TUN interface and enqueueing Data SDUs.
-    currentMacTunMode = TUN_ENABLED;
+    currentParameters->setMacTunMode(TUN_ENABLED);
 
     //Loop will execute until STOP mode is activated
-    while(currentMacMode!=STOP_MODE){
+    while(currentParameters->getMacMode()!=STOP_MODE){
         //Allocate buffer
         bzero(buffer, MAXIMUM_BUFFER_LENGTH);
 
@@ -92,7 +93,7 @@ SduBuffers::enqueueingDataSdus(
             //Check EOF
             if(numberBytesRead==0){
                 if(verbose) cout<<"[SduBuffers] End of Transmission."<<endl;
-            	break;
+                break;
             }
 
             //Check ipv4
@@ -127,6 +128,7 @@ SduBuffers::enqueueingDataSdus(
                 
                 dataSduQueue[index].push_back(bufferDataSdu);
                 dataSizes[index].push_back(numberBytesRead);
+                dataTimestamp[index].push_back(timerSubframe->getSubframeNumber());
             }
             else
                 if(verbose) cout<<"[SduBuffers] Data SDU could not be added to queue: index not found."<<endl;
@@ -138,7 +140,7 @@ SduBuffers::enqueueingDataSdus(
     if(verbose) cout<<"[SduBuffers] Entering STOP_MODE."<<endl;
 
     //Mark current MAC Tun mode as DISABLED for reading TUN interface and enqueueing Data SDUs.
-    currentMacTunMode = TUN_DISABLED;
+    currentParameters->setMacTunMode(TUN_DISABLED);
 }
 
 uint8_t
@@ -206,20 +208,27 @@ SduBuffers::getNumberControlSdus(
     return -1;
 }
 
-bool
+void
 SduBuffers::bufferStatusInformation(
-    uint8_t macAddress)
+    vector<uint8_t> &ueIds,     //Vector of selected UE identifications
+    vector<int> &bufferSize)    //Vector of buffer status for each UE selected
 {
-    return (getNumberDataSdus(macAddress)!=0)||(getNumberControlSdus(macAddress)!=0);
-}
+    uint8_t macAddress;     //Current UE Identification
+    int numSdus = 0;        //Total Number of DataSdus and ControlSdus
 
-bool
-SduBuffers::bufferStatusInformation(){
-    bool returnValue = false;
     for(int i=0;i<currentParameters->getNumberUEs();i++){
-        returnValue = returnValue||bufferStatusInformation(currentParameters->getMacAddress(i));
+        //Get current MacAddress
+        macAddress = currentParameters->getMacAddress(i);
+
+        //Get current number of SDUs
+        numSdus  =getNumberDataSdus(macAddress) + getNumberControlSdus(macAddress);
+
+        //Select UE if there are SDUs to transmit
+        if(numSdus>0){
+            ueIds.push_back(macAddress);
+            bufferSize.push_back(numSdus);
+        }
     }
-    return returnValue;
 }
 
 ssize_t 
@@ -248,6 +257,7 @@ SduBuffers::getNextDataSdu(
     //Delete front positions
     dataSizes[index].erase(dataSizes[index].begin());
     dataSduQueue[index].erase(dataSduQueue[index].begin());
+    dataTimestamp[index].erase(dataTimestamp[index].begin());
 
     if(verbose) cout<<"[SduBuffers] Got SDU from L3 queue."<<endl;
 
@@ -295,7 +305,7 @@ SduBuffers::getNextDataSduSize(
     //Lock mutex to remove SDU from the head of the queue
     lock_guard<mutex> lk(dataMutex);
     if(dataSduQueue[index].size()==0){
-        if(verbose) cout<<"[SduBuffers] Tried to get empty SDU from L3."<<endl;
+        if(verbose) cout<<"[SduBuffers] Tried to get size of empty SDU from L3."<<endl;
         return -1;
     }
 
@@ -312,10 +322,58 @@ SduBuffers::getNextControlSduSize(
     //Lock mutex to remove SDU from the head of the queue
     lock_guard<mutex> lk(controlMutex);
     if(controlSduQueue[index].size()==0){
-        if(verbose) cout<<"[SduBuffers] Tried to get empty SDU from L3."<<endl;
+        if(verbose) cout<<"[SduBuffers] Tried to get size of empty SDU from Control SDU queue."<<endl;
         return -1;
     }
 
     //Get front values from the vectors
     return controlSizes[index].front();
+}
+
+void 
+SduBuffers::dataSduTimeoutChecking(){
+    unsigned long long stop;    //Mark current Subframe to calculate 
+    unsigned long long diff;    //Subframe difference
+
+    //Execute until withing STOP_MODE
+    while(currentParameters->getMacMode()!=STOP_MODE){
+        stop = timerSubframe->getSubframeNumber();    //Get current Subframe
+
+        for(int index=0;index<currentParameters->getNumberUEs();index++){
+            dataMutex.lock();   //Lock Data SDU Buffer mutex to possibly make alterarions on queue
+            //Check if there are Data SDUs to analyze
+            if(!(dataSduQueue[index].size()>0)){
+                dataMutex.unlock();
+                this_thread::sleep_for(chrono::microseconds(SUBFRAME_DURATION));
+                break;
+            }
+
+            
+            //Calculate Subframe difference
+            if(dataTimestamp[index][0]>stop){   
+                diff = (18446744073709551615ULL - dataTimestamp[index][0]);
+                diff += stop;
+            }
+            else 
+                diff = stop - dataTimestamp[index][0];
+
+            //Verify timeout
+            if(diff<currentParameters->getIpTimeout()){
+                //Nothing to do: unlock mutex and sleep for a subframe dutation
+                dataMutex.unlock();
+                this_thread::sleep_for(chrono::microseconds((currentParameters->getIpTimeout()-diff)*SUBFRAME_DURATION));
+            }
+            else{
+                if(verbose) cout<<"[SduBuffers] IP Packet timeout with "<<diff<<" subframes as difference."<<endl;
+                
+                //Delete front positions
+                dataSizes[index].erase(dataSizes[index].begin());
+                dataSduQueue[index].erase(dataSduQueue[index].begin());
+                dataTimestamp[index].erase(dataTimestamp[index].begin());
+
+                //Unlock Mutex
+                dataMutex.unlock();
+            }
+        }
+    }
 }

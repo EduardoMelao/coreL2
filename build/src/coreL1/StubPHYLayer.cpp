@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : March 13th, 2020
+@Last alteration : April 7th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -26,12 +26,15 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 #include "StubPHYLayer.h"
 
 CoreL1::CoreL1(
-    bool _verbose)  //Verbosity flag
+    uint8_t _macAddress,    //MAC Address of this equipment
+    bool _verbose)          //Verbosity flag
 {
+    currentMacAddress = _macAddress;
     verbose = _verbose;
     numberSockets = 0;
     subFrameCounter = 0;    
     rxMetricsPeriodicity = 0;   //Unnactivated
+    phyActive = false;          //Initialized as false
 
     //PDUs Client socket creation
     socketToL2 = createClientSocketToSendMessages(PORT_TO_L2, &serverPdusSocketAddress, "127.0.0.1");
@@ -194,6 +197,7 @@ CoreL1::sendPdus(
             return true;
         }
     }
+
     if(verbose) cout<<"[CoreL1] Could not send Pdu."<<endl;
     return false;
 }
@@ -283,11 +287,9 @@ CoreL1::encoding(
         delete macPdu;
     }
 
-    //#TODO: Remove this part of code because PHY will not send MAC PDUs via sockets
-	macAddress = ((bufferPdu[0])&15);
-
-    //Send PDU through correct port  
-    sendPdus((const char*) &(bufferPdu[0]), bufferPdu.size(), ports[getSocketIndex(macAddress)]);
+    //Send PDU through all ports
+    for(int i=0;i<numberSockets;i++)
+        sendPdus((const char*) &(bufferPdu[0]), bufferPdu.size(), ports[i]);
 }
 
 void 
@@ -299,32 +301,32 @@ CoreL1::decoding(
     bool flagBS = (macAddress!=0);  //Flag to indicate if it is BaseStation (true) or UserEquipment (false)   
 
     //Create SubframeRx.Start message
-    string messageParameters;		            //This string will contain the parameters of the message
-	vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
+	vector<uint8_t> subFrameStartMessage;	            //Vector to receive serialized parameters structure SubframeRx.Start
+    subFrameStartMessage.push_back(flagBS? 'C':'D');    //SubframeRx.Start control message
+    char subFrameEndMessage = 'E';                      
 
-    //Downlink routine:
-    string subFrameStartMessage = flagBS? "C":"D";    //SubframeRx.Start control message
     
     if(flagBS){     //Create BSSubframeRx.Start message
         BSSubframeRx_Start messageBS;	//Message parameters structure
-        messageBS.snr = 10;    
-        messageBS.serialize(messageParametersBytes);
-        for(uint i=0;i<messageParametersBytes.size();i++)
-            messageParameters+=messageParametersBytes[i];
+        for(int i=0;i<132;i++)
+            messageBS.snr[i] = 10; 
+        messageBS.serialize(subFrameStartMessage);
     }
     else{       //Create UESubframeRx.Start message
         UESubframeRx_Start messageUE;	//Messages parameters structure
-        messageUE.snr = 11;
-        messageUE.pmi = 1;
-        messageUE.ri = 2;
+        for(int i=0;i<132;i++)
+            messageUE.snr[i] = 11;
         messageUE.ssm = 3;
-        messageUE.serialize(messageParametersBytes);
-        for(uint i=0;i<messageParametersBytes.size();i++)
-            messageParameters+=messageParametersBytes[i];
+        messageUE.serialize(subFrameStartMessage);
     }
 
-    //Add parameters
-    subFrameStartMessage+=messageParameters;
+    //Declare variables to be used in demultiplexing PDU(s) received
+    size_t offset = 0;          //Offset location decoding buffer
+    uint8_t numberSDUs;         //Number of SDUs in actual PDU
+    int sizeSdus = 0;           //Total size of SDUs into PDU
+    int sizePdu;                //Total size of actual PDU
+    vector<MacPDU> macPDUs;     //Array of MACPDUs to be sent to L2
+    vector<uint8_t> bytesPDUs;  //Array of bytes corresponding to MAC PDUs serialized
 
     //Clear buffer
     bzero(buffer, MAXIMUMSIZE);
@@ -334,9 +336,54 @@ CoreL1::decoding(
     //Communication Stream
     while(size>0){
         if(verbose) cout<<"[CoreL1] PDU with size "<<(int)size<<" received."<<endl;
+        
+        //Demultiplex PDUs received, verifying if destination is correct
+        offset = 0; //Reset offset
 
+        while(offset<size){
+            //Reset counter of total size of SDUs
+            sizeSdus = 0;
 
-        //Send control messages and PDU to L2 and RX Metrics if it is time
+            //Read PDU size
+            numberSDUs = (uint8_t) buffer[offset+1];
+
+            //Calculate total Size of SDUs into PDU
+            for(int i=0;i<numberSDUs;i++){
+                sizeSdus += (((buffer[offset+2+2*i]&127)<<8)|((buffer[offset+3+2*i])&255));
+            }
+
+            //Set offset to PDU total size
+            sizePdu = 2+ 2*numberSDUs + sizeSdus + 2;  //2 bytes: SA, DA, numPDUs;2 bytes for each: D/C flag and size; 2 bytes at end: CRC
+            offset += sizePdu;
+
+            //Verify if destination is correct
+            if(currentMacAddress!=(buffer[offset-sizePdu]&15)){
+                if(verbose) cout<<"[CoreL1] Drop PDU destinated to UE "<<(int)(buffer[offset-sizePdu]&15)<<endl;
+                continue;
+            }
+
+            //Drop PDU if CRC does not check
+            macPDUs.resize(macPDUs.size()+1);
+            macPDUs.back().mac_data_.resize(sizePdu);
+            macPDUs.back().mac_data_.assign(&(buffer[offset-sizePdu]), &(buffer[offset-sizePdu])+sizePdu);
+            macPDUs.back().rankIndicator_ = 10;
+            macPDUs.back().snr_avg_ = 10;
+        }
+
+        //Test if all PDU(s) was(were) droped
+        if(macPDUs.size()==0){
+                //Receive next PDUs
+            bzero(buffer, MAXIMUMSIZE);
+            macPDUs.clear();
+            size = receivePdus(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
+            continue;
+        }
+
+        //Create a vector of Bytes to be sent to L2
+        for(int i=0;i<macPDUs.size();i++)
+            macPDUs[i].serialize(bytesPDUs);
+
+        //Send SubframeRx.Start control message to L2 and RX Metrics if it is time
         if(rxMetricsPeriodicity && subFrameCounter==rxMetricsPeriodicity){
             sendto(socketControlMessagesToL2, &(subFrameStartMessage[0]), subFrameStartMessage.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
             subFrameCounter = 0;
@@ -348,10 +395,15 @@ CoreL1::decoding(
         if(rxMetricsPeriodicity) subFrameCounter ++;
         
         //Send PDUs
-        sendto(socketToL2, buffer, size, MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
+        sendto(socketToL2, &bytesPDUs[0], bytesPDUs.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
         
+        //Send SubframeRx.End message
+        sendto(socketControlMessagesToL2, &subFrameEndMessage, 1, MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
+
         //Receive next PDUs
         bzero(buffer, MAXIMUMSIZE);
+        macPDUs.clear();
+        bytesPDUs.clear();
         size = receivePdus(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
     }
 }
@@ -382,6 +434,24 @@ CoreL1::receiveInterlayerMessage(){
 
         switch(buffer[0])
         {
+            case 'A':
+            {
+                //Treat PHYConfig.Request message and return PHYConfig.Response
+                if(verbose) cout<<"[CoreL1] Received PHYConfig.Request Message."<<endl;
+                char configResponseMessage[] = "AA";
+                sendInterlayerMessage(configResponseMessage, 2);
+                phyActive = true;
+            }
+            break;
+            case 'B':
+            {
+                //Tread PHYStop.Request message and return PHYStop.Response
+                if(verbose) cout<<"[CoreL1] Received PHYStop.Request Message."<<endl;
+                char stopResponseMessage[] = "BA";
+                phyActive = false;
+                sendInterlayerMessage(stopResponseMessage, 2);
+            }
+            break;
             case 'C':
                 //Treat BSSubframeTx.Start parameters and trigger encoding MAC PDU to UE procedure
                 for(int i=1;i<messageSize;i++)
@@ -405,6 +475,9 @@ CoreL1::receiveInterlayerMessage(){
             case 'E':
                 if(verbose) cout<<"[CoreL1] Received SubframeTx.End message."<<endl;
                 break;
+
+            case 'F':
+                if(verbose) cout<<"[CoreL1] Receive new FLUT value: "<<(int)buffer[1]<<endl;
             
             default:
                 if(verbose) cout<<"[CoreL1] Unknown Control Message received."<<endl;
@@ -419,7 +492,7 @@ CoreL1::receiveInterlayerMessage(){
 
 void
 CoreL1::startThreads(){
-    int numberThreads = 1+numberSockets;    //Number of threads
+    int numberThreads = 2+numberSockets;    //Number of threads
     /** Thread list:
      *  0 .. numberSockets-1    --> decoding
      *  numberSockets           --> receiving Interlayer messages
@@ -428,10 +501,24 @@ CoreL1::startThreads(){
 
     for(int i=0;i<numberSockets;i++)
         threads[i] = thread(&CoreL1::decoding, this, macAddresses[i]);
-    threads[numberThreads-1] = thread(&CoreL1::receiveInterlayerMessage, this);
+    threads[numberThreads-2] = thread(&CoreL1::receiveInterlayerMessage, this);
+    threads[numberThreads-1] = thread(&CoreL1::sendTxIndication, this);
 
     //Join all threads
     for(int i=0;i<numberThreads;i++)
         threads[i].join();
 }
 
+void
+CoreL1::sendTxIndication()
+{
+    char txIndication = 'F';    //Tx Indication character
+
+    //Infinite loop
+    while(1){
+        if(phyActive){
+            sendInterlayerMessage(&txIndication, 1);
+            this_thread::sleep_for(chrono::microseconds(4600));
+        }
+    }
+}

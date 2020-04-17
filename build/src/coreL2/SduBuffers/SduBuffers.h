@@ -7,13 +7,14 @@
 #ifndef SDU_BUFFERS_H
 #define SDU_BUFFERS_H
 
-#include <vector>                                       //Auxiliar library to manage arrays
-#include <mutex>                                        //Mutex Semaphores to prevent different threads trying to write the same variable
+#include "../TimerSubframe/TimerSubframe.h"             //Library to count subframes 
+#include "../MacController/MacController.h"             //Mac Controller Library
 #include "MacAddressTable/MacAddressTable.h"            //IP <-> MAC mapping
 #include "../ReceptionProtocol/ReceptionProtocol.h"     //Reception Protocol to manage reception of L3 packets from TUN
 #include "../SystemParameters/CurrentParameters.h"      //System Current Parameters contains number of UEs and their IDs (MAC addresses)
 #include "../../common/libMac5gRange/libMac5gRange.h"   //MAC Common library contains system's states and substates
-#include "../MacController/MacController.h"             //Mac Controller Library
+#include <vector>                                       //Auxiliar library to manage arrays
+#include <mutex>                                        //Mutex Semaphores to prevent different threads trying to write the same variable
 
 #define DST_OFFSET 16               //Destination address offset in IP Packet [bytes]    
 
@@ -27,7 +28,8 @@ private:
     //System variables
     ReceptionProtocol* reception;           //Object to receive packets from L3
     MacAddressTable* ipMacTable;            //Table of correlation of IP Addresses and MAC5GR Addresses
-    CurrentParameters* currentParameters;    //Object with the parameters that are currently being used by the system
+    CurrentParameters* currentParameters;   //Object with the parameters that are currently being used by the system
+    TimerSubframe* timerSubframe;           //Timer with Subframe indication to support IP timeout control
     bool verbose;                           //Verbosity flag
 
     //Buffers
@@ -35,6 +37,9 @@ private:
     vector<vector<char*>> controlSduQueue;  //Vector of MACC SDUs for each destination
     vector<vector<ssize_t>> dataSizes;      //Vector containing size of MACD SDU for each destination
     vector<vector<ssize_t>> controlSizes;   //Vector containing size of MACC SDU for each destination
+
+    //IP timeout control
+    vector<vector<unsigned long long>> dataTimestamp;   //Vector of subframe index when IP packet was added to buffer
 
     //Mutexes
     mutex dataMutex;                        //Mutex to control access to data queue
@@ -46,9 +51,10 @@ public:
      * @param _reception Object to receive packets from L3
      * @param _currentParameters Parameters that are currently being used by the system
      * @param _ipMacTable Table of correlation of IP Addresses and MAC5GR Addresses
+     * @param _timerSubframe Timer with Subframe indication to support IP timeout control
      * @param _verbose Verbosity flag 
      */
-    SduBuffers(ReceptionProtocol* _reception, CurrentParameters* _currentParameters, MacAddressTable* _ipMacTable, bool _verbose);
+    SduBuffers(ReceptionProtocol* _reception, CurrentParameters* _currentParameters, MacAddressTable* _ipMacTable, TimerSubframe* _timerSubframe, bool _verbose);
     
     /**
      * @brief Destroys SduBuffers
@@ -57,10 +63,8 @@ public:
     
     /**
      * @brief Procedure that executes forever, receiving packets from L3 and storing them in the data queue
-     * @param currentMacMode Actual MAC Mode to control enqueueing while system is in another modes, e.g. RECONFIG_MODE or STOP_MODE
-     * @param currentMacTunMode Actual MAC Tun Mode to signal to system if it is in an active mode, e.g. TUN_DISABLED
      */
-    void enqueueingDataSdus(MacModes & currentMacMode, MacTunModes & currentMacTunMode);
+    void enqueueingDataSdus();
 
     /**
      * @brief Given the SDU, open it and look for its IP in Mac Address Table
@@ -93,16 +97,10 @@ public:
 
     /**
      * @brief Informs the Scheduler about the state of SDU buffers
-     * @param macAddress Destination MAC Address
-     * @returns TRUE if there are packets to schedule; FALSE otherwise
+     * @param ueIds Vector of UEIDs for next transmission
+     * @param bufferSize Vector of Buffer status for each UE selected
      */
-    bool bufferStatusInformation(uint8_t macAddress);
-
-    /**
-     * @brief Informs the Scheduler about the state of all SDU buffers
-     * @returns TRUE if there are packets to schedule; FALSE otherwise
-     */
-    bool bufferStatusInformation();
+    void bufferStatusInformation(vector<uint8_t> &ueIds, vector<int> &bufferSize);
     
     /**
      * @brief Gets next data SDU on queue for treatment
@@ -133,5 +131,10 @@ public:
      * @returns Size of control SDU; -1 for errors
      */
     ssize_t getNextControlSduSize(uint8_t macAddress);
+
+    /**
+     * @brief Checks for IP packets with timeout exceeded
+     */
+    void dataSduTimeoutChecking();
 };
 #endif  //SDU_BUFFERS_H
