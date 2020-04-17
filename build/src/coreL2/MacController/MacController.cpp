@@ -345,7 +345,7 @@ MacController::scheduling(){
         vector<allocation_cfg_t> allocations;   //Vector containing allocation for next transmission
 
         //Before any procedure, check if there are channels available for transmission
-        if(currentParameters->getFLUTMatrix()==0){
+        if(flagBS && currentParameters->getFLUTMatrix()==0){
             if(verbose) cout<<"[MacController] All TV channels are busy"<<endl;
             return;
         }
