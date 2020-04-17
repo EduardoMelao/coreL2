@@ -96,7 +96,7 @@ ProtocolControl::decodeControlSdus(
                 averageMCS  =averageMCS/133;
 
                 //Calculate new DLMCS
-                macController->cliL2Interface->dynamicParameters->setMcsDownlink(averageMCS);
+                macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress, averageMCS);
                 
                 if(verbose){
                     cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received."<<endl;
