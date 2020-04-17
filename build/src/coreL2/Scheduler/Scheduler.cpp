@@ -59,7 +59,7 @@ Scheduler::scheduleRequest(
 
     //For each UE, calculate RBG allocation
     for(int i=0;i<bufferSize.size();i++)
-        rbgsAllocation.push_back(bufferSize[i]/(totalBufferSize/numberAvailableRBGs));
+        rbgsAllocation.push_back((float)bufferSize[i]/((float)totalBufferSize/numberAvailableRBGs));
 
     //Evaluate allocations 
     int rbgOffset=0;        //Offset for each RBG allocation
@@ -80,6 +80,7 @@ Scheduler::scheduleRequest(
         allocations.resize(allocations.size()+1);
         allocations.back().target_ue_id = ueIds[ueOffset];
         allocations.back().first_rb = rbgOffset*currentParameters->getRbgSize();
+        allocations.back().number_of_rb = 0;
 
         while(rbgsAllocation[ueOffset]>0){
             allocations.back().number_of_rb+=currentParameters->getRbgSize();
