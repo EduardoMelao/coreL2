@@ -64,21 +64,11 @@ ProtocolControl::decodeControlSdus(
                 //Deserialize Bytes
                 rxMetrics[index].snr_avg_ri_deserialize(rxMetricsBytes);
 
-                //Calculate new DLMCS
-                macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress,LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr_avg));
-
                 if(verbose){
                     cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received."<<endl;
                     cout<<"RI: "<<(int)rxMetrics[index].rankIndicator<<endl;
                 }
 
-                //If new MCS is different from old, enter RECONFIG mode
-                if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
-                    //Changes current MAC mode to RECONFIG
-                    macController->currentParameters->setMacMode(RECONFIG_MODE);
-
-                    if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
-                }
                 break;
             }
             case '2':   //RxMetrics: snr per RB and Spectrum Sensing Report
@@ -98,6 +88,28 @@ ProtocolControl::decodeControlSdus(
                 //Deserialize Bytes
                 rxMetrics[index].snr_ssr_deserialize(rxMetricsBytes);
 
+                //Calculate average MCS
+                uint8_t averageMCS = 0;
+                for(int i=0;i<132;i++)
+                    averageMCS += LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr[i]);
+                averageMCS += rxMetrics[index].snr_avg;
+                averageMCS  =averageMCS/133;
+
+                //Calculate new DLMCS
+                macController->cliL2Interface->dynamicParameters->setMcsDownlink(averageMCS);
+                
+                if(verbose){
+                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received."<<endl;
+                    cout<<"Flut: "<<(int)rxMetrics[index].ssReport<<" MCS avg:"<<(int)averageMCS<<endl;
+                }
+
+                //If new MCS is different from old, enter RECONFIG mode
+                if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
+                    //Changes current MAC mode to RECONFIG
+                    macController->currentParameters->setMacMode(RECONFIG_MODE);
+
+                    if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+                }
                 //Perform Fusion calculation
                 macController->cosora->fusionAlgorithm(rxMetrics[index].ssReport);
 
