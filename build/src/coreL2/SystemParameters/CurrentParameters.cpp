@@ -7,7 +7,7 @@
 @Arquive name : CurrentParameters.cpp
 @Classification : System Parameters - Current Parameters
 @
-@Last alteration : March 27th, 2020
+@Last alteration : April 16th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -100,6 +100,11 @@ CurrentParameters::readTxtSystemParameters(
 		//Gets Acknowledgement waiting Timeout
 		getline(readingConfigurationsFile, readBuffer);
 		ackWaitTimeout = stoi(readBuffer);
+		readBuffer.clear();
+
+		//Gets Acknowledgement waiting Timeout
+		getline(readingConfigurationsFile, readBuffer);
+		rbgSize = stoi(readBuffer);
 		readBuffer.clear();
 	}
 
@@ -209,6 +214,9 @@ CurrentParameters::recordTxtCurrentParameters(){
 
 		//Writes Acknowledgement waiting Timeout
 		writingConfigurationsFile << to_string((int)ackWaitTimeout) << '\n';
+
+		//Writes Acknowledgement waiting Timeout
+		writingConfigurationsFile << to_string((int)rbgSize) << '\n';
 	}
 
 	//Loop to write the parameters numberUEs times
@@ -293,6 +301,11 @@ CurrentParameters::getSSReportWaitTimeout(){
 uint8_t 
 CurrentParameters::getACKWaitTimeout(){
 	return ackWaitTimeout;
+}
+
+uint8_t
+CurrentParameters::getRbgSize(){
+	return rbgSize;
 }
 
 uint8_t

@@ -97,16 +97,10 @@ public:
 
     /**
      * @brief Informs the Scheduler about the state of SDU buffers
-     * @param macAddress Destination MAC Address
-     * @returns TRUE if there are packets to schedule; FALSE otherwise
+     * @param ueIds Vector of UEIDs for next transmission
+     * @param bufferSize Vector of Buffer status for each UE selected
      */
-    bool bufferStatusInformation(uint8_t macAddress);
-
-    /**
-     * @brief Informs the Scheduler about the state of all SDU buffers
-     * @returns TRUE if there are packets to schedule; FALSE otherwise
-     */
-    bool bufferStatusInformation();
+    void bufferStatusInformation(vector<uint8_t> &ueIds, vector<int> &bufferSize);
     
     /**
      * @brief Gets next data SDU on queue for treatment
