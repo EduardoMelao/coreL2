@@ -70,10 +70,9 @@ public:
     ~L1L2Interface();
 
     /**
-     * @param macPdus MAC PDUs structure containing all information PHY needs
-     * @param numberPDUs Number of MAC PDUs for transmission
+     * @param macPdus Array of MAC PDUs structures containing all information PHY needs
      */
-    void sendPdus(MacPDU** macPdus, int numberPdus);
+    void sendPdus(vector<MacPDU> macPdus);
 
     /**
      * @brief Receives PDUs from PHY Layer

@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : April 1st, 2020
+@Last alteration : April 17th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -99,19 +99,18 @@ L1L2Interface::createServerSocketToReceiveMessages(
 
 void
 L1L2Interface::sendPdus(
-	MacPDU** macPdus,           //MAC PDUs structure
-    int numberPdus)             //Number of MAC PDUs for transmission
+	vector<MacPDU> macPdus)           //MAC PDUs structure
 {
     ssize_t numberSent;                 //Number of Bytes sent to L1
     size_t numberPduBytes;              //Number of Bytes contained into PDU 
     vector<uint8_t> serializedMacPdus;  //Array of Bytes containing all MAC PDUs serialized
 
     //Perform CRC calculations
-    for(int i=0;i<numberPdus;i++){
-        numberPduBytes = macPdus[i]->mac_data_.size();      //Number of Data Bytes before inserting CRC
-        macPdus[i]->mac_data_.resize(numberPduBytes+2);     //Resize vector
+    for(int i=0;i<macPdus.size();i++){
+        numberPduBytes = macPdus[i].mac_data_.size();      //Number of Data Bytes before inserting CRC
+        macPdus[i].mac_data_.resize(numberPduBytes+2);     //Resize vector
         crcPackageCalculate((char*)&(macPdus[i]->mac_data_[0]), numberPduBytes);
-        macPdus[i]->serialize(serializedMacPdus);           //Serialize MAC PDU
+        macPdus[i].serialize(serializedMacPdus);           //Serialize MAC PDU
     }
 
     //Send PDU to L1

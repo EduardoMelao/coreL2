@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : March 30th, 2020
+@Last alteration : April 17th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -208,20 +208,27 @@ SduBuffers::getNumberControlSdus(
     return -1;
 }
 
-bool
+void
 SduBuffers::bufferStatusInformation(
-    uint8_t macAddress)
+    vector<uint8_t> &ueIds,     //Vector of selected UE identifications
+    vector<int> &bufferSize)    //Vector of buffer status for each UE selected
 {
-    return (getNumberDataSdus(macAddress)!=0)||(getNumberControlSdus(macAddress)!=0);
-}
+    uint8_t macAddress;     //Current UE Identification
+    int numSdus = 0;        //Total Number of DataSdus and ControlSdus
 
-bool
-SduBuffers::bufferStatusInformation(){
-    bool returnValue = false;
     for(int i=0;i<currentParameters->getNumberUEs();i++){
-        returnValue = returnValue||bufferStatusInformation(currentParameters->getMacAddress(i));
+        //Get current MacAddress
+        macAddress = currentParameters->getMacAddress(i);
+
+        //Get current number of SDUs
+        numSdus  =getNumberDataSdus(macAddress) + getNumberControlSdus(macAddress);
+
+        //Select UE if there are SDUs to transmit
+        if(numSdus>0){
+            ueIds.push_back(macAddress);
+            bufferSize.push_back(numSdus);
+        }
     }
-    return returnValue;
 }
 
 ssize_t 

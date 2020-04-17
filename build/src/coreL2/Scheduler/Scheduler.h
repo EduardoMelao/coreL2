@@ -44,6 +44,20 @@ public:
     ~Scheduler();
 
     /**
+     * @brief Spectrum allocation procedure for BS
+     * @param ueIds UEIDs for next transmission
+     * @param bufferSize Size of buffer for each UEID
+     * @param allocations Vector where allocations will be stored
+     */
+    void scheduleRequest(vector<uint8_t> ueIds, vector<int> bufferSizes, vector<allocation_cfg_t> &allocations);
+
+    /**
+     * @brief Fills MacPdu with SDUs and information to PHY
+     * @param macPdus Vector of MacPDUs to be filled
+     */
+    void fillMacPdus(vector<MacPDU> &macPdus);
+
+    /**
      * @brief Scheduling procedure for BS
      * @param macPDUs Array of MAC PDUs where scheduler will store Multiplexed SDUs
      */

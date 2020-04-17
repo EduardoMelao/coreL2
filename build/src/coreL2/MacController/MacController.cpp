@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : April 7th, 2020
+@Last alteration : April 17th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -339,24 +339,52 @@ void
 MacController::scheduling(){
     if(currentParameters->getMacMode()==IDLE_MODE){
         currentParameters->setMacTxMode(ACTIVE_MODE_TX);
-        if(sduBuffers->bufferStatusInformation()){
-            //Create array of 2 pointers to MacPDU objects
-            MacPDU* macPdus[2];
-            macPdus[0] = new MacPDU();
-            macPdus[1] = new MacPDU();  //In case it is BS, 2 MAC PDUs are required by the scheduler
+        //Create vectors to store UEIDs and number of packets for next transmission
+        vector<uint8_t> ueIds;                  //UEIDs of each UE selected for next transmission
+        vector<int> bufferSize;                 //Current buffer status for each UE
+        vector<allocation_cfg_t> allocations;   //Vector containing allocation for next transmission
 
-            //Schedule Spectrum and SDUs into PDU(s)
-            if(flagBS){
-                scheduler->scheduleRequestBS(macPdus);
+        //Before any procedure, check if there are channels available for transmission
+        if(currentParameters->getFLUTMatrix()==0){
+            if(verbose) cout<<"[MacController] All TV channels are busy"<<endl;
+            return;
+        }
+
+        //Get buffer status information and store into ueIds and bufferSize vectors
+        sduBuffers->bufferStatusInformation(ueIds, bufferSize);
+
+        //Execute if there are UEs selected for transmission
+        if(ueIds.size()>0){
+            //If it is BS, perform spectrum allocation calculation for next transmission
+            if(flagBS)
+                scheduler->scheduleRequest(ueIds, bufferSize , allocations);
+            else{
+                allocations.resize(1);
+                allocations = currentParameters->getUlReservation(currentParameters->getCurrentMacAddress());
             }
-            else
-                scheduler->scheduleRequestUE(macPdus[0]);
+
+            //Create MacPDU structures and populate allocations
+            vector<MacPDU> macPdus;
+            macPdus.resize(allocations.size());
+            for(int i=0;i<allocations.size();i++)
+                macPdus[i].allocation_ = allocations[i];
+
+            //Schedule SDUs into PDU(s)
+            scheduler->fillMacPdus(macPdus);
             
-            //Get number of PDUs
-            int numberPdus = macPdus[1]->mac_data_.size()==0 ? 1:2;
-            
+
             //Test if there is actualy information to send
-            if(macPdus[0]->mac_data_.size() != 0){
+            if(macPdus.size() > 0){
+                //Get number of UEs for next transmission
+                int numberUes = 1;
+                uint8_t currentUeId = macPdus[0].allocation_.target_ue_id;
+                for(int i=1;i<macPdus.size();i++){
+                    if(macPdus[i].allocation_.target_ue_id!=currentUeId){
+                        numberUes++;
+                        currentUeId = macPdus[i].allocation_.target_ue_id;
+                    }
+                }
+
                 //Create SubframeTx.Start message
                 string messageParameters;		            //This string will contain the parameters of the message
                 vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
@@ -365,10 +393,19 @@ MacController::scheduling(){
                     BSSubframeTx_Start messageBS;	//Message parameters structure
 
                     //Fill the structure with information
-                    messageBS.numUEs = currentParameters->getNumberUEs();
-                    messageBS.numPDUs = numberPdus;      //If seconds MACPDU is empty, there's just one MAC PDU
+                    messageBS.numUEs = numberUes;
+                    messageBS.numPDUs = macPdus.size();
                     messageBS.fLutDL = currentParameters->getFLUTMatrix();
-                    currentParameters->getUlReservations(messageBS.ulReservations);
+
+                    //Get Uplink reservations for each UE in this transmission
+                    currentUeId = macPdus[0].allocation_.target_ue_id;
+                    messageBS.ulReservations.push_back(currentParameters->getUlReservation(currentUeId));
+                    for(int i=1;i<macPdus.size();i++){
+                        if(currentUeId != macPdus[i].allocation_.target_ue_id){
+                            currentUeId = macPdus[i].allocation_.target_ue_id;
+                            messageBS.ulReservations.push_back(currentParameters->getUlReservation(currentUeId));
+                        }
+                    }
                     messageBS.numerology = currentParameters->getNumerology();
                     messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
                     messageBS.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
@@ -403,13 +440,9 @@ MacController::scheduling(){
 
                 //Send interlayer messages and the PDU
                 protocolControl->sendInterlayerMessages(&subFrameStartMessage[0], subFrameStartMessage.size());
-                transmissionProtocol->sendPackagesToL1(macPdus, numberPdus);
+                transmissionProtocol->sendPackagesToL1(macPdus);
                 protocolControl->sendInterlayerMessages(&subFrameEndMessage[0], subFrameEndMessage.size());
             }
-
-            //Finally, delete both Mac PDUs
-            delete macPdus[0];
-            delete macPdus[1];
         }
     }
     //Change MAC Tx Mode to DISABLED_MODE_TX
