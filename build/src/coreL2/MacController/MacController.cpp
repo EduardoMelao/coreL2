@@ -361,6 +361,7 @@ MacController::scheduling(){
             else{
                 allocations.resize(1);
                 allocations[0] = currentParameters->getUlReservation(currentParameters->getCurrentMacAddress());
+                allocations[0].target_ue_id = 0;
             }
 
             //Create MacPDU structures and populate allocations
@@ -372,7 +373,6 @@ MacController::scheduling(){
             //Schedule SDUs into PDU(s)
             scheduler->fillMacPdus(macPdus);
             
-
             //Test if there is actualy information to send
             if(macPdus.size() > 0){
                 //Get number of UEs for next transmission

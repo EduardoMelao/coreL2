@@ -199,7 +199,9 @@ Scheduler::fillMacPdus(
         //Retreive full PDU from multiplexer if not empty
         if(!multiplexer->isEmpty())
             multiplexer->getPDU(macPdus[i].mac_data_);
-
+        else
+            macPdus.erase(macPdus.begin()+i);
+        
         //Delete multiplexer
         delete multiplexer;
     }
