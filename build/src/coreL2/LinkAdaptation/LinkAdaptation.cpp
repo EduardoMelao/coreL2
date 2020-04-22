@@ -7,7 +7,7 @@
 @Arquive name : LinkAdaptation.cpp
 @Classification : Link Adaptation
 @
-@Last alteration : March 5th, 2020
+@Last alteration : Aplil 22nd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -23,7 +23,7 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 */
 
 #include "LinkAdaptation.h"
-#include "../../common/lib5grange/lib5grange.h"
+
 LinkAdaptation::LinkAdaptation() {}
 
 LinkAdaptation::~LinkAdaptation() {}

@@ -12,6 +12,7 @@
 #include <complex.h>
 #include <vector>
 #include <array>
+#include <memory>
 
 #define ALL_TERMINAL (0xF)
 #define BS_TERMINAL  (0x0)
@@ -24,8 +25,7 @@
 #define POLAR_CRC_LEN (16)
 
 /** DCI Size in QAM symbols **/
-#define DCI_SIZE (256)
-#define NUM_TB_PER_DCI (8)
+#define NUM_RB_PER_DCI (11)
 
 namespace lib5grange {
     using namespace std;
@@ -49,10 +49,12 @@ namespace lib5grange {
         unsigned pilot_dt;                /**< Pilot spacing in time  */
         unsigned pilot_df;                /**< Pilot spacing in frequency */
         unsigned num_pilot_sc;            /**< Number of pilot subcarriers */
+        unsigned num_dci_sc;              /**< Number of subcarriers used for control dci*/
+        unsigned num_dci_qam;             /**< Number of control QAM symbols */
     } numerology_cfg_t;
-
- constexpr numerology_cfg_t numerology[] =
-    {
+ 
+ constexpr numerology_cfg_t numerology[] = 
+    {    
             {/** Numerology 0 definition **/
                 .k   = 16384,
                 .m   = 4,
@@ -67,6 +69,8 @@ namespace lib5grange {
                 .pilot_dt = 2,
                 .pilot_df = 4,
                 .num_pilot_sc = 3168,
+                .num_dci_sc   = 32,  // dci: first 32 subcarriers of allocation
+                .num_dci_qam  = 224, // dci: net number of RE on dci
             },
 
             {/** Numerology 1 definition **/
@@ -82,7 +86,9 @@ namespace lib5grange {
                 .symbols_per_subframe = 4,
                 .pilot_dt = 4,
                 .pilot_df = 4,
-                .num_pilot_sc = 1584
+                .num_pilot_sc = 1584,
+                .num_dci_sc   = 16,  // dci: first 16 subcarriers of allocation
+                .num_dci_qam  = 240, // dci: net number of RE on dci
             },
 
             {/** Numerology 2 definition **/
@@ -98,7 +104,10 @@ namespace lib5grange {
                 .symbols_per_subframe = 8,
                 .pilot_dt =	4,
                 .pilot_df =	4,
-                .num_pilot_sc = 792
+                .num_pilot_sc = 792,
+                .num_dci_sc   = 8,   // dci: first 8 subcarriers of allocation
+                .num_dci_qam  = 240, // dci: net number of RE on dci
+
             },
 
             {/** Numerology 3 definition **/
@@ -108,13 +117,15 @@ namespace lib5grange {
                 .ncs =	96,
                 .nw  =	64,
                 .kon = 	1584,
-                .koff = 500,
+                .koff = 464,
                 .a   = 	0,
                 .subcarriers_per_rb   = 12,
                 .symbols_per_subframe = 16,
                 .pilot_dt =	4,
                 .pilot_df =	4,
-                .num_pilot_sc = 396
+                .num_pilot_sc = 396,
+                .num_dci_sc   = 4,   // dci: first 4 subcarriers of allocation
+                .num_dci_qam  = 240, // dci: net number of RE on dci
             },
 
             {/** Numerology 4 definition **/
@@ -130,7 +141,10 @@ namespace lib5grange {
                 .symbols_per_subframe = 32,
                 .pilot_dt =	4,
                 .pilot_df =	3,
-                .num_pilot_sc = 264
+                .num_pilot_sc = 264,
+                .num_dci_sc   = 2 ,  // dci: first 2 subcarriers of allocation
+                .num_dci_qam  = 224, // dci: net number of RE on dci
+
             },
 
             {/** Numerology 5 definition **/
@@ -147,11 +161,13 @@ namespace lib5grange {
                 .pilot_dt =	4,
                 .pilot_df =	6,
                 .num_pilot_sc = 132,
+                .num_dci_sc   = 2 ,  // dci: first 2 subcarriers of allocation
+                .num_dci_qam  = 224, // dci: net number of RE on dci
             }
     };
 
-
-    /** QAM mdodulation enum type.
+    
+    /** QAM mdodulation enum type. 
      *  The value is the number of bits per symbol in each modulation
      */
     typedef enum {
@@ -160,7 +176,7 @@ namespace lib5grange {
         QAM64  = 6,     /**<  64QAM - 6 bits per symbol**/
         QAM256 = 8      /**< 256QAM - 8 bits per symbol**/
     } qammod_t;
-
+    
     constexpr qammod_t mcsToModulation[] =
         {
             QPSK,   //MCS 0 (filler)
@@ -194,14 +210,14 @@ namespace lib5grange {
         };
 
     /**
-     * @brief Transform any basic C type into bytes
-     *
+     * @brief Transform any basic C type into bytes 
+     * 
      * Method used to transform any C basic type to a sequance of bytes and
      * and push at the end of thevector given as argument
-     *
+     * 
      * @tparam T: type
-     * @param num: number to be serialized
-     * @param v: vector where the bytes will be stored
+     * @param num: number to be serialized 
+     * @param v: vector where the bytes will be stored 
      */
     template <typename T>
     void push_bytes(vector<uint8_t> & v, T num){
@@ -213,27 +229,26 @@ namespace lib5grange {
 
     template <typename T>
     void pop_bytes(T & num, vector<uint8_t> & v){
-        T* ptr = (T*) (&v.back()-sizeof(T)+1);
+        T* ptr = (T*) (&v.back()-sizeof(T)+1); 
         num = *ptr;
         v.erase(v.end()-sizeof(T), v.end());
     }
 
 
     /**
-     * @brief Transform a vector of any basic C type into bytes
-     *
-     * @tparam T: type
-     * @param newdata: Vector to be serialized
-     * @param data: vector where the bytes data will be appended
+     * @brief Transform a vector of any basic C type into bytes 
+     * 
+     * @tparam T: type 
+     * @param newdata: Vector to be serialized 
+     * @param bytes: vector where the bytes data will be appended 
      */
     template <typename T>
     void serialize_vector(vector<uint8_t> & bytes, vector<T> & newdata){
         size_t num_bytes_of_newdata = sizeof(T)*newdata.size();
         size_t newsize = bytes.size() + num_bytes_of_newdata;
         size_t last = bytes.size();
-        bytes.reserve(sizeof(newdata.size()));
         bytes.resize(newsize);
-        uint8_t * newdata_byte_ptr = (uint8_t*) newdata.data();
+        uint8_t * newdata_byte_ptr = (uint8_t*) newdata.data(); 
         for (size_t i=0; i<num_bytes_of_newdata; i++){
             bytes[last+i] = newdata_byte_ptr[i];
         }
@@ -242,14 +257,14 @@ namespace lib5grange {
 
     /**
      * @brief Recover a vector from bytes
-     *
-     * @tparam T: type
-     * @param newdata: Vector to be serialized
-     * @param data: vector where the bytes data will be appended
+     * 
+     * @tparam T : type
+     * @param v : Vector to be serialized 
+     * @param bytes : vector where the bytes data will be appended 
      */
     template <typename T>
     void deserialize_vector(vector<T> & v, vector<uint8_t> & bytes){
-        size_t num_elements;
+        size_t num_elements;           
         pop_bytes(num_elements, bytes); // Retrieve the vector size
         v.resize(num_elements);         // space for the data
         T* first_element_ptr = ((T*) (&bytes.back() + 1)) - num_elements; // Find the first
@@ -262,17 +277,17 @@ namespace lib5grange {
 
     /** Definition of MIMO configuration type **/
     typedef enum {
-        NONE = 0,           /**< SISO **/
+        NONE = 0,           /**< SISO **/          
         DIVERSITY = 1,      /**< Space Time block coding **/
         MULTIPLEXING = 2    /**< Spatial multiplexing **/
     } mimo_scheme_t;
-
+    
     /** MIMO configuration struct **/
     typedef struct{
         mimo_scheme_t scheme  = NONE; /**< MIMO Scheme **/
         size_t num_tx_antenas = 1;    /**< Number of transmitting antennas **/
         size_t precoding_mtx  = 0;    /**< MIMO Precoding matrix selection **/
-
+        
         /** Serializatyion method for the struct**/
         void serialize(vector<uint8_t> & bytes)
         {
@@ -288,14 +303,14 @@ namespace lib5grange {
             pop_bytes(scheme, bytes);
         }
     }mimo_cfg_t;
-
-
+    
+    
      /** Resource allocation configuration struct **/
     typedef struct{
         uint8_t target_ue_id = ALL_TERMINAL; /**< 16 bit ID of the target terminal **/
         uint8_t first_rb = 0;                  /**< First alocated resource block  **/
         uint8_t number_of_rb = 132;            /**< Number of allocatced resource blocks  **/
-
+        
         /** Serializatyion method for the struct**/
         void serialize(vector<uint8_t> & bytes)
         {
@@ -319,7 +334,7 @@ namespace lib5grange {
         size_t power_offset = 0;       /**< Power offset in dB for the transmission **/
         size_t num_info_bytes = 0;     /**< Number of information bits  **/
         size_t num_coded_bytes = 0;    /**< Number of coded bits  **/
-
+        
         /** Serializatyion method for the struct**/
         void serialize(vector<uint8_t> & bytes)
         {
@@ -335,23 +350,23 @@ namespace lib5grange {
             pop_bytes(power_offset, bytes);
             pop_bytes(modulation, bytes);
         }
-
+        
     } mcs_cfg_t;
-
-
+    
+    
     /** MAC/PHY info struct **/
     typedef struct {
         uint8_t sequence_number = 0;       /**< Sequence number of the transport block  **/
         unsigned  subframe_number = 0;     /**< Subframe number  **/
         bool  last_tb_in_subframe = false; /**< Indicates if this is the last transport block in the subframe  **/
         bool first_tb_in_subframe = false; /**< Indicates if this is the last transport block in the subframe  **/
-
-        /**
+    
+        /** 
          * \brief Serializatyion method for the struct
          * This method convert all menbers of the struct to a sequance of bytes and appends at the end
          * of the vector given as argument
-         *
-         *  @param v: vector of bytes where the struct will be serialized
+         * 
+         *  @param bytes: vector of bytes where the struct will be serialized
          **/
         void serialize(vector<uint8_t> & bytes)
         {
@@ -367,10 +382,10 @@ namespace lib5grange {
             pop_bytes(subframe_number, bytes);
             pop_bytes(sequence_number, bytes);
 
-        }
+        }        
     } macphyctl_t;
-
-    /**
+    
+    /** 
     * Calculates the  amout of bytes available for transmission using the given configuration
     * @param numID: (0 - 5) Number identifying the 5G Range numerology according to D3.2.
     * @param allocation: Struct with the configuration of the resource allocation (see: allocation_cfg_t).
@@ -380,94 +395,266 @@ namespace lib5grange {
         const size_t & numID,                 // Numerology ID
         const allocation_cfg_t & allocation,  // Allocation config struct
         const mimo_cfg_t & mimo);             // MIMO config struct
-
-    /**
-     * @brief Calculates the gross amount of bits available for transmission using the given configuration
-     *
-     * This function calculates the amount of bits available for transmission using the given configuration
-     * PHY configuration and resource allocation.
-     *
-     *  @param numID: (0 - 5) Number identifying the 5G Range numerology according to D3.2.
-     *  @param allocation: Struct with the configuration of the resource allocation (see: allocation_cfg_t).
-     *  @param mimo: Struct with the configuration of the MIMO (see: mimo_cfg_t).
-     *  @param qam: QAM modulation (QPSK, QAM16, QAM64 or QAM256).
-    **/
-    size_t get_bit_capacity(
+    
+   /**
+    * @brief Calculates the gross amount of bits available for transmission using the given configuration
+    * 
+    * This function calculates the amount of bits available for transmission using the given configuration
+    * PHY configuration and resource allocation.
+    * 
+    *  @param numID : (0 - 5) Number identifying the 5G Range numerology according to D3.2.
+    *  @param allocation: Struct with the configuration of the resource allocation (see: allocation_cfg_t).
+    *  @param mimo: Struct with the configuration of the MIMO (see: mimo_cfg_t).
+    *  @param mod: QAM modulation (QPSK, QAM16, QAM64 or QAM256).
+    *  @return size_t 
+    */
+    inline size_t get_bit_capacity(
         const size_t & numID,
-        const allocation_cfg_t & allocation,
+        const allocation_cfg_t & allocation,    
         const mimo_cfg_t & mimo,
         const qammod_t & mod);
 
-    /**
+    /** 
      * @brief Calculates the gross amount of bits available for transmission using the given configuration
      *  @param numRE: Number of Resorce elements.
-     *  @param qam: QAM modulation (QPSK, QAM16, QAM64 or QAM256).
+     *  @param mod: QAM modulation (QPSK, QAM16, QAM64 or QAM256).
     **/
-    size_t get_bit_capacity(
+    inline size_t get_bit_capacity(
         const size_t & numRE, // Number of resource elements
         const qammod_t & mod); // Modulation
-
+    
     /**
     * Returns the number of resource blocks required to transmit a given number of bits
     * with a given modulation and a taget code-rate.
-    *
+    *   
     *   @param numID: (0 - 5) Number identifying the 5G Range numerology according to D3.2.
     *   @param mimo: Struct with the configuration of the MIMO (see: mimo_cfg_t).
-    *   @param qam: QAM modulation (QPSK, QAM16, QAM64 or QAM256).
+    *   @param mod: QAM modulation (QPSK, QAM16, QAM64 or QAM256).
     *   @param target_coderate: The target coderate for the tranmission.
     *   @param info_bits: Number of information bits to be sent.
     **/
     size_t get_num_required_rb(
         const size_t & numID,    // Numerology ID
         const mimo_cfg_t & mimo, // MIMO Onfiguration
-        const qammod_t & mod,    // Modulation
+        const qammod_t & mod,    // Modulation 
         float target_coderate,   // Target coderate
         size_t info_bits);       // number of infromation bits
-
-    using namespace std;
+    
     /**
      * @brief This class represents a transport block sent by the MAC and holds all configuration required by the PHY
      * for the transmission.
-     *
+     * 
      */
     class MacPDU {
         private:
 
         public:
             unsigned numID_;                    /**< Numerology ID **/
-            macphyctl_t macphy_ctl_;            /**< MAC to PHY control struct **/
+            macphyctl_t macphy_ctl_;            /**< MAC to PHY control struct **/          
             allocation_cfg_t allocation_;       /**< allocation: Struct with the configuration of the resource allocation (see: allocation_cfg_t). **/
             mimo_cfg_t mimo_;                   /**< Struct with the configuration of the MIMO (see: mimo_cfg_t). **/
             mcs_cfg_t  mcs_;                    /**< /** Struct with the regarding Modulation and coding configuration (see: mcs_cfg_t) **/
             uint8_t rankIndicator_;              /**<  Rank indicator **/ 
-            float snr_avg_;                      /**< Average SNR measured **/
+            float snr_avg_;                      /**< Average SNR measured **/            
             // Data section
-            vector<uint8_t> mac_data_ {};       /**< Uncoded information bits from MAC. **/
+            std::vector<uint8_t> mac_data_ {};            /**< Uncoded information bits from MAC. **/
+            std::vector<uint8_t> coded_data_ {};          /**< Coded bits to be transmitted. **/
+            std::vector<std::complex<float>> symbols_ {}; /**< QAM symbols to be transmitted  **/
+            std::array<std::vector<std::complex<float>>,2> mimo_symbols_ {}; /**< MIMO encoded information symbols**/
+
+            // DCI / UCI
+            std::vector<uint8_t> control_data_ {};                 /**< Coded control information bits to be transmitted **/
+            std::array<std::vector<std::complex<float>>,2> control_symbols_ {};  /**< Control QAM symbols to be transmitted **/
 
             /** @brief Construct a empty new MacPDU object */
             MacPDU();
-
-            /**
+            
+            /** 
              * @brief Construct a MAC PDU object with the specified configuration parameters.
+             * @param numID : Numerology id
              * @param phyctl: MAC/PHY control struct
-             * @param allocation: config struct
-             * @param mimo: configuration struct
-             * @param modulation: and coding config
+             * @param allocation: allocation config struct
+             * @param mimo_cfg: mimo config struct
+             * @param mcs_cfg: modulation and coding config struct
             **/
             MacPDU(unsigned numID, macphyctl_t phyctl, allocation_cfg_t allocation, mimo_cfg_t mimo_cfg, mcs_cfg_t mcs_cfg);
+            
             /**
              * @brief Construct a new MacPDU object from a serialized byte sequence (see: MacPDU::serialize()).
-             * @param bytes: vector of bytes with the srialized object
+             * @param bytes: vector of bytes with the srialized object 
              */
-
             MacPDU(vector<uint8_t> & bytes);
-
+                      
             /** @brief Destroy the MacPDU object **/
             ~MacPDU(){};
-
+            
             /** Serializes the MacPDU object to a sequance of bytes **/
             void serialize(vector<uint8_t> & bytes);
-
+           
     }; /* class MacPDU */
+
+        inline size_t
+    get_re_capacity(
+        const size_t & numID,                   // Numerology ID
+        const allocation_cfg_t & allocation,    // Allocation config struct
+        const mimo_cfg_t & mimo = {NONE, 1, 0}) // MIMO config struct (defaults to SISO)
+    {
+        size_t numRB = allocation.number_of_rb;
+        if (numRB==0){return 0;}
+        const auto & subcarriers = numerology[numID].subcarriers_per_rb;
+        const auto & subsymbols  = numerology[numID].m;
+        const auto & symbols     = numerology[numID].symbols_per_subframe;
+        const auto & df          = numerology[numID].pilot_df;
+        const auto & dt          = numerology[numID].pilot_dt;
+        const auto & dci_size    = numerology[numID].num_dci_qam;
+        size_t numRE = subcarriers * subsymbols * symbols;
+        numRE = numRE - numRE/(df*dt);                                              // Account for REs used for pilots
+        numRE = (numRE * numRB) - dci_size - dci_size*((numRB-1)/NUM_RB_PER_DCI);   // Account for REs used for DCI
+        if (mimo.scheme==MULTIPLEXING){
+            numRE = numRE * mimo.num_tx_antenas;
+        }
+        return numRE;
+    }
+
+    /**
+     * @brief Get the RE capacity from PDU object
+     * 
+     * @param pdu 
+     * @return size_t 
+     */
+    inline size_t
+    get_re_capacity(const MacPDU & pdu) 
+    {
+        const auto & numID = pdu.numID_;
+        const auto & allocation = pdu.allocation_;
+        const auto & mimo = pdu.mimo_;
+        return get_re_capacity(numID, allocation, mimo);
+    }
+
+    inline size_t
+    get_bit_capacity(
+        const size_t & numID,
+        const allocation_cfg_t & allocation,    
+        const mimo_cfg_t & mimo,
+        const qammod_t & mod)
+    {
+        size_t numRE = get_re_capacity(numID, allocation, mimo);
+        size_t numBits = (numRE*mod);
+        return numBits;
+    }
+
+    inline size_t
+    get_bit_capacity(const MacPDU & pdu)
+    {   
+        const auto & numID = pdu.numID_;
+        const auto & allocation = pdu.allocation_;
+        const auto & mimo = pdu.mimo_;
+        const auto & mod = pdu.mcs_.modulation;
+
+        return get_bit_capacity(numID, allocation, mimo, mod);
+    }
+
+    inline size_t
+    get_bit_capacity(
+        const size_t & numRE, // Number of resource elements
+        const qammod_t & mod) // Modulation
+    {
+        return (numRE*mod);
+    }
+
+    inline size_t 
+    get_num_required_rb(
+        const size_t & numID,    // Numerology ID
+        const mimo_cfg_t & mimo, // MIMO Onfiguration
+        const qammod_t & mod,    // Modulation 
+        float target_coderate,   // Target coderate
+        size_t info_bits)        // number of information bits
+    {
+        float required_bit_capacity = round((float)info_bits/target_coderate);
+        allocation_cfg_t aloc = {
+            .target_ue_id =0,
+            .first_rb=0,
+            .number_of_rb=1
+            };
+        auto & dci_size = numerology[numID].num_dci_qam;
+        size_t gross_rb_bit_capacity = get_bit_capacity(numID,aloc,mimo,mod) + (dci_size*mod);
+        size_t gross_qam_capacity = gross_rb_bit_capacity/mod;
+        size_t num_qam_required = (size_t) round(required_bit_capacity / mod); //round odr ceil
+        num_qam_required += dci_size;   // Account for the first DCI
+        num_qam_required += (((num_qam_required-dci_size)/gross_qam_capacity))/NUM_RB_PER_DCI * dci_size; // Account for extra DCIs
+        size_t numRB = (size_t) ceil(float(num_qam_required)/float(gross_qam_capacity));
+        return numRB;
+    } /* get_mum_required_rb */ 
+
+    inline MacPDU::MacPDU(){
+        numID_ = 0;
+        snr_avg_ = 10;
+		rankIndicator_ = 10;
+        mac_data_   = {};
+        coded_data_ = {};
+        symbols_ = {};
+        mimo_symbols_[0] = {};
+        mimo_symbols_[1] = {};
+        control_symbols_[0] = {};
+        control_symbols_[1] = {};
+    }
+
+    inline MacPDU::MacPDU(
+        unsigned numID,                 // Numerology ID
+        macphyctl_t phyctl,             // phyctl MAC/PHY control struct
+        allocation_cfg_t allocation,    // allocation config
+        mimo_cfg_t mimo_cfg,            // MIMO config
+        mcs_cfg_t mcs_cfg)              // modulation and coding config
+    {
+        numID_ = numID;
+        macphy_ctl_ = phyctl;
+        allocation_ = allocation;
+        mimo_ = mimo_cfg;
+        mcs_ = mcs_cfg;
+        snr_avg_ = 10;
+		rankIndicator_ = 10;
+        
+    } /*MacPDU()*/
+
+    inline void
+    MacPDU::serialize(vector<uint8_t> & bytes)
+    {
+        push_bytes(bytes, numID_);
+        macphy_ctl_.serialize(bytes);
+        allocation_.serialize(bytes);
+        mimo_.serialize(bytes);
+        mcs_.serialize(bytes);
+        push_bytes(bytes, snr_avg_);
+		push_bytes(bytes, rankIndicator_);
+        // Vectors
+        serialize_vector(bytes, mac_data_);
+        serialize_vector(bytes, coded_data_);
+        serialize_vector(bytes, symbols_);
+        serialize_vector(bytes, control_data_);
+        serialize_vector(bytes, control_symbols_[0]);
+        serialize_vector(bytes, control_symbols_[1]);
+        serialize_vector(bytes, mimo_symbols_[0]);
+        serialize_vector(bytes, mimo_symbols_[1]);
+    }
+
+    inline MacPDU::MacPDU(vector<uint8_t> & bytes)
+    {
+        deserialize_vector(mimo_symbols_[1], bytes);
+        deserialize_vector(mimo_symbols_[0], bytes);
+        deserialize_vector(control_symbols_[1], bytes);
+        deserialize_vector(control_symbols_[0], bytes);
+        deserialize_vector(control_data_, bytes);
+        deserialize_vector(symbols_, bytes);
+        deserialize_vector(coded_data_, bytes);
+        deserialize_vector(mac_data_, bytes);
+        // non-vectors
+        pop_bytes(rankIndicator_, bytes);
+		pop_bytes(snr_avg_, bytes);
+        mcs_.deserialize(bytes);
+        mimo_.deserialize(bytes);
+        allocation_.deserialize(bytes);
+        macphy_ctl_.deserialize(bytes);
+        pop_bytes(numID_, bytes);
+    }
 } /* namespace lib5grange */
 #endif /* INCLUDED_LIB5GRANGE_H */

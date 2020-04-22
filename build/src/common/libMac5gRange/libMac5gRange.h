@@ -145,7 +145,7 @@ typedef struct{
  */
 typedef struct{
     float snr[132];     //Signal to Noise Ratio per Resource Block //#TODO: define range
-    uint8_t ssm;        //SSM: Spectrum Sensing Measurement. Array of 4 bits
+    float ssm;          //SSM: Spectrum Sensing Measurement. Array of 4 bits
     
     /**
      * @brief Serialization method for the struct
@@ -156,7 +156,7 @@ typedef struct{
      **/
     void serialize(vector<uint8_t> & bytes)
     {
-        push_bytes(bytes,(uint8_t)(ssm&15));
+        push_bytes(bytes,(ssm));
         for(int i=0;i<132;i++)
             push_bytes(bytes, snr[i]);
     }
@@ -176,8 +176,8 @@ typedef struct{
 typedef struct{
     float snr[132];         //Channel Signal to Noise Ratio per Resource Block
     float snr_avg;          //Average Signal to Noise Ratio
-    uint8_t rankIndicator;  //Rank Indicator
-    uint8_t ssReport;       //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 4 bits
+    float rankIndicator;    //Rank Indicator
+    float ssReport;         //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 4 bits
     
     /**
      * @brief Serialization method for the struct
@@ -189,7 +189,7 @@ typedef struct{
     void snr_avg_ri_serialize(vector<uint8_t> & bytes)
     {
         push_bytes(bytes, snr_avg);
-        push_bytes(bytes, (uint8_t)rankIndicator);
+        push_bytes(bytes, rankIndicator);
     }
 
     /**
@@ -203,7 +203,7 @@ typedef struct{
     {
         for(int i=0;i<132;i++)
             push_bytes(bytes, snr[i]);
-        push_bytes(bytes, (uint8_t)ssReport&15);
+        push_bytes(bytes, ssReport);
     }
 
     /** Deserialization method for the struct (inverse order)**/
