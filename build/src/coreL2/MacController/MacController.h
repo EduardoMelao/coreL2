@@ -29,9 +29,8 @@
 
 using namespace std;
 
-#define MAXIMUM_BUFFER_LENGTH 102400     //Maximum buffer length in bytes
+#define MAXIMUM_BUFFER_LENGTH 204800    //Maximum buffer length in bytes
 #define PHY_READY 1                     //Timeout, in seconds, to wait for PHY to be ready (Start/stop)
-
 
 //Initializing classes that will be defined in other .h files
 class ProtocolControl;

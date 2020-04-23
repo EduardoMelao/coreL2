@@ -6,7 +6,6 @@ enable_testing()
 
 add_executable(coreL2.o
 src/coreL2/CoreL2.cpp
-src/common/lib5grange/lib5grange.cpp
 src/coreL2/CLIL2Interface/CLIL2Interface.cpp
 src/coreL2/CoreTunInterface/TunInterface.cpp
 src/coreL2/Cosora/Cosora.cpp
