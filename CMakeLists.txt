@@ -24,7 +24,8 @@ src/coreL2/Scheduler/Scheduler.cpp
 src/coreL2/TimerSubframe/TimerSubframe.cpp)
 
 target_link_libraries(coreL2.o
-pthread)
+pthread
+rt)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : April 7th, 2020
+@Last alteration : April 23rd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -146,7 +146,7 @@ ProtocolControl::sendInterlayerMessages(
 void
 ProtocolControl::receiveInterlayerMessages()
 {
-    char buffer[MAXIMUM_BUFFER_LENGTH]; //Buffer where message will be stored
+    char buffer[MQ_MAX_CONTROL_MSG_SIZE]; //Buffer where message will be stored
     string message;                     //String containing message converted from char*
     uint8_t sourceMacAddress;           //Source MAC Address
 
@@ -158,9 +158,9 @@ ProtocolControl::receiveInterlayerMessages()
             macController->currentParameters->setMacRxMode(ACTIVE_MODE_RX); 
 
             //Clear buffer and message and receive next control message
-            bzero(buffer, MAXIMUM_BUFFER_LENGTH);
+            bzero(buffer, MQ_MAX_CONTROL_MSG_SIZE);
             message.clear();
-            ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
+            ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer);
 
             //If it returns 0 or less, no information was received
             if(messageSize<=0)

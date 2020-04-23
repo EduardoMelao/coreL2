@@ -7,12 +7,14 @@
 #ifndef INCLUDED_CORE_L1_H
 #define INCLUDED_CORE_L1_H
 
-#define PORT_TO_L2 8091
-#define PORT_FROM_L2 8090
-#define CONTROL_MESSAGES_PORT_TO_L2 8093
-#define CONTROL_MESSAGES_PORT_FROM_L2 8092
+#define MQ_PDU_TO_L1 "/mqPduToPhy"
+#define MQ_PDU_FROM_L1 "/mqPduFromPhy"
+#define MQ_CONTROL_TO_L1 "/mqControlToPhy"
+#define MQ_CONTROL_FROM_L1 "/mqControlromPhy"
 
-#define MAXIMUMSIZE 204800
+#define MQ_MAX_NUM_MSG 100
+#define MQ_MAX_PDU_MSG_SIZE 204800
+#define MQ_MAX_CONTROL_MSG_SIZE 204800
 
 #include <iostream>     //cout
 #include <stdint.h>     //uint16_t
@@ -22,6 +24,7 @@
 #include <vector>
 #include <unistd.h>     //close()
 #include <thread>       //thread
+#include <mqueue.h>     //POSIX Message Queues
 #include "../common/lib5grange/lib5grange.h"
 #include "../common/libMac5gRange/libMac5gRange.h"
 
@@ -41,12 +44,12 @@ private:
     uint8_t currentMacAddress;              //MAC address of this equipment
     uint8_t *macAddresses;                  //Array of MAC addresses of each destination
     int numberSockets;                      //Number of actual sockets stored
-    int socketFromL2;                       //File descriptor of socket used to RECEIVE from L2
-    int socketToL2;                         //File descriptor of socket used to SEND to L2
-    int socketControlMessagesFromL2;        //File descriptor of socket used to RECEIVE Control Messages from L2
-    int socketControlMessagesToL2;          //File descriptor of socket used to SEND Control Messages to L2
-    struct sockaddr_in serverPdusSocketAddress; //Address of server to which client will send PDUs
-    struct sockaddr_in serverControlMessagesSocketAddress;  //Address of server to which client will send control messages
+
+    mqd_t mqPduToPhy;                       //Message Queue descriptor used to RECEIVE PDUs from L2
+    mqd_t mqPduFromPhy;                     //Message Queue descriptor used to SEND PDUs to L2
+    mqd_t mqControlToPhy;                   //Message Queue descriptor used to RECEIVE Control Messages from L2
+    mqd_t mqControlFromPhy;                 //Message Queue descriptor used to SEND Control Messages to L2
+
     int subFrameCounter;                    //Counter to trigger RX Metrics sending to MAC
     uint8_t rxMetricsPeriodicity;           //Periodicity to send Rx metrics to MAC, in number of Subframes
     bool phyActive;                         //Flag to control PHY activation and deactivation
@@ -81,6 +84,14 @@ public:
      * @brief Destructor of CoreL1 object
      */
     ~CoreL1();
+
+    /**
+     * @brief Crates and opens message queue with default parameters
+     * @param messageQueue Message Queue descriptor
+     * @param messageQueueName Name of MessageQueue
+     * @param isPduQueue Flag to indicate if it os a messageQueue for PDUs (TRUE) or Control (FALSE) messages
+     */
+    void createMessageQueue(mqd_t & messageQueue, const char* messageQueueName, bool isPduQueue);
 
     /**
      * @brief Adds new socket information in CoreL1. 

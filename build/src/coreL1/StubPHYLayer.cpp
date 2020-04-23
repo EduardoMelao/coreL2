@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : April 7th, 2020
+@Last alteration : April 23rd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -36,17 +36,17 @@ CoreL1::CoreL1(
     rxMetricsPeriodicity = 0;   //Unnactivated
     phyActive = false;          //Initialized as false
 
-    //PDUs Client socket creation
-    socketToL2 = createClientSocketToSendMessages(PORT_TO_L2, &serverPdusSocketAddress, "127.0.0.1");
+    //Message queue creation to receive PDUs
+    createMessageQueue(mqPduToPhy, MQ_PDU_TO_L1, true);
 
-    //PDUs Server socket creation
-    socketFromL2 = createServerSocketToReceiveMessages(PORT_FROM_L2);
-    
-    //Control Client socket creation
-    socketControlMessagesToL2 = createClientSocketToSendMessages(CONTROL_MESSAGES_PORT_TO_L2, &serverControlMessagesSocketAddress, "127.0.0.1");
+    //Message queue creation to send PDUS
+    createMessageQueue(mqPduFromPhy, MQ_PDU_FROM_L1, true);
 
-    //ControlServer socket creation
-    socketControlMessagesFromL2 = createServerSocketToReceiveMessages(CONTROL_MESSAGES_PORT_FROM_L2);
+    //Message queue creation to receive Interlayeer messages
+    createMessageQueue(mqControlToPhy, MQ_CONTROL_TO_L1, false);
+
+    //Message queue creation to send Interlayer Messages
+    createMessageQueue(mqControlFromPhy, MQ_CONTROL_FROM_L1, false);
 }
 
 CoreL1::~CoreL1()
@@ -55,8 +55,10 @@ CoreL1::~CoreL1()
         close(socketsIn[i]);
         close(socketsOut[i]);
     }
-    close(socketFromL2);
-    close(socketToL2);
+    mq_close(mqPduToPhy);
+    mq_close(mqPduFromPhy);
+    mq_close(mqControlToPhy);
+    mq_close(mqControlFromPhy);
     if(numberSockets){
         delete[] socketsIn;
         delete[] socketsOut;
@@ -65,6 +67,29 @@ CoreL1::~CoreL1()
         delete[] macAddresses;
         delete[] socketNames;
     }
+}
+
+void
+CoreL1::createMessageQueue(
+    mqd_t & messageQueue,               //Message Queue descriptor
+    const char* messageQueueName,       //Message Queue Name
+    bool isPduQueue)                    //Flag to indicate if it is a PDU or ControlMessages queue
+{
+    //Define message queue attributes
+    struct mq_attr messageQueueAttributes;
+    messageQueueAttributes.mq_maxmsg = MQ_MAX_NUM_MSG;
+    messageQueueAttributes.mq_msgsize = isPduQueue? MQ_MAX_PDU_MSG_SIZE: MQ_MAX_CONTROL_MSG_SIZE;
+
+    //Open message queue
+    messageQueue = mq_open( messageQueueName, \
+                            O_CREAT|O_RDWR, \
+                            0666, \
+                            &messageQueueAttributes);
+    //Check for errors
+    if(messageQueue==-1) 
+        perror("[CoreL1] Error creating message queue: ");
+    else 
+        if(verbose) cout<<"[CoreL1] MessageQueue "<<messageQueueName<<" created successfully."<<endl;
 }
 
 int
@@ -253,15 +278,15 @@ void
 CoreL1::encoding(
     uint8_t numberPdus)     //Number of PDUs for transmission
 {
-    char bufferFromL2[MAXIMUMSIZE]; //Buffer to store packet from L2
-    vector<uint8_t> bufferPdu;      //Buffer to store only data to send to the other side
-    ssize_t size;                   //Size of packet received
-    uint8_t macAddress;             //Destination MAC address
-    size_t pdusTotalSize = 0;       //Total size of PDUs for transmission
-    MacPDU* macPdu;                 //Pointer to store desserialized PDU
+    char bufferFromL2[MQ_MAX_PDU_MSG_SIZE]; //Buffer to store packet from L2
+    vector<uint8_t> bufferPdu;              //Buffer to store only data to send to the other side
+    ssize_t size;                           //Size of packet received
+    uint8_t macAddress;                     //Destination MAC address
+    size_t pdusTotalSize = 0;               //Total size of PDUs for transmission
+    MacPDU* macPdu;                         //Pointer to store desserialized PDU
 
     //Receive from L2
-    size = recv(socketFromL2, bufferFromL2, MAXIMUMSIZE, MSG_WAITALL);
+    size = mq_receive(mqPduToPhy, bufferFromL2, MQ_MAX_PDU_MSG_SIZE, NULL);
 
     //Convert buffer received to vector<uint8_t>
     vector<uint8_t> serializedMacPdu;
@@ -296,9 +321,9 @@ void
 CoreL1::decoding(
     uint8_t macAddress)
 { 
-    char buffer[MAXIMUMSIZE];       //Buffer to store packet incoming
-    ssize_t size;                   //Size of packet received
-    bool flagBS = (macAddress!=0);  //Flag to indicate if it is BaseStation (true) or UserEquipment (false)   
+    char buffer[MQ_MAX_PDU_MSG_SIZE];       //Buffer to store packet incoming
+    ssize_t size;                           //Size of packet received
+    bool flagBS = (macAddress!=0);          //Flag to indicate if it is BaseStation (true) or UserEquipment (false)   
 
     //Create SubframeRx.Start message
 	vector<uint8_t> subFrameStartMessage;	            //Vector to receive serialized parameters structure SubframeRx.Start
@@ -329,9 +354,9 @@ CoreL1::decoding(
     vector<uint8_t> bytesPDUs;  //Array of bytes corresponding to MAC PDUs serialized
 
     //Clear buffer
-    bzero(buffer, MAXIMUMSIZE);
+    bzero(buffer, MQ_MAX_PDU_MSG_SIZE);
 
-    size = receivePdus(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
+    size = receivePdus(buffer, MQ_MAX_PDU_MSG_SIZE, ports[getSocketIndex(macAddress)]);
 
     //Communication Stream
     while(size>0){
@@ -373,9 +398,9 @@ CoreL1::decoding(
         //Test if all PDU(s) was(were) droped
         if(macPDUs.size()==0){
                 //Receive next PDUs
-            bzero(buffer, MAXIMUMSIZE);
+            bzero(buffer, MQ_MAX_PDU_MSG_SIZE);
             macPDUs.clear();
-            size = receivePdus(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
+            size = receivePdus(buffer, MQ_MAX_PDU_MSG_SIZE, ports[getSocketIndex(macAddress)]);
             continue;
         }
 
@@ -385,26 +410,26 @@ CoreL1::decoding(
 
         //Send SubframeRx.Start control message to L2 and RX Metrics if it is time
         if(rxMetricsPeriodicity && subFrameCounter==rxMetricsPeriodicity){
-            sendto(socketControlMessagesToL2, &(subFrameStartMessage[0]), subFrameStartMessage.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
+            sendInterlayerMessage((char*)&subFrameStartMessage[0], subFrameStartMessage.size());
             subFrameCounter = 0;
         }
         else{
-            sendto(socketControlMessagesToL2, &(subFrameStartMessage[0]), 1, MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
+            sendInterlayerMessage((char*)&subFrameStartMessage[0], 1);
         }
 
         if(rxMetricsPeriodicity) subFrameCounter ++;
         
         //Send PDUs
-        sendto(socketToL2, &bytesPDUs[0], bytesPDUs.size(), MSG_CONFIRM, (const struct sockaddr*)(&serverPdusSocketAddress), sizeof(serverPdusSocketAddress));
+        mq_send(mqPduFromPhy, (const char*)&bytesPDUs[0], bytesPDUs.size(), 1);
         
         //Send SubframeRx.End message
-        sendto(socketControlMessagesToL2, &subFrameEndMessage, 1, MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress));
+        sendInterlayerMessage(&subFrameEndMessage, 1);
 
         //Receive next PDUs
-        bzero(buffer, MAXIMUMSIZE);
+        bzero(buffer, MQ_MAX_PDU_MSG_SIZE);
         macPDUs.clear();
         bytesPDUs.clear();
-        size = receivePdus(buffer, MAXIMUMSIZE, ports[getSocketIndex(macAddress)]);
+        size = receivePdus(buffer, MQ_MAX_PDU_MSG_SIZE, ports[getSocketIndex(macAddress)]);
     }
 }
 
@@ -413,15 +438,15 @@ CoreL1::sendInterlayerMessage(
     char* buffer,           //Buffer containing message
     size_t numberBytes)     //Size of message in Bytes
 {
-    if(sendto(socketControlMessagesToL2, buffer, numberBytes, MSG_CONFIRM, (const struct sockaddr*)(&serverControlMessagesSocketAddress), sizeof(serverControlMessagesSocketAddress))==-1){
+    if(mq_send(mqControlFromPhy, (const char*)buffer, numberBytes, 1)==-1){
         if(verbose) cout<<"[CoreL1] Error sending control message."<<endl;
     }
 }
 
 void
 CoreL1::receiveInterlayerMessage(){
-    char buffer[MAXIMUMSIZE];       //Buffer where message will be stored
-    ssize_t messageSize = recv(socketControlMessagesFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
+    char buffer[MQ_MAX_CONTROL_MSG_SIZE];   //Buffer where message will be stored
+    ssize_t messageSize = mq_receive(mqControlToPhy, buffer, MQ_MAX_CONTROL_MSG_SIZE, NULL);
 
     //Control message stream
     while(messageSize>0){
@@ -485,8 +510,8 @@ CoreL1::receiveInterlayerMessage(){
         }
 
         //Clear buffer and message and receive next control message
-        bzero(buffer, MAXIMUMSIZE);
-        messageSize = recv(socketControlMessagesFromL2, buffer, MAXIMUMSIZE, MSG_WAITALL);
+        bzero(buffer, MQ_MAX_CONTROL_MSG_SIZE);
+        ssize_t messageSize = mq_receive(mqControlToPhy, buffer, MQ_MAX_CONTROL_MSG_SIZE, NULL);
     }
 }
 
