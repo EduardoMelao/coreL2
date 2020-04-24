@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : April 23rd, 2020
+@Last alteration : April 24th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -56,9 +56,13 @@ CoreL1::~CoreL1()
         close(socketsOut[i]);
     }
     mq_close(mqPduToPhy);
+    mq_unlink(MQ_PDU_TO_L1);
     mq_close(mqPduFromPhy);
+    mq_unlink(MQ_PDU_FROM_L1);
     mq_close(mqControlToPhy);
+    mq_unlink(MQ_CONTROL_TO_L1);
     mq_close(mqControlFromPhy);
+    mq_unlink(MQ_CONTROL_FROM_L1);
     if(numberSockets){
         delete[] socketsIn;
         delete[] socketsOut;

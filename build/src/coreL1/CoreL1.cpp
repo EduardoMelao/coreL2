@@ -7,7 +7,7 @@
 @Arquive name : CoreL1.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : April 1st, 2020
+@Last alteration : April 24th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -36,7 +36,8 @@ int main(int argc, char** argv){
     int counter = 0;                //Counter to help assigning threads
     bool verbose = false;
     if(argc<6){
-        cout<<"Usage: ./a.out macAddress numberEquipments ip1 port1 mac1 ... ipN portN macN --v"<<endl;
+        cout<<"Usage: ./a.out currentUeId numberEquipments [ip1 port1 ueId1] --v"<<endl;
+        cout<<"Items between [] have to be repeated for numberEquipments times."<<endl;
         exit(1);
     }
 

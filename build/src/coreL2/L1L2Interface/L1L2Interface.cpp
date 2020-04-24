@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : April 23rd, 2020
+@Last alteration : April 24th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -48,9 +48,13 @@ L1L2Interface::L1L2Interface(
 
 L1L2Interface::~L1L2Interface() {
     mq_close(mqPduToPhy);
+    mq_unlink(MQ_PDU_TO_L1);
     mq_close(mqPduFromPhy);
+    mq_unlink(MQ_PDU_FROM_L1);
     mq_close(mqControlToPhy);
+    mq_unlink(MQ_CONTROL_TO_L1);
     mq_close(mqControlFromPhy);
+    mq_unlink(MQ_CONTROL_FROM_L1);
 
 }
 
