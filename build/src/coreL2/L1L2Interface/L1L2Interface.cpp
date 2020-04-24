@@ -31,54 +31,13 @@ L1L2Interface::L1L2Interface(
 {
     verbose = _verbose;
 
-    //Message queue creation to send PDUs
-    createMessageQueue(mqPduToPhy, MQ_PDU_TO_L1, true);
-
-    //Message queue creation to receive PDUS
-    createMessageQueue(mqPduFromPhy, MQ_PDU_FROM_L1, true);
-
-    //Message queue creation to send Interlayeer messages
-    createMessageQueue(mqControlToPhy, MQ_CONTROL_TO_L1, false);
-
-    //Message queue creation to receive Interlayer Messages
-    createMessageQueue(mqControlFromPhy, MQ_CONTROL_FROM_L1, false);
-    
-    
+    //Message queue creation 
+    l1l2InterfaceQueues.createMessageQueues();
 }
 
 L1L2Interface::~L1L2Interface() {
-    mq_close(mqPduToPhy);
-    mq_unlink(MQ_PDU_TO_L1);
-    mq_close(mqPduFromPhy);
-    mq_unlink(MQ_PDU_FROM_L1);
-    mq_close(mqControlToPhy);
-    mq_unlink(MQ_CONTROL_TO_L1);
-    mq_close(mqControlFromPhy);
-    mq_unlink(MQ_CONTROL_FROM_L1);
+    l1l2InterfaceQueues.closeMessageQueues();
 
-}
-
-void
-L1L2Interface::createMessageQueue(
-    mqd_t & messageQueue,               //Message Queue descriptor
-    const char* messageQueueName,       //Message Queue Name
-    bool isPduQueue)                    //Flag to indicate if it is a PDU or ControlMessages queue
-{
-    //Define message queue attributes
-    struct mq_attr messageQueueAttributes;
-    messageQueueAttributes.mq_maxmsg = MQ_MAX_NUM_MSG;
-    messageQueueAttributes.mq_msgsize = isPduQueue? MQ_MAX_PDU_MSG_SIZE: MQ_MAX_CONTROL_MSG_SIZE;
-
-    //Open message queue
-    messageQueue = mq_open( messageQueueName, \
-                            O_CREAT|O_RDWR|O_NONBLOCK, \
-                            0666, \
-                            &messageQueueAttributes);
-    //Check for errors
-    if(messageQueue==-1) 
-        perror("[L1L2Interface] Error creating message queue: ");
-    else 
-        if(verbose) cout<<"[L1L2Interface] MessageQueue "<<messageQueueName<<" created successfully."<<endl;
 }
 
 void
@@ -98,7 +57,7 @@ L1L2Interface::sendPdus(
     }
 
     //Send PDU to L1
-    numberSent = mq_send(mqPduToPhy, (const char*)&(serializedMacPdus[0]), serializedMacPdus.size(), 1);
+    numberSent = mq_send(l1l2InterfaceQueues.mqPduToPhy, (const char*)&(serializedMacPdus[0]), serializedMacPdus.size(), 1);
 
     //Verify if transmission was successful
 	if(numberSent!=-1){
@@ -117,7 +76,7 @@ L1L2Interface::receivePdus(
 
 
     //Perform socket UDP packet reception
-    ssize_t totalSize = mq_receive(mqPduFromPhy, receptionBuffer, MQ_MAX_PDU_MSG_SIZE, NULL);
+    ssize_t totalSize = mq_receive(l1l2InterfaceQueues.mqPduFromPhy, receptionBuffer, MQ_MAX_PDU_MSG_SIZE, NULL);
 
     //Turn reception buffer into vector of Bytes for MAC PDU deserialization
     vector<uint8_t> receptionBufferBytes;
@@ -151,7 +110,7 @@ L1L2Interface::sendControlMessage(
     char* buffer,           //Buffer containing the message
     size_t numberBytes)     //Message size in Bytes
 {
-    if(mq_send(mqControlToPhy, buffer, numberBytes, 1)==-1){
+    if(mq_send(l1l2InterfaceQueues.mqControlToPhy, buffer, numberBytes, 1)==-1){
         if(verbose) cout<<"[L1L2Interface] Error sending control message."<<endl;
     }
 }
@@ -160,7 +119,7 @@ ssize_t
 L1L2Interface::receiveControlMessage(
     char* buffer)               //Buffer where message will be stored
 {
-    return mq_receive(mqControlFromPhy, buffer, MQ_MAX_CONTROL_MSG_SIZE, NULL);
+    return mq_receive(l1l2InterfaceQueues.mqControlFromPhy, buffer, MQ_MAX_CONTROL_MSG_SIZE, NULL);
 }
 
 void 

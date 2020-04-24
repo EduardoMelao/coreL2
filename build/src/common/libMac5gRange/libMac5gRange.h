@@ -11,6 +11,16 @@
 #include <vector>
 #include "../lib5grange/lib5grange.h"
 #include <mutex>
+#include <mqueue.h>
+
+#define MQ_PDU_TO_L1 "/mqPduToPhy"
+#define MQ_PDU_FROM_L1 "/mqPduFromPhy"
+#define MQ_CONTROL_TO_L1 "/mqControlToPhy"
+#define MQ_CONTROL_FROM_L1 "/mqControlfromPhy"
+
+#define MQ_MAX_NUM_MSG 10
+#define MQ_MAX_PDU_MSG_SIZE 204800
+#define MQ_MAX_CONTROL_MSG_SIZE 204800
 
 using namespace std;
 using namespace lib5grange;
@@ -19,7 +29,6 @@ enum MacModes {STANDBY_MODE, CONFIG_MODE, START_MODE, IDLE_MODE, RECONFIG_MODE, 
 enum MacTxModes {ACTIVE_MODE_TX, DISABLED_MODE_TX};
 enum MacRxModes {ACTIVE_MODE_RX, DISABLED_MODE_RX};
 enum MacTunModes {TUN_ENABLED, TUN_DISABLED};
-
 
 /**
  * @brief Struct for BSSubframeTx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
@@ -221,4 +230,77 @@ typedef struct{
             pop_bytes(snr[i], bytes);
     }
 }RxMetrics;
+
+
+/**
+ * @brief Struct for Message Queues used to interface MAC and PHY
+ */
+typedef struct{
+    mqd_t mqPduToPhy;                       //Message Queue descriptor used to RECEIVE PDUs from L2
+    mqd_t mqPduFromPhy;                     //Message Queue descriptor used to SEND PDUs to L2
+    mqd_t mqControlToPhy;                   //Message Queue descriptor used to RECEIVE Control Messages from L2
+    mqd_t mqControlFromPhy;                 //Message Queue descriptor used to SEND Control Messages to L2
+
+    /**
+     * @brief Procedure to create all 4 queues to communicate MAC and PHY
+     */
+    void createMessageQueues(){
+        //Define message queue attributes
+        struct mq_attr messageQueueAttributes;
+        messageQueueAttributes.mq_maxmsg = MQ_MAX_NUM_MSG;
+        messageQueueAttributes.mq_msgsize = MQ_MAX_PDU_MSG_SIZE;
+
+        //Open PDU message queues (PDU queues are non-blockable)
+        mqPduToPhy = mq_open( MQ_PDU_TO_L1, \
+                                O_CREAT|O_RDWR|O_NONBLOCK, \
+                                0666, \
+                                &messageQueueAttributes);
+        mqPduFromPhy = mq_open( MQ_PDU_FROM_L1, \
+                                O_CREAT|O_RDWR|O_NONBLOCK, \
+                                0666, \
+                                &messageQueueAttributes);   
+        
+        //Change mqueue max message size
+        messageQueueAttributes.mq_msgsize = MQ_MAX_CONTROL_MSG_SIZE;
+        
+        //Open Control message queues
+        mqControlToPhy = mq_open( MQ_CONTROL_TO_L1, \
+                                O_CREAT|O_RDWR, \
+                                0666, \
+                                &messageQueueAttributes);
+        mqControlFromPhy = mq_open( MQ_CONTROL_FROM_L1, \
+                                O_CREAT|O_RDWR, \
+                                0666, \
+                                &messageQueueAttributes);   
+        //Check for errors
+        if(mqPduToPhy==-1) 
+            perror("Error creating mqPduToPhy message queue");
+            
+        if(mqPduFromPhy==-1) 
+            perror("Error creating mqPduFromPhy message queue");
+            
+        if(mqControlToPhy==-1) 
+            perror("Error creating mqControlToPhy message queue");
+            
+        if(mqControlFromPhy==-1) 
+            perror("Error creating mqControlFromPhy message queue");
+    }
+
+    /**
+     * @brief Procedure to eliminate all Message Queues
+     */
+    void closeMessageQueues(){
+        //Close message queues
+        mq_close(mqPduToPhy);
+        mq_close(mqPduFromPhy);
+        mq_close(mqControlToPhy);
+        mq_close(mqControlFromPhy);
+
+        //Unlink message queues
+        mq_unlink(MQ_PDU_TO_L1);
+        mq_unlink(MQ_PDU_FROM_L1);
+        mq_unlink(MQ_CONTROL_TO_L1);
+        mq_unlink(MQ_CONTROL_FROM_L1);
+    }
+}l1_l2_interface_t;
 #endif  //INCLUDED_LIB_MAC_5G_RANGE_H

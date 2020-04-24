@@ -7,31 +7,20 @@
 #ifndef INCLUDED_L1_L2_INTERFACE_H
 #define INCLUDED_L1_L2_INTERFACE_H
 
-#define MQ_PDU_TO_L1 "/mqPduToPhy"
-#define MQ_PDU_FROM_L1 "/mqPduFromPhy"
-#define MQ_CONTROL_TO_L1 "/mqControlToPhy"
-#define MQ_CONTROL_FROM_L1 "/mqControlFromPhy"
-
-#define MQ_MAX_NUM_MSG 10
-#define MQ_MAX_PDU_MSG_SIZE 204800
-#define MQ_MAX_CONTROL_MSG_SIZE 204800
-
 #include <iostream>
 #include <mqueue.h>     //Posix Message Queues
 #include <vector>
 #include <string.h>     //bzero()
 #include <unistd.h>     //close()
 #include "../../common/lib5grange/lib5grange.h"
+#include "../../common/libMac5gRange/libMac5gRange.h"
 
 using namespace std;
 using namespace lib5grange;
 
 class L1L2Interface{
 private:
-    mqd_t mqPduToPhy;           //Message Queue descriptor used to SEND PDUs to L1
-    mqd_t mqPduFromPhy;         //Message Queue descriptor used to RECEIVE PDUs from L1
-    mqd_t mqControlToPhy;       //Message Queue descriptor used to SEND Control Messages to L1
-    mqd_t mqControlFromPhy;     //Message Queue descriptor used to RECEIVE Control Messages from L1
+    l1_l2_interface_t l1l2InterfaceQueues;      //Struct containing all queues to change messages with PHY  
     bool verbose;                               //Verbosity flag
 
     /**
@@ -53,14 +42,6 @@ public:
      * @brief Destroys a L1L2Interface object
      */
     ~L1L2Interface();
-
-    /**
-     * @brief Crates and opens message queue with default parameters
-     * @param messageQueue Message Queue descriptor
-     * @param messageQueueName Name of MessageQueue
-     * @param isPduQueue Flag to indicate if it os a messageQueue for PDUs (TRUE) or Control (FALSE) messages
-     */
-    void createMessageQueue(mqd_t & messageQueue, const char* messageQueueName, bool isPduQueue);
 
     /**
      * @param macPdus Array of MAC PDUs structures containing all information PHY needs

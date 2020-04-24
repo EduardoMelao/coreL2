@@ -7,15 +7,6 @@
 #ifndef INCLUDED_CORE_L1_H
 #define INCLUDED_CORE_L1_H
 
-#define MQ_PDU_TO_L1 "/mqPduToPhy"
-#define MQ_PDU_FROM_L1 "/mqPduFromPhy"
-#define MQ_CONTROL_TO_L1 "/mqControlToPhy"
-#define MQ_CONTROL_FROM_L1 "/mqControlfromPhy"
-
-#define MQ_MAX_NUM_MSG 10
-#define MQ_MAX_PDU_MSG_SIZE 204800
-#define MQ_MAX_CONTROL_MSG_SIZE 204800
-
 #include <iostream>     //cout
 #include <stdint.h>     //uint16_t
 #include <sys/socket.h> //socket(), AF_INET, SOCK_DGRAM
@@ -45,10 +36,7 @@ private:
     uint8_t *macAddresses;                  //Array of MAC addresses of each destination
     int numberSockets;                      //Number of actual sockets stored
 
-    mqd_t mqPduToPhy;                       //Message Queue descriptor used to RECEIVE PDUs from L2
-    mqd_t mqPduFromPhy;                     //Message Queue descriptor used to SEND PDUs to L2
-    mqd_t mqControlToPhy;                   //Message Queue descriptor used to RECEIVE Control Messages from L2
-    mqd_t mqControlFromPhy;                 //Message Queue descriptor used to SEND Control Messages to L2
+    l1_l2_interface_t l1l2Interface;        //Object containing all message queues to change messages with L2
 
     int subFrameCounter;                    //Counter to trigger RX Metrics sending to MAC
     uint8_t rxMetricsPeriodicity;           //Periodicity to send Rx metrics to MAC, in number of Subframes
@@ -84,14 +72,6 @@ public:
      * @brief Destructor of CoreL1 object
      */
     ~CoreL1();
-
-    /**
-     * @brief Crates and opens message queue with default parameters
-     * @param messageQueue Message Queue descriptor
-     * @param messageQueueName Name of MessageQueue
-     * @param isPduQueue Flag to indicate if it os a messageQueue for PDUs (TRUE) or Control (FALSE) messages
-     */
-    void createMessageQueue(mqd_t & messageQueue, const char* messageQueueName, bool isPduQueue);
 
     /**
      * @brief Adds new socket information in CoreL1. 
