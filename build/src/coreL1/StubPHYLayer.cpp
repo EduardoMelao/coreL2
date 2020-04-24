@@ -411,7 +411,7 @@ CoreL1::sendInterlayerMessage(
 void
 CoreL1::receiveInterlayerMessage(){
     char buffer[MQ_MAX_CONTROL_MSG_SIZE];   //Buffer where message will be stored
-    ssize_t messageSize = mq_receive(l1l2Interface.mqControlFromPhy, buffer, MQ_MAX_CONTROL_MSG_SIZE, NULL);
+    ssize_t messageSize = mq_receive(l1l2Interface.mqControlToPhy, buffer, MQ_MAX_CONTROL_MSG_SIZE, NULL);
 
     //Control message stream
     while(messageSize>0){
