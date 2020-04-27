@@ -29,7 +29,7 @@
 
 using namespace std;
 
-#define PHY_READY 1                     //Timeout, in seconds, to wait for PHY to be ready (Start/stop)
+#define PHY_READY 1     //Timeout, in seconds, to wait for PHY to be stopped
 
 //Initializing classes that will be defined in other .h files
 class ProtocolControl;
