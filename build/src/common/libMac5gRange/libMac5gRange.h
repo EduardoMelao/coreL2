@@ -252,11 +252,11 @@ typedef struct{
 
         //Open PDU message queues (PDU queues are non-blockable)
         mqPduToPhy = mq_open( MQ_PDU_TO_L1, \
-                                O_CREAT|O_RDWR|O_NONBLOCK, \
+                                O_CREAT|O_RDWR, \
                                 0666, \
                                 &messageQueueAttributes);
         mqPduFromPhy = mq_open( MQ_PDU_FROM_L1, \
-                                O_CREAT|O_RDWR|O_NONBLOCK, \
+                                O_CREAT|O_RDWR, \
                                 0666, \
                                 &messageQueueAttributes);   
         
@@ -265,11 +265,11 @@ typedef struct{
         
         //Open Control message queues
         mqControlToPhy = mq_open( MQ_CONTROL_TO_L1, \
-                                O_CREAT|O_RDWR, \
+                                O_CREAT|O_RDWR|O_NONBLOCK, \
                                 0666, \
                                 &messageQueueAttributes);
         mqControlFromPhy = mq_open( MQ_CONTROL_FROM_L1, \
-                                O_CREAT|O_RDWR, \
+                                O_CREAT|O_RDWR|O_NONBLOCK, \
                                 0666, \
                                 &messageQueueAttributes);   
         //Check for errors
