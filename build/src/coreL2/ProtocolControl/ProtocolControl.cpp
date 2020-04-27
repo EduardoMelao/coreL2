@@ -65,7 +65,7 @@ ProtocolControl::decodeControlSdus(
                 rxMetrics[index].snr_avg_ri_deserialize(rxMetricsBytes);
 
                 if(verbose){
-                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received."<<endl;
+                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received: ";
                     cout<<"RI: "<<(int)rxMetrics[index].rankIndicator<<endl;
                 }
 
@@ -99,7 +99,7 @@ ProtocolControl::decodeControlSdus(
                 macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress, averageMCS);
                 
                 if(verbose){
-                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received."<<endl;
+                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received: ";
                     cout<<"Flut: "<<(int)rxMetrics[index].ssReport<<" MCS avg:"<<(int)averageMCS<<endl;
                 }
 
