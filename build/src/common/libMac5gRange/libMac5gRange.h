@@ -284,6 +284,28 @@ typedef struct{
             
         if(mqControlFromPhy==-1) 
             perror("Error creating mqControlFromPhy message queue");
+
+        //Clear queues
+        clearQueue(mqPduToPhy);
+        clearQueue(mqPduFromPhy);
+        clearQueue(mqControlToPhy);
+        clearQueue(mqControlFromPhy);
+    }
+
+    /**
+     * @brief This procedure clears the queue when it is being opened
+     * @param mQueue
+     */
+    void clearQueue(mqd_t mQueue){
+        struct mq_attr mQueueAttributes;    //Struct to store current messageQueue's number of messages
+        char buffer[MQ_MAX_PDU_MSG_SIZE];   //Buffer to store provisional message
+        //Get attributes
+        mq_getattr(mQueue, &mQueueAttributes);
+
+        //Repeat message reception
+        for(int i=0;i<mQueueAttributes.mq_curmsgs;i++)
+            mq_receive(mQueue, buffer, MQ_MAX_PDU_MSG_SIZE, NULL);
+        
     }
 
     /**

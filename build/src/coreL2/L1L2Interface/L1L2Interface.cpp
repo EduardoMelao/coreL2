@@ -37,7 +37,6 @@ L1L2Interface::L1L2Interface(
 
 L1L2Interface::~L1L2Interface() {
     l1l2InterfaceQueues.closeMessageQueues();
-
 }
 
 void
