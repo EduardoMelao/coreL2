@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : April 24th, 2020
+@Last alteration : April 27th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -411,12 +411,16 @@ CoreL1::sendInterlayerMessage(
 void
 CoreL1::receiveInterlayerMessage(){
     char buffer[MQ_MAX_CONTROL_MSG_SIZE];   //Buffer where message will be stored
-    ssize_t messageSize = mq_receive(l1l2Interface.mqControlToPhy, buffer, MQ_MAX_CONTROL_MSG_SIZE, NULL);
+    ssize_t messageSize;                    //Size of message received
+    while(1){
+        //Clear buffer and message and receive next control message
+        bzero(buffer, MQ_MAX_CONTROL_MSG_SIZE);
+        messageSize = mq_receive(l1l2Interface.mqControlToPhy, buffer, MQ_MAX_CONTROL_MSG_SIZE, NULL);
 
-    //Control message stream
-    while(messageSize>0){
-        //#TODO: Implement other messages decoding because it is CONSIDERING ONLY SubframeTx.Start messages
+        if(messageSize<0)   //No message received
+            continue;
 
+        //Interlayermessage stream
     	vector<uint8_t> messageParametersBytes; //Array of Bytes where serialized message parameters will be stored
         BSSubframeTx_Start messageParametersBS; //Struct for BSSubframeTx.Start parameters
         UESubframeTx_Start messageParametersUE; //Struct for UESubframeTx.Start parameters
@@ -473,10 +477,6 @@ CoreL1::receiveInterlayerMessage(){
                 if(verbose) cout<<"[CoreL1] Unknown Control Message received."<<endl;
                 break;
         }
-
-        //Clear buffer and message and receive next control message
-        bzero(buffer, MQ_MAX_CONTROL_MSG_SIZE);
-        ssize_t messageSize = mq_receive(l1l2Interface.mqControlToPhy, buffer, MQ_MAX_CONTROL_MSG_SIZE, NULL);
     }
 }
 
