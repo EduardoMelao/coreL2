@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : April 27th, 2020
+@Last alteration : April 28th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -458,7 +458,7 @@ MacController::decoding()
 {
     uint8_t macAddress;                         //Source MAC address
     ssize_t numberBytesSdu;                     //Number of bytes of SDU incoming
-    char bufferSdu[MQ_MAX_PDU_MSG_SIZE];      //Buffer to store SDU incoming
+    char bufferSdu[MQ_MAX_MSG_SIZE];      //Buffer to store SDU incoming
     vector<MacPDU*> bufferPdus;                 //Buffer to store PDUs incoming
 
     //Read packet from Socket
@@ -508,7 +508,7 @@ MacController::decoding()
             if(verbose) cout<<"[MacController] Data SDU received. Forwarding to L3."<<endl; 
                 transmissionProtocol->sendPackageToL3(bufferSdu, numberBytesSdu);
             }
-            bzero(bufferSdu, MQ_MAX_PDU_MSG_SIZE);
+            bzero(bufferSdu, MQ_MAX_MSG_SIZE);
         }
 
         //Delete multiplexer and erase first position of vector

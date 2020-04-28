@@ -70,12 +70,12 @@ void
 L1L2Interface::receivePdus(
     vector<MacPDU*> & buffer)   //Buffer where PDUs are going to be stored
 {
-    char *receptionBuffer = new char[MQ_MAX_PDU_MSG_SIZE];  //Buffer to receive PDUs from L1
-    bzero(receptionBuffer, MQ_MAX_PDU_MSG_SIZE);            //Clear Reception buffer
+    char *receptionBuffer = new char[MQ_MAX_MSG_SIZE];  //Buffer to receive PDUs from L1
+    bzero(receptionBuffer, MQ_MAX_MSG_SIZE);            //Clear Reception buffer
 
 
     //Perform socket UDP packet reception
-    ssize_t totalSize = mq_receive(l1l2InterfaceQueues.mqPduFromPhy, receptionBuffer, MQ_MAX_PDU_MSG_SIZE, NULL);
+    ssize_t totalSize = mq_receive(l1l2InterfaceQueues.mqPduFromPhy, receptionBuffer, MQ_MAX_MSG_SIZE, NULL);
 
     //Turn reception buffer into vector of Bytes for MAC PDU deserialization
     vector<uint8_t> receptionBufferBytes;
@@ -121,7 +121,7 @@ ssize_t
 L1L2Interface::receiveControlMessage(
     char* buffer)               //Buffer where message will be stored
 {
-    return mq_receive(l1l2InterfaceQueues.mqControlFromPhy, buffer, MQ_MAX_CONTROL_MSG_SIZE, NULL);
+    return mq_receive(l1l2InterfaceQueues.mqControlFromPhy, buffer, MQ_MAX_MSG_SIZE, NULL);
 }
 
 void 
@@ -130,9 +130,9 @@ L1L2Interface::crcPackageCalculate(
     int size)           //PDU size in Bytes
 {
     unsigned short crc = 0x0000;
-    for(int i=0;i<size;i++){
-        crc = auxiliaryCalculationCRC(buffer[i],crc);
-    }
+    //for(int i=0;i<size;i++){
+    //    crc = auxiliaryCalculationCRC(buffer[i],crc);
+    //}
     buffer[size] = crc>>8;
     buffer[size+1] = crc&255;
 }
@@ -143,14 +143,14 @@ L1L2Interface::crcPackageChecking(
     int size)           //Size of PDU in Bytes
 {
     //Perform CRC calculation with auxiliary function
-    unsigned short crc1, crc2;
-    crc1 = ((buffer[size-2]&255)<<8)|((buffer[size-1])&255);
-    crc2 = 0x0000;
-    for(int i=0;i<size-2;i++){
-        crc2 = auxiliaryCalculationCRC(buffer[i],crc2);
-    }
+    //unsigned short crc1, crc2;
+    //crc1 = ((buffer[size-2]&255)<<8)|((buffer[size-1])&255);
+    //crc2 = 0x0000;
+    //for(int i=0;i<size-2;i++){
+    //    crc2 = auxiliaryCalculationCRC(buffer[i],crc2);
+    //}
 
-    return crc1==crc2;
+    return true;
 }
 
 unsigned short 

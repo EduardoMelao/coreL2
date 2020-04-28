@@ -12,15 +12,15 @@
 #include "../lib5grange/lib5grange.h"
 #include <mutex>
 #include <mqueue.h>
+#include <sys/resource.h>
 
 #define MQ_PDU_TO_L1 "/mqPduToPhy"
 #define MQ_PDU_FROM_L1 "/mqPduFromPhy"
 #define MQ_CONTROL_TO_L1 "/mqControlToPhy"
 #define MQ_CONTROL_FROM_L1 "/mqControlFromPhy"
 
-#define MQ_MAX_NUM_MSG 10
-#define MQ_MAX_PDU_MSG_SIZE 204800
-#define MQ_MAX_CONTROL_MSG_SIZE 204800
+#define MQ_MAX_NUM_MSG 100
+#define MQ_MAX_MSG_SIZE 204800
 
 using namespace std;
 using namespace lib5grange;
@@ -218,10 +218,17 @@ typedef struct{
      * @brief Procedure to create all 4 queues to communicate MAC and PHY
      */
     void createMessageQueues(){
+        //Increase System limits
+        struct rlimit rlim;
+        memset(&rlim, 0, sizeof(rlim));
+        rlim.rlim_cur = RLIM_INFINITY;
+        rlim.rlim_max = RLIM_INFINITY;
+        setrlimit(RLIMIT_MSGQUEUE, &rlim); 
+
         //Define message queue attributes
         struct mq_attr messageQueueAttributes;
         messageQueueAttributes.mq_maxmsg = MQ_MAX_NUM_MSG;
-        messageQueueAttributes.mq_msgsize = MQ_MAX_PDU_MSG_SIZE;
+        messageQueueAttributes.mq_msgsize = MQ_MAX_MSG_SIZE;
 
         //Open PDU message queues (PDU queues are non-blockable)
         mqPduToPhy = mq_open( MQ_PDU_TO_L1, \
@@ -232,9 +239,7 @@ typedef struct{
                                 O_CREAT|O_RDWR, \
                                 0666, \
                                 &messageQueueAttributes);   
-        
-        //Change mqueue max message size
-        messageQueueAttributes.mq_msgsize = MQ_MAX_CONTROL_MSG_SIZE;
+    
         
         //Open Control message queues
         mqControlToPhy = mq_open( MQ_CONTROL_TO_L1, \
@@ -271,13 +276,13 @@ typedef struct{
      */
     void clearQueue(mqd_t mQueue){
         struct mq_attr mQueueAttributes;    //Struct to store current messageQueue's number of messages
-        char buffer[MQ_MAX_PDU_MSG_SIZE];   //Buffer to store provisional message
+        char buffer[MQ_MAX_MSG_SIZE];   //Buffer to store provisional message
         //Get attributes
         mq_getattr(mQueue, &mQueueAttributes);
 
         //Repeat message reception
         for(int i=0;i<mQueueAttributes.mq_curmsgs;i++)
-            mq_receive(mQueue, buffer, MQ_MAX_PDU_MSG_SIZE, NULL);
+            mq_receive(mQueue, buffer, MQ_MAX_MSG_SIZE, NULL);
         
     }
 

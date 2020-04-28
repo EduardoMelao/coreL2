@@ -146,7 +146,7 @@ ProtocolControl::sendInterlayerMessages(
 void
 ProtocolControl::receiveInterlayerMessages()
 {
-    char buffer[MQ_MAX_CONTROL_MSG_SIZE]; //Buffer where message will be stored
+    char buffer[MQ_MAX_MSG_SIZE]; //Buffer where message will be stored
     string message;                     //String containing message converted from char*
     uint8_t sourceMacAddress;           //Source MAC Address
 
@@ -158,7 +158,7 @@ ProtocolControl::receiveInterlayerMessages()
             macController->currentParameters->setMacRxMode(ACTIVE_MODE_RX); 
 
             //Clear buffer and message and receive next control message
-            bzero(buffer, MQ_MAX_CONTROL_MSG_SIZE);
+            bzero(buffer, MQ_MAX_MSG_SIZE);
             message.clear();
             ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer);
 
