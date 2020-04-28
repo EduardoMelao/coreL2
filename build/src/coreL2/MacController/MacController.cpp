@@ -165,10 +165,6 @@ MacController::manager(){
 
                 //Here, all system threads that don't execute only in IDLE_MODE are started.
                 startThreads();
-                
-                //Send PHYConfig.Request message to PHY (no parameters needed)
-                char configRequestMessage = 'A';
-                protocolControl->sendInterlayerMessages(&configRequestMessage, 1);
 
                 //Set MAC mode to start mode
                 currentParameters->setMacMode(START_MODE);
@@ -180,9 +176,15 @@ MacController::manager(){
 
             case START_MODE:
             {
+                //Send PHYConfig.Request message to PHY (no parameters needed)
+                char configRequestMessage = 'A'; 
+                protocolControl->sendInterlayerMessages(&configRequestMessage, 1);
 
-                //Wait for PHY to be ready doing nothing...
+                //Set MAC mode to start mode
+                currentParameters->setMacMode(START_MODE);
 
+                //Wait for PHY to be ready for PHY_READY seconds
+                this_thread::sleep_for(chrono::seconds(PHY_READY));
             }
             break;
 
