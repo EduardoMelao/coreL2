@@ -7,7 +7,7 @@
 @Arquive name : Scheduler.cpp
 @Classification : Scheduler
 @
-@Last alteration : April 17th, 2020
+@Last alteration : April 28th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -109,7 +109,7 @@ Scheduler::fillMacPdus(
     vector<MacPDU> &macPdus)     //Vector of MacPDUs to be filled
 {
     uint8_t destinationUeId;                //Current Destination UE Identification
-    char sduBuffer[MAXIMUM_BUFFER_LENGTH];  //Buffer to store SDU on aggregation procedure
+    char sduBuffer[MQ_MAX_MSG_SIZE];    //Buffer to store SDU on aggregation procedure
     size_t sduSize;                         //SDU Size in bytes
     for(int i=0;i<macPdus.size();i++){
         destinationUeId = macPdus[i].allocation_.target_ue_id;
@@ -155,7 +155,7 @@ Scheduler::fillMacPdus(
             }
 
             //Clear buffer
-            bzero(sduBuffer, MAXIMUM_BUFFER_LENGTH);
+            bzero(sduBuffer, MQ_MAX_MSG_SIZE);
 
             //Get SDU from queue
             sduSize = sduBuffers->getNextControlSdu(destinationUeId, sduBuffer);
@@ -183,7 +183,7 @@ Scheduler::fillMacPdus(
             }
 
             //Clear buffer
-            bzero(sduBuffer, MAXIMUM_BUFFER_LENGTH);
+            bzero(sduBuffer, MQ_MAX_MSG_SIZE);
 
             //Get SDU from queue
             sduSize = sduBuffers->getNextDataSdu(destinationUeId, sduBuffer);

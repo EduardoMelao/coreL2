@@ -11,6 +11,16 @@
 #include <vector>
 #include "../lib5grange/lib5grange.h"
 #include <mutex>
+#include <mqueue.h>
+#include <sys/resource.h>
+
+#define MQ_PDU_TO_L1 "/mqPduToPhy"
+#define MQ_PDU_FROM_L1 "/mqPduFromPhy"
+#define MQ_CONTROL_TO_L1 "/mqControlToPhy"
+#define MQ_CONTROL_FROM_L1 "/mqControlFromPhy"
+
+#define MQ_MAX_NUM_MSG 100
+#define MQ_MAX_MSG_SIZE 204800
 
 using namespace std;
 using namespace lib5grange;
@@ -19,7 +29,6 @@ enum MacModes {STANDBY_MODE, CONFIG_MODE, START_MODE, IDLE_MODE, RECONFIG_MODE, 
 enum MacTxModes {ACTIVE_MODE_TX, DISABLED_MODE_TX};
 enum MacRxModes {ACTIVE_MODE_RX, DISABLED_MODE_RX};
 enum MacTunModes {TUN_ENABLED, TUN_DISABLED};
-
 
 /**
  * @brief Struct for BSSubframeTx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
@@ -114,38 +123,11 @@ typedef struct{
 }UESubframeTx_Start;
 
 /**
- * @brief Struct for BSSubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
- */
-typedef struct{
-    float snr[132];     //Signal to Noise Ratio //#TODO: define range.
-    
-    /**
-     * @brief Serialization method for the struct
-     * This method convert all menbers of the struct to a sequance of bytes and appends at the end
-     * of the vector given as argument
-     *
-     * @param bytes: vector of bytes where the struct will be serialized
-     */
-    void serialize(vector<uint8_t> & bytes)
-    {
-        for(int i=0;i<132;i++)
-            push_bytes(bytes, snr[i]);
-    }
-
-    /** deserializatyion method for the struct (inverse order)**/
-    void deserialize(vector<uint8_t> & bytes)
-    {
-        for(int i=131;i>=0;i--)
-            pop_bytes(snr[i], bytes);
-    }
-}BSSubframeRx_Start;
-
-/**
  * @brief Struct for UESubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
     float snr[132];     //Signal to Noise Ratio per Resource Block //#TODO: define range
-    uint8_t ssm;        //SSM: Spectrum Sensing Measurement. Array of 4 bits
+    float ssm;          //SSM: Spectrum Sensing Measurement. Array of 4 bits
     
     /**
      * @brief Serialization method for the struct
@@ -156,7 +138,7 @@ typedef struct{
      **/
     void serialize(vector<uint8_t> & bytes)
     {
-        push_bytes(bytes,(uint8_t)(ssm&15));
+        push_bytes(bytes,(ssm));
         for(int i=0;i<132;i++)
             push_bytes(bytes, snr[i]);
     }
@@ -176,8 +158,8 @@ typedef struct{
 typedef struct{
     float snr[132];         //Channel Signal to Noise Ratio per Resource Block
     float snr_avg;          //Average Signal to Noise Ratio
-    uint8_t rankIndicator;  //Rank Indicator
-    uint8_t ssReport;       //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 4 bits
+    float rankIndicator;    //Rank Indicator
+    float ssReport;         //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 4 bits
     
     /**
      * @brief Serialization method for the struct
@@ -189,7 +171,7 @@ typedef struct{
     void snr_avg_ri_serialize(vector<uint8_t> & bytes)
     {
         push_bytes(bytes, snr_avg);
-        push_bytes(bytes, (uint8_t)rankIndicator);
+        push_bytes(bytes, rankIndicator);
     }
 
     /**
@@ -203,7 +185,7 @@ typedef struct{
     {
         for(int i=0;i<132;i++)
             push_bytes(bytes, snr[i]);
-        push_bytes(bytes, (uint8_t)ssReport&15);
+        push_bytes(bytes, ssReport);
     }
 
     /** Deserialization method for the struct (inverse order)**/
@@ -221,4 +203,104 @@ typedef struct{
             pop_bytes(snr[i], bytes);
     }
 }RxMetrics;
+
+
+/**
+ * @brief Struct for Message Queues used to interface MAC and PHY
+ */
+typedef struct{
+    mqd_t mqPduToPhy;                       //Message Queue descriptor used to RECEIVE PDUs from L2
+    mqd_t mqPduFromPhy;                     //Message Queue descriptor used to SEND PDUs to L2
+    mqd_t mqControlToPhy;                   //Message Queue descriptor used to RECEIVE Control Messages from L2
+    mqd_t mqControlFromPhy;                 //Message Queue descriptor used to SEND Control Messages to L2
+
+    /**
+     * @brief Procedure to create all 4 queues to communicate MAC and PHY
+     */
+    void createMessageQueues(){
+        //Increase System limits
+        struct rlimit rlim;
+        memset(&rlim, 0, sizeof(rlim));
+        rlim.rlim_cur = RLIM_INFINITY;
+        rlim.rlim_max = RLIM_INFINITY;
+        setrlimit(RLIMIT_MSGQUEUE, &rlim); 
+
+        //Define message queue attributes
+        struct mq_attr messageQueueAttributes;
+        messageQueueAttributes.mq_maxmsg = MQ_MAX_NUM_MSG;
+        messageQueueAttributes.mq_msgsize = MQ_MAX_MSG_SIZE;
+
+        //Open PDU message queues (PDU queues are non-blockable)
+        mqPduToPhy = mq_open( MQ_PDU_TO_L1, \
+                                O_CREAT|O_RDWR, \
+                                0666, \
+                                &messageQueueAttributes);
+        mqPduFromPhy = mq_open( MQ_PDU_FROM_L1, \
+                                O_CREAT|O_RDWR, \
+                                0666, \
+                                &messageQueueAttributes);   
+    
+        
+        //Open Control message queues
+        mqControlToPhy = mq_open( MQ_CONTROL_TO_L1, \
+                                O_CREAT|O_RDWR|O_NONBLOCK, \
+                                0666, \
+                                &messageQueueAttributes);
+        mqControlFromPhy = mq_open( MQ_CONTROL_FROM_L1, \
+                                O_CREAT|O_RDWR|O_NONBLOCK, \
+                                0666, \
+                                &messageQueueAttributes);   
+        //Check for errors
+        if(mqPduToPhy==-1) 
+            perror("Error creating mqPduToPhy message queue");
+            
+        if(mqPduFromPhy==-1) 
+            perror("Error creating mqPduFromPhy message queue");
+            
+        if(mqControlToPhy==-1) 
+            perror("Error creating mqControlToPhy message queue");
+            
+        if(mqControlFromPhy==-1) 
+            perror("Error creating mqControlFromPhy message queue");
+
+        //Clear queues
+        clearQueue(mqPduToPhy);
+        clearQueue(mqPduFromPhy);
+        clearQueue(mqControlToPhy);
+        clearQueue(mqControlFromPhy);
+    }
+
+    /**
+     * @brief This procedure clears the queue when it is being opened
+     * @param mQueue
+     */
+    void clearQueue(mqd_t mQueue){
+        struct mq_attr mQueueAttributes;    //Struct to store current messageQueue's number of messages
+        char buffer[MQ_MAX_MSG_SIZE];   //Buffer to store provisional message
+        //Get attributes
+        mq_getattr(mQueue, &mQueueAttributes);
+
+        //Repeat message reception
+        for(int i=0;i<mQueueAttributes.mq_curmsgs;i++)
+            mq_receive(mQueue, buffer, MQ_MAX_MSG_SIZE, NULL);
+        
+    }
+
+    /**
+     * @brief Procedure to eliminate all Message Queues
+     */
+    void closeMessageQueues(){
+        //Close message queues
+        mq_close(mqPduToPhy);
+        mq_close(mqPduFromPhy);
+        mq_close(mqControlToPhy);
+        mq_close(mqControlFromPhy);
+
+        //Unlink message queues
+        mq_unlink(MQ_PDU_TO_L1);
+        mq_unlink(MQ_PDU_FROM_L1);
+        mq_unlink(MQ_CONTROL_TO_L1);
+        mq_unlink(MQ_CONTROL_FROM_L1);
+    }
+}l1_l2_interface_t;
 #endif  //INCLUDED_LIB_MAC_5G_RANGE_H

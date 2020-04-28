@@ -39,9 +39,8 @@ public:
     /**
      * @brief Receives packet from PHY Layer
      * @param buffer Buffer where packet will be stored
-     * @param maximumSize Maximum size of buffer in Bytes
      */
-    void receivePackageFromL1(vector<MacPDU*> & buffer, int maximumSize);
+    void receivePackageFromL1(vector<MacPDU*> & buffer);
 
     /**
      * @brief Receives packet from Linux IP Layer
