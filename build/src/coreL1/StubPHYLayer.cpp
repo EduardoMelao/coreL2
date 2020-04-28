@@ -472,7 +472,7 @@ CoreL1::receiveInterlayerMessage(){
 
             case 'F':
                 if(verbose) cout<<"[CoreL1] Receive new FLUT value: "<<(int)buffer[1]<<endl;
-            
+                break;
             default:
                 if(verbose) cout<<"[CoreL1] Unknown Control Message received."<<endl;
                 break;

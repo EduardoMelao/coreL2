@@ -16,7 +16,7 @@
 #define MQ_PDU_TO_L1 "/mqPduToPhy"
 #define MQ_PDU_FROM_L1 "/mqPduFromPhy"
 #define MQ_CONTROL_TO_L1 "/mqControlToPhy"
-#define MQ_CONTROL_FROM_L1 "/mqControlfromPhy"
+#define MQ_CONTROL_FROM_L1 "/mqControlFromPhy"
 
 #define MQ_MAX_NUM_MSG 10
 #define MQ_MAX_PDU_MSG_SIZE 204800
