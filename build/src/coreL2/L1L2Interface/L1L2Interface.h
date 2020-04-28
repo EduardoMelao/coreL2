@@ -8,11 +8,12 @@
 #define INCLUDED_L1_L2_INTERFACE_H
 
 #include <iostream>
-#include <mqueue.h>     //Posix Message Queues
+#include <mqueue.h>         //Posix Message Queues
 #include <vector>
-#include <string.h>     //bzero()
-#include <unistd.h>     //close()
-#include <errno.h>      //errno
+#include <string.h>         //bzero()
+#include <unistd.h>         //close()
+#include <errno.h>          //errno
+#include <boost/crc.hpp>    //Boost CRC library
 #include "../../common/lib5grange/lib5grange.h"
 #include "../../common/libMac5gRange/libMac5gRange.h"
 
@@ -26,11 +27,11 @@ private:
 
     /**
     * @brief Auxiliary function for CRC calculation
-    * @param data Single byte from PDU
-    * @param crc CRC history
-    * @returns 2-byte CRC calculation
+    * @param buffer Buffer with PDU bytes
+    * @param size Size of buffer in Bytes
+    * @returns CRC calculation
     */
-    unsigned short auxiliaryCalculationCRC(char data, unsigned short crc);
+    unsigned short auxiliaryCalculationCRC(char* buffer, int size);
 
 public:
     /**

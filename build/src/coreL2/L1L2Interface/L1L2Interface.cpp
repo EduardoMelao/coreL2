@@ -129,10 +129,9 @@ L1L2Interface::crcPackageCalculate(
     char* buffer,       //Buffer of Bytes of PDU
     int size)           //PDU size in Bytes
 {
-    unsigned short crc = 0x0000;
-    //for(int i=0;i<size;i++){
-    //    crc = auxiliaryCalculationCRC(buffer[i],crc);
-    //}
+    unsigned short crc = auxiliaryCalculationCRC(buffer, size);
+
+    //Input CRC value at the end of Buffer
     buffer[size] = crc>>8;
     buffer[size+1] = crc&255;
 }
@@ -142,28 +141,26 @@ L1L2Interface::crcPackageChecking(
     char* buffer,       //Bytes of PDU
     int size)           //Size of PDU in Bytes
 {
-    //Perform CRC calculation with auxiliary function
-    //unsigned short crc1, crc2;
-    //crc1 = ((buffer[size-2]&255)<<8)|((buffer[size-1])&255);
-    //crc2 = 0x0000;
-    //for(int i=0;i<size-2;i++){
-    //    crc2 = auxiliaryCalculationCRC(buffer[i],crc2);
-    //}
+    unsigned short receivedCRC;     //Value of CRC received at the end of PDU
+    unsigned short calculatedCRC;   //Value of CRC calculated with PDU bytes
 
-    return true;
+    //Get received CRC from 2 ending Bytes of PDU received
+    receivedCRC = ((buffer[size-2]&255)<<8)|((buffer[size-1])&255);
+
+    //Calculate CRC of received PDU discounting 2 ending Bytes used above
+    calculatedCRC = auxiliaryCalculationCRC(buffer, size-2);    
+
+    //Return true of values match
+    return receivedCRC == calculatedCRC;
 }
 
 unsigned short 
 L1L2Interface::auxiliaryCalculationCRC(
-    char data,              //Byte from PDU
-    unsigned short crc)     //CRC history
+    char* buffer,       //Buffer of Bytes of PDU
+    int size)           //PDU size in Bytes
 {
-    //Perform CRC calculation per Byte
-    char i, bit;
-    for(i=0x01;i;i<<=1){
-        bit = (((crc&0x0001)?1:0)^((data&i)?1:0));
-        crc>>=1;
-        if(bit) crc^=0x9299;
-    }
-    return crc;
+    boost::crc_16_type result;              //Result of CRC calculation
+    result.process_bytes(buffer, size);     //Process buffer Bytes
+
+    return result.checksum(); //Get CRC value
 }
