@@ -12,6 +12,7 @@
 #include "../lib5grange/lib5grange.h"
 #include <mutex>
 #include <mqueue.h>
+#include <sys/resource.h>
 
 #define MQ_PDU_TO_L1 "/mqPduToPhy"
 #define MQ_PDU_FROM_L1 "/mqPduFromPhy"
@@ -218,6 +219,13 @@ typedef struct{
      * @brief Procedure to create all 4 queues to communicate MAC and PHY
      */
     void createMessageQueues(){
+        //Increase System limits
+        struct rlimit rlim;
+        memset(&rlim, 0, sizeof(rlim));
+        rlim.rlim_cur = RLIM_INFINITY;
+        rlim.rlim_max = RLIM_INFINITY;
+        setrlimit(RLIMIT_MSGQUEUE, &rlim); 
+
         //Define message queue attributes
         struct mq_attr messageQueueAttributes;
         messageQueueAttributes.mq_maxmsg = MQ_MAX_NUM_MSG;
