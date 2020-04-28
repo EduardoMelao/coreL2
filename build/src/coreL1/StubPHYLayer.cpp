@@ -243,7 +243,7 @@ void
 CoreL1::encoding(
     uint8_t numberPdus)     //Number of PDUs for transmission
 {
-    char bufferFromL2[MQ_MAX_PDU_MSG_SIZE]; //Buffer to store packet from L2
+    char bufferFromL2[MQ_MAX_MSG_SIZE]; //Buffer to store packet from L2
     vector<uint8_t> bufferPdu;              //Buffer to store only data to send to the other side
     ssize_t size;                           //Size of packet received
     uint8_t macAddress;                     //Destination MAC address
@@ -251,7 +251,7 @@ CoreL1::encoding(
     MacPDU* macPdu;                         //Pointer to store desserialized PDU
 
     //Receive from L2
-    size = mq_receive(l1l2Interface.mqPduToPhy, bufferFromL2, MQ_MAX_PDU_MSG_SIZE, NULL);
+    size = mq_receive(l1l2Interface.mqPduToPhy, bufferFromL2, MQ_MAX_MSG_SIZE, NULL);
 
     //Convert buffer received to vector<uint8_t>
     vector<uint8_t> serializedMacPdu;
@@ -286,7 +286,7 @@ void
 CoreL1::decoding(
     uint8_t macAddress)
 { 
-    char buffer[MQ_MAX_PDU_MSG_SIZE];       //Buffer to store packet incoming
+    char buffer[MQ_MAX_MSG_SIZE];       //Buffer to store packet incoming
     ssize_t size;                           //Size of packet received
     bool flagBS = (macAddress!=0);          //Flag to indicate if it is BaseStation (true) or UserEquipment (false)   
 
@@ -313,9 +313,9 @@ CoreL1::decoding(
     vector<uint8_t> bytesPDUs;  //Array of bytes corresponding to MAC PDUs serialized
 
     //Clear buffer
-    bzero(buffer, MQ_MAX_PDU_MSG_SIZE);
+    bzero(buffer, MQ_MAX_MSG_SIZE);
 
-    size = receivePdus(buffer, MQ_MAX_PDU_MSG_SIZE, ports[getSocketIndex(macAddress)]);
+    size = receivePdus(buffer, MQ_MAX_MSG_SIZE, ports[getSocketIndex(macAddress)]);
 
     //Communication Stream
     while(size>0){
@@ -357,9 +357,9 @@ CoreL1::decoding(
         //Test if all PDU(s) was(were) droped
         if(macPDUs.size()==0){
                 //Receive next PDUs
-            bzero(buffer, MQ_MAX_PDU_MSG_SIZE);
+            bzero(buffer, MQ_MAX_MSG_SIZE);
             macPDUs.clear();
-            size = receivePdus(buffer, MQ_MAX_PDU_MSG_SIZE, ports[getSocketIndex(macAddress)]);
+            size = receivePdus(buffer, MQ_MAX_MSG_SIZE, ports[getSocketIndex(macAddress)]);
             continue;
         }
 
@@ -385,10 +385,10 @@ CoreL1::decoding(
         sendInterlayerMessage(&subFrameEndMessage, 1);
 
         //Receive next PDUs
-        bzero(buffer, MQ_MAX_PDU_MSG_SIZE);
+        bzero(buffer, MQ_MAX_MSG_SIZE);
         macPDUs.clear();
         bytesPDUs.clear();
-        size = receivePdus(buffer, MQ_MAX_PDU_MSG_SIZE, ports[getSocketIndex(macAddress)]);
+        size = receivePdus(buffer, MQ_MAX_MSG_SIZE, ports[getSocketIndex(macAddress)]);
     }
 }
 
@@ -408,12 +408,12 @@ CoreL1::sendInterlayerMessage(
 
 void
 CoreL1::receiveInterlayerMessage(){
-    char buffer[MQ_MAX_CONTROL_MSG_SIZE];   //Buffer where message will be stored
+    char buffer[MQ_MAX_MSG_SIZE];   //Buffer where message will be stored
     ssize_t messageSize;                    //Size of message received
     while(1){
         //Clear buffer and message and receive next control message
-        bzero(buffer, MQ_MAX_CONTROL_MSG_SIZE);
-        messageSize = mq_receive(l1l2Interface.mqControlToPhy, buffer, MQ_MAX_CONTROL_MSG_SIZE, NULL);
+        bzero(buffer, MQ_MAX_MSG_SIZE);
+        messageSize = mq_receive(l1l2Interface.mqControlToPhy, buffer, MQ_MAX_MSG_SIZE, NULL);
 
         if(messageSize<0)   //No message received
             continue;

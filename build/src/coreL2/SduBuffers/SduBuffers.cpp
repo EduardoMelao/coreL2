@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : April 23rd, 2020
+@Last alteration : April 28th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -66,7 +66,7 @@ SduBuffers::~SduBuffers(){
 void 
 SduBuffers::enqueueingDataSdus()
 {
-    char buffer[MQ_MAX_PDU_MSG_SIZE];
+    char buffer[MQ_MAX_MSG_SIZE];
     ssize_t numberBytesRead = 0;
     
     //Mark current MAC Tun mode as ENABLED for reading TUN interface and enqueueing Data SDUs.
@@ -75,10 +75,10 @@ SduBuffers::enqueueingDataSdus()
     //Loop will execute until STOP mode is activated
     while(currentParameters->getMacMode()!=STOP_MODE){
         //Allocate buffer
-        bzero(buffer, MQ_MAX_PDU_MSG_SIZE);
+        bzero(buffer, MQ_MAX_MSG_SIZE);
 
         //Read from TUN Interface
-        numberBytesRead = reception->receivePackageFromL3(buffer, MQ_MAX_PDU_MSG_SIZE);
+        numberBytesRead = reception->receivePackageFromL3(buffer, MQ_MAX_MSG_SIZE);
 
         //Check if there is actually information received
         if(numberBytesRead<0){
