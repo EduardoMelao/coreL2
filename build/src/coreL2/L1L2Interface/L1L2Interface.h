@@ -12,6 +12,7 @@
 #include <vector>
 #include <string.h>     //bzero()
 #include <unistd.h>     //close()
+#include <errno.h>      //errno
 #include "../../common/lib5grange/lib5grange.h"
 #include "../../common/libMac5gRange/libMac5gRange.h"
 

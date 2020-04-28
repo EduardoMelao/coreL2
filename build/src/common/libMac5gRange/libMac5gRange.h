@@ -123,33 +123,6 @@ typedef struct{
 }UESubframeTx_Start;
 
 /**
- * @brief Struct for BSSubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
- */
-typedef struct{
-    float snr[132];     //Signal to Noise Ratio //#TODO: define range.
-    
-    /**
-     * @brief Serialization method for the struct
-     * This method convert all menbers of the struct to a sequance of bytes and appends at the end
-     * of the vector given as argument
-     *
-     * @param bytes: vector of bytes where the struct will be serialized
-     */
-    void serialize(vector<uint8_t> & bytes)
-    {
-        for(int i=0;i<132;i++)
-            push_bytes(bytes, snr[i]);
-    }
-
-    /** deserializatyion method for the struct (inverse order)**/
-    void deserialize(vector<uint8_t> & bytes)
-    {
-        for(int i=131;i>=0;i--)
-            pop_bytes(snr[i], bytes);
-    }
-}BSSubframeRx_Start;
-
-/**
  * @brief Struct for UESubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{

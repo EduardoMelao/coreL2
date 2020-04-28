@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : April 23rd, 2020
+@Last alteration : April 28th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -181,19 +181,6 @@ ProtocolControl::receiveInterlayerMessages()
                     cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
                 break;
                 case 'C':    //Treat BSSubframeRX.Start message
-                    if(messageSize>1){      //It means that RX metrics were received
-                        BSSubframeRx_Start messageParametersBS;     //Define struct for BS paremeters
-
-                        //Copy buffer to vector
-                        messageParametersBytes.resize(messageSize-1);
-                        messageParametersBytes.assign(&(buffer[1]), &(buffer[1])+(messageSize-1));
-                        
-                        //Deserialize message
-                        messageParametersBS.deserialize(messageParametersBytes);
-
-                        if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start with Rx Metrics message. Receiving PDU from L1..."<<endl;
-
-                    }
                     if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
                     sourceMacAddress = macController->decoding();
                 break;

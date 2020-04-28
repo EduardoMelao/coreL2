@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : April 24th, 2020
+@Last alteration : April 28th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -109,8 +109,11 @@ L1L2Interface::sendControlMessage(
     char* buffer,           //Buffer containing the message
     size_t numberBytes)     //Message size in Bytes
 {
-    if(mq_send(l1l2InterfaceQueues.mqControlToPhy, buffer, numberBytes, 1)==-1){
-        if(verbose) cout<<"[L1L2Interface] Error sending control message."<<endl;
+    while(mq_send(l1l2InterfaceQueues.mqControlToPhy, buffer, numberBytes, 1)==-1){
+        if(errno == EAGAIN)
+            continue;
+        if(verbose) perror("[L1L2Interface] Error sending control message.");
+        exit(1);
     }
 }
 

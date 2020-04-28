@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : April 27th, 2020
+@Last alteration : April 28th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -296,13 +296,7 @@ CoreL1::decoding(
     char subFrameEndMessage = 'E';                      
 
     
-    if(flagBS){     //Create BSSubframeRx.Start message
-        BSSubframeRx_Start messageBS;	//Message parameters structure
-        for(int i=0;i<132;i++)
-            messageBS.snr[i] = 10; 
-        messageBS.serialize(subFrameStartMessage);
-    }
-    else{       //Create UESubframeRx.Start message
+    if(!flagBS){       //Create UESubframeRx.Start message
         UESubframeRx_Start messageUE;	//Messages parameters structure
         for(int i=0;i<132;i++)
             messageUE.snr[i] = 11;
@@ -403,8 +397,12 @@ CoreL1::sendInterlayerMessage(
     char* buffer,           //Buffer containing message
     size_t numberBytes)     //Size of message in Bytes
 {
-    if(mq_send(l1l2Interface.mqControlFromPhy, (const char*)buffer, numberBytes, 1)==-1){
-        if(verbose) cout<<"[CoreL1] Error sending control message."<<endl;
+    
+    while(mq_send(l1l2Interface.mqControlFromPhy, (const char*)buffer, numberBytes, 1)==-1){
+        if(errno == EAGAIN)
+            continue;
+        if(verbose) perror("[CoreL1] Error sending control message.");
+        exit(1);
     }
 }
 

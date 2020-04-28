@@ -16,6 +16,7 @@
 #include <unistd.h>     //close()
 #include <thread>       //thread
 #include <mqueue.h>     //POSIX Message Queues
+#include <errno.h>      //errno
 #include "../common/lib5grange/lib5grange.h"
 #include "../common/libMac5gRange/libMac5gRange.h"
 
