@@ -122,5 +122,11 @@ public:
      * @returns TRUE if Multiplexer is empty; FALSE otherwise
      */
     bool isEmpty();
+
+    /**
+     * @brief Function to get number of SDUs multiplexed
+     * @returns number of SDUs multiplexed
+     */
+    uint8_t getNumberSdusMultiplexed(); 
 };
 #endif  //INCLUDED__MULTIPLEXER_H
