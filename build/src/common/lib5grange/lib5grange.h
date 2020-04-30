@@ -209,6 +209,38 @@ namespace lib5grange {
             QAM256  //MCS 27
         };
 
+    constexpr float mcsToCodeRate[] =
+        {
+            0.04167,   //MCS 0 (filler)
+            0.04167,   //MCS 1
+            0.08333,   //MCS 2
+            0.12500,   //MCS 3
+            0.06250,   //MCS 4
+            0.20833,   //MCS 5
+            0.29167,   //MCS 6
+            0.37500,   //MCS 7
+            0.20833,   //MCS 8
+            0.25000,   //MCS 9
+            0.29167,   //MCS 10
+            0.37500,   //MCS 11
+            0.45833,   //MCS 12
+            0.54167,   //MCS 13
+            0.62500,   //MCS 14
+            0.75000,   //MCS 15
+            0.83333,   //MCS 16
+            0.58333,   //MCS 17
+            0.66667,   //MCS 18
+            0.75000,   //MCS 19
+            0.79167,   //MCS 20
+            0.87500,   //MCS 21
+            0.91667,   //MCS 22
+            0.75000,   //MCS 23
+            0.83333,   //MCS 24
+            0.87500,   //MCS 25
+            0.91667,   //MCS 26
+            0.95833    //MCS 27
+        };
+
     /**
      * @brief Transform any basic C type into bytes 
      * 
@@ -263,7 +295,7 @@ namespace lib5grange {
      * @param bytes : vector where the bytes data will be appended 
      */
     template <typename T>
-    void deserialize_vector(vector<T> & v, vector<uint8_t> & bytes){
+    inline void deserialize_vector(vector<T> & v, vector<uint8_t> & bytes){
         size_t num_elements;           
         pop_bytes(num_elements, bytes); // Retrieve the vector size
         v.resize(num_elements);         // space for the data
@@ -391,7 +423,7 @@ namespace lib5grange {
     * @param allocation: Struct with the configuration of the resource allocation (see: allocation_cfg_t).
     * @param mimo: Struct with the configuration of the MIMO (see: mimo_cfg_t).
     **/
-    size_t get_re_capacity(
+    inline size_t get_re_capacity(
         const size_t & numID,                 // Numerology ID
         const allocation_cfg_t & allocation,  // Allocation config struct
         const mimo_cfg_t & mimo);             // MIMO config struct
@@ -419,7 +451,7 @@ namespace lib5grange {
      *  @param numRE: Number of Resorce elements.
      *  @param mod: QAM modulation (QPSK, QAM16, QAM64 or QAM256).
     **/
-    inline size_t get_bit_capacity(
+    size_t get_bit_capacity(
         const size_t & numRE, // Number of resource elements
         const qammod_t & mod); // Modulation
     
@@ -433,7 +465,7 @@ namespace lib5grange {
     *   @param target_coderate: The target coderate for the tranmission.
     *   @param info_bits: Number of information bits to be sent.
     **/
-    size_t get_num_required_rb(
+    inline size_t get_num_required_rb(
         const size_t & numID,    // Numerology ID
         const mimo_cfg_t & mimo, // MIMO Onfiguration
         const qammod_t & mod,    // Modulation 
@@ -486,15 +518,15 @@ namespace lib5grange {
             MacPDU(vector<uint8_t> & bytes);
                       
             /** @brief Destroy the MacPDU object **/
-            ~MacPDU(){};
+            inline  ~MacPDU(){};
             
             /** Serializes the MacPDU object to a sequance of bytes **/
             void serialize(vector<uint8_t> & bytes);
            
     }; /* class MacPDU */
 
-        inline size_t
-    get_re_capacity(
+    size_t
+    inline get_re_capacity(
         const size_t & numID,                   // Numerology ID
         const allocation_cfg_t & allocation,    // Allocation config struct
         const mimo_cfg_t & mimo = {NONE, 1, 0}) // MIMO config struct (defaults to SISO)
@@ -522,8 +554,8 @@ namespace lib5grange {
      * @param pdu 
      * @return size_t 
      */
-    inline size_t
-    get_re_capacity(const MacPDU & pdu) 
+    size_t
+    inline get_re_capacity(const MacPDU & pdu) 
     {
         const auto & numID = pdu.numID_;
         const auto & allocation = pdu.allocation_;
@@ -531,8 +563,8 @@ namespace lib5grange {
         return get_re_capacity(numID, allocation, mimo);
     }
 
-    inline size_t
-    get_bit_capacity(
+    size_t
+    inline get_bit_capacity(
         const size_t & numID,
         const allocation_cfg_t & allocation,    
         const mimo_cfg_t & mimo,
@@ -543,8 +575,8 @@ namespace lib5grange {
         return numBits;
     }
 
-    inline size_t
-    get_bit_capacity(const MacPDU & pdu)
+    size_t
+    inline get_bit_capacity(const MacPDU & pdu)
     {   
         const auto & numID = pdu.numID_;
         const auto & allocation = pdu.allocation_;
@@ -554,16 +586,16 @@ namespace lib5grange {
         return get_bit_capacity(numID, allocation, mimo, mod);
     }
 
-    inline size_t
-    get_bit_capacity(
+    size_t
+    inline get_bit_capacity(
         const size_t & numRE, // Number of resource elements
         const qammod_t & mod) // Modulation
     {
         return (numRE*mod);
     }
 
-    inline size_t 
-    get_num_required_rb(
+    size_t 
+    inline get_num_required_rb(
         const size_t & numID,    // Numerology ID
         const mimo_cfg_t & mimo, // MIMO Onfiguration
         const qammod_t & mod,    // Modulation 
@@ -628,24 +660,24 @@ namespace lib5grange {
 		push_bytes(bytes, rankIndicator_);
         // Vectors
         serialize_vector(bytes, mac_data_);
-        serialize_vector(bytes, coded_data_);
-        serialize_vector(bytes, symbols_);
-        serialize_vector(bytes, control_data_);
-        serialize_vector(bytes, control_symbols_[0]);
-        serialize_vector(bytes, control_symbols_[1]);
-        serialize_vector(bytes, mimo_symbols_[0]);
-        serialize_vector(bytes, mimo_symbols_[1]);
+        // serialize_vector(bytes, coded_data_);
+        // serialize_vector(bytes, symbols_);
+        // serialize_vector(bytes, control_data_);
+        // serialize_vector(bytes, control_symbols_[0]);
+        // serialize_vector(bytes, control_symbols_[1]);
+        // serialize_vector(bytes, mimo_symbols_[0]);
+        // serialize_vector(bytes, mimo_symbols_[1]);
     }
 
     inline MacPDU::MacPDU(vector<uint8_t> & bytes)
     {
-        deserialize_vector(mimo_symbols_[1], bytes);
-        deserialize_vector(mimo_symbols_[0], bytes);
-        deserialize_vector(control_symbols_[1], bytes);
-        deserialize_vector(control_symbols_[0], bytes);
-        deserialize_vector(control_data_, bytes);
-        deserialize_vector(symbols_, bytes);
-        deserialize_vector(coded_data_, bytes);
+        // deserialize_vector(mimo_symbols_[1], bytes);
+        // deserialize_vector(mimo_symbols_[0], bytes);
+        // deserialize_vector(control_symbols_[1], bytes);
+        // deserialize_vector(control_symbols_[0], bytes);
+        // deserialize_vector(control_data_, bytes);
+        // deserialize_vector(symbols_, bytes);
+        // deserialize_vector(coded_data_, bytes);
         deserialize_vector(mac_data_, bytes);
         // non-vectors
         pop_bytes(rankIndicator_, bytes);
@@ -656,5 +688,24 @@ namespace lib5grange {
         macphy_ctl_.deserialize(bytes);
         pop_bytes(numID_, bytes);
     }
+
+    inline size_t
+    get_net_byte_capacity(float coderate, const MacPDU & pdu)
+    {
+        return ((get_bit_capacity(pdu)/8) * coderate);
+    };
+
+    inline size_t
+    get_net_byte_capacity(
+        size_t numID,
+        allocation_cfg_t allocation,
+        mimo_cfg_t mimo,
+        qammod_t mod,
+        float coderate)
+    {
+        return (get_bit_capacity(numID, allocation, mimo, mod)/8 * coderate);
+    }
+
+
 } /* namespace lib5grange */
 #endif /* INCLUDED_LIB5GRANGE_H */
