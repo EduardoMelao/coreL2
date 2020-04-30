@@ -8,6 +8,7 @@
 #define INCLUDED_LINK_ADAPTATION_H
 
 #include <stdint.h>     //uint8_t
+#include "../../common/lib5grange/lib5grange.h"
 
 /**
  * @brief Class to perform Link Adaptation calculations such as converting SNR to MCS

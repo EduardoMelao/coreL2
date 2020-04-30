@@ -7,7 +7,7 @@
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : March 13th, 2020
+@Last alteration : April 29th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -231,4 +231,9 @@ Multiplexer::removeMacHeader(){
 bool
 Multiplexer::isEmpty(){
     return numberSDUs==0;
+}
+
+uint8_t
+Multiplexer::getNumberSdusMultiplexed(){
+    return numberSDUs;
 }

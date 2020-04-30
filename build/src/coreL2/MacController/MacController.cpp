@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : April 17th, 2020
+@Last alteration : April 28th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -56,7 +56,6 @@ MacController::~MacController(){
     delete receptionProtocol;
     delete transmissionProtocol;
     delete tunInterface;
-    delete l1l2Interface;
     delete [] threads;
     delete ipMacTable;
     delete timerSubframe;
@@ -66,6 +65,7 @@ MacController::~MacController(){
     if(currentParameters->getMacMode()!=STOP_MODE){
         delete cliL2Interface;
         delete currentParameters;
+        delete l1l2Interface;
     }
 }
 
@@ -170,16 +170,20 @@ MacController::manager(){
                 currentParameters->setMacMode(START_MODE);
 
                 cout<<"\n\n[MacController] ___________ System entering START mode. ___________\n"<<endl;
+                cout<<"[MacController] Waiting for PHY to be ready..."<<endl;
             }
             break;
 
             case START_MODE:
             {
                 //Send PHYConfig.Request message to PHY (no parameters needed)
-                char configRequestMessage = 'A';
+                char configRequestMessage = 'A'; 
                 protocolControl->sendInterlayerMessages(&configRequestMessage, 1);
 
-                //Wait for PHY to be ready
+                //Set MAC mode to start mode
+                currentParameters->setMacMode(START_MODE);
+
+                //Wait for PHY to be ready for PHY_READY seconds
                 this_thread::sleep_for(chrono::seconds(PHY_READY));
             }
             break;
@@ -454,11 +458,11 @@ MacController::decoding()
 {
     uint8_t macAddress;                         //Source MAC address
     ssize_t numberBytesSdu;                     //Number of bytes of SDU incoming
-    char bufferSdu[MAXIMUM_BUFFER_LENGTH];      //Buffer to store SDU incoming
+    char bufferSdu[MQ_MAX_MSG_SIZE];      //Buffer to store SDU incoming
     vector<MacPDU*> bufferPdus;                 //Buffer to store PDUs incoming
 
     //Read packet from Socket
-    receptionProtocol->receivePackageFromL1(bufferPdus, MAXIMUM_BUFFER_LENGTH);
+    receptionProtocol->receivePackageFromL1(bufferPdus);
 
     //Decode PDUs
     while(bufferPdus.size()>0){
@@ -504,7 +508,7 @@ MacController::decoding()
             if(verbose) cout<<"[MacController] Data SDU received. Forwarding to L3."<<endl; 
                 transmissionProtocol->sendPackageToL3(bufferSdu, numberBytesSdu);
             }
-            bzero(bufferSdu, MAXIMUM_BUFFER_LENGTH);
+            bzero(bufferSdu, MQ_MAX_MSG_SIZE);
         }
 
         //Delete multiplexer and erase first position of vector

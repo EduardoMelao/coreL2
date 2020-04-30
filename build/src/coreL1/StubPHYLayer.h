@@ -7,13 +7,6 @@
 #ifndef INCLUDED_CORE_L1_H
 #define INCLUDED_CORE_L1_H
 
-#define PORT_TO_L2 8091
-#define PORT_FROM_L2 8090
-#define CONTROL_MESSAGES_PORT_TO_L2 8093
-#define CONTROL_MESSAGES_PORT_FROM_L2 8092
-
-#define MAXIMUMSIZE 102400
-
 #include <iostream>     //cout
 #include <stdint.h>     //uint16_t
 #include <sys/socket.h> //socket(), AF_INET, SOCK_DGRAM
@@ -22,6 +15,8 @@
 #include <vector>
 #include <unistd.h>     //close()
 #include <thread>       //thread
+#include <mqueue.h>     //POSIX Message Queues
+#include <errno.h>      //errno
 #include "../common/lib5grange/lib5grange.h"
 #include "../common/libMac5gRange/libMac5gRange.h"
 
@@ -41,12 +36,9 @@ private:
     uint8_t currentMacAddress;              //MAC address of this equipment
     uint8_t *macAddresses;                  //Array of MAC addresses of each destination
     int numberSockets;                      //Number of actual sockets stored
-    int socketFromL2;                       //File descriptor of socket used to RECEIVE from L2
-    int socketToL2;                         //File descriptor of socket used to SEND to L2
-    int socketControlMessagesFromL2;        //File descriptor of socket used to RECEIVE Control Messages from L2
-    int socketControlMessagesToL2;          //File descriptor of socket used to SEND Control Messages to L2
-    struct sockaddr_in serverPdusSocketAddress; //Address of server to which client will send PDUs
-    struct sockaddr_in serverControlMessagesSocketAddress;  //Address of server to which client will send control messages
+
+    l1_l2_interface_t l1l2Interface;        //Object containing all message queues to change messages with L2
+
     int subFrameCounter;                    //Counter to trigger RX Metrics sending to MAC
     uint8_t rxMetricsPeriodicity;           //Periodicity to send Rx metrics to MAC, in number of Subframes
     bool phyActive;                         //Flag to control PHY activation and deactivation

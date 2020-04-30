@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : April 7th, 2020
+@Last alteration : April 30th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -31,6 +31,7 @@ ProtocolControl::ProtocolControl(
 {
     macController = _macController;
     rxMetrics = new RxMetrics[macController->currentParameters->getNumberUEs()];
+    rxMetricsReceived = false;
     verbose = _verbose;
 }
 
@@ -64,13 +65,27 @@ ProtocolControl::decodeControlSdus(
                 //Deserialize Bytes
                 rxMetrics[index].snr_avg_ri_deserialize(rxMetricsBytes);
 
-                //Calculate new DLMCS
-                macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress,LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr_avg));
-
                 if(verbose){
-                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received."<<endl;
-                    cout<<"RI: "<<(int)rxMetrics[index].rankIndicator<<endl;
+                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received: ";
+                    cout<<"RI: "<<(int)rxMetrics[index].rankIndicator;
                 }
+
+                //Calculate average MCS
+                int averageMCS = 0;
+                if(rxMetricsReceived){
+                    for(int i=0;i<132;i++)
+                        averageMCS += LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr[i]);
+                }
+                averageMCS += LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr_avg)*macController->currentParameters->getUlReservation(macAddress).number_of_rb;
+                averageMCS = averageMCS/(macController->currentParameters->getUlReservation(macAddress).number_of_rb + (rxMetricsReceived? 133:0));
+
+                //Assert WbSNR was not received
+                rxMetricsReceived = false;
+
+                if(verbose) cout<<" and MCS avg: "<<(int)averageMCS<<endl;
+
+                //Calculate new DLMCS
+                macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress, averageMCS);
 
                 //If new MCS is different from old, enter RECONFIG mode
                 if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
@@ -79,6 +94,7 @@ ProtocolControl::decodeControlSdus(
 
                     if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
                 }
+
                 break;
             }
             case '2':   //RxMetrics: snr per RB and Spectrum Sensing Report
@@ -97,6 +113,14 @@ ProtocolControl::decodeControlSdus(
 
                 //Deserialize Bytes
                 rxMetrics[index].snr_ssr_deserialize(rxMetricsBytes);
+
+                if(verbose){
+                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received: ";
+                    cout<<"Flut: "<<(int)rxMetrics[index].ssReport<<endl;
+                }
+                
+                //Change flag value
+                rxMetricsReceived = true;
 
                 //Perform Fusion calculation
                 macController->cosora->fusionAlgorithm(rxMetrics[index].ssReport);
@@ -134,7 +158,7 @@ ProtocolControl::sendInterlayerMessages(
 void
 ProtocolControl::receiveInterlayerMessages()
 {
-    char buffer[MAXIMUM_BUFFER_LENGTH]; //Buffer where message will be stored
+    char buffer[MQ_MAX_MSG_SIZE]; //Buffer where message will be stored
     string message;                     //String containing message converted from char*
     uint8_t sourceMacAddress;           //Source MAC Address
 
@@ -146,9 +170,9 @@ ProtocolControl::receiveInterlayerMessages()
             macController->currentParameters->setMacRxMode(ACTIVE_MODE_RX); 
 
             //Clear buffer and message and receive next control message
-            bzero(buffer, MAXIMUM_BUFFER_LENGTH);
+            bzero(buffer, MQ_MAX_MSG_SIZE);
             message.clear();
-            ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MAXIMUM_BUFFER_LENGTH);
+            ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer);
 
             //If it returns 0 or less, no information was received
             if(messageSize<=0)
@@ -169,19 +193,6 @@ ProtocolControl::receiveInterlayerMessages()
                     cout<<"\n\n[MacController] ___________ System entering STOP mode. ___________\n"<<endl;
                 break;
                 case 'C':    //Treat BSSubframeRX.Start message
-                    if(messageSize>1){      //It means that RX metrics were received
-                        BSSubframeRx_Start messageParametersBS;     //Define struct for BS paremeters
-
-                        //Copy buffer to vector
-                        messageParametersBytes.resize(messageSize-1);
-                        messageParametersBytes.assign(&(buffer[1]), &(buffer[1])+(messageSize-1));
-                        
-                        //Deserialize message
-                        messageParametersBS.deserialize(messageParametersBytes);
-
-                        if(verbose) cout<<"[ProtocolControl] Received BSSubframeRx.Start with Rx Metrics message. Receiving PDU from L1..."<<endl;
-
-                    }
                     if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
                     sourceMacAddress = macController->decoding();
                 break;

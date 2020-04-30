@@ -7,7 +7,7 @@
 @Arquive name : ReceptionProtocol.cpp
 @Classification : Reception Protocol
 @
-@Last alteration : April 1st, 2020
+@Last alteration : April 23rd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -38,11 +38,10 @@ ReceptionProtocol::~ReceptionProtocol() {}
 
 void 
 ReceptionProtocol::receivePackageFromL1(
-    vector<MacPDU*> & buffer,   //Buffer where packet will be stored
-    int maximumSize)            //Maximum size of buffer in Bytes
+    vector<MacPDU*> & buffer)   //Buffer where packet will be stored
 {
     if(verbose) cout<<"[ReceptionProtocol] Receiving packet from L1."<<endl;
-    l1l2Interface->receivePdus(buffer, maximumSize);
+    l1l2Interface->receivePdus(buffer);
 }
 
 ssize_t 

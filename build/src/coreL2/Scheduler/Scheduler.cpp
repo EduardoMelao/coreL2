@@ -7,7 +7,7 @@
 @Arquive name : Scheduler.cpp
 @Classification : Scheduler
 @
-@Last alteration : April 17th, 2020
+@Last alteration : April 30th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -109,7 +109,7 @@ Scheduler::fillMacPdus(
     vector<MacPDU> &macPdus)     //Vector of MacPDUs to be filled
 {
     uint8_t destinationUeId;                //Current Destination UE Identification
-    char sduBuffer[MAXIMUM_BUFFER_LENGTH];  //Buffer to store SDU on aggregation procedure
+    char sduBuffer[MQ_MAX_MSG_SIZE];    //Buffer to store SDU on aggregation procedure
     size_t sduSize;                         //SDU Size in bytes
     for(int i=0;i<macPdus.size();i++){
         destinationUeId = macPdus[i].allocation_.target_ue_id;
@@ -125,20 +125,22 @@ Scheduler::fillMacPdus(
         macPdus[i].mimo_.precoding_mtx = currentParameters->getMimoPrecoding(destinationUeId);
 
         //Fill MCS struct
-        if(currentParameters->isBaseStation())  
-            macPdus[i].mcs_.modulation = mcsToModulation[currentParameters->getMcsDownlink(destinationUeId)];
+        uint8_t mcsValue;   //Value of MCS for current transmission and current destination
+        if(currentParameters->isBaseStation())
+            mcsValue = currentParameters->getMcsDownlink(destinationUeId);
         else
-            macPdus[i].mcs_.modulation = mcsToModulation[currentParameters->getMcsUplink(destinationUeId)];
-        
+            mcsValue = currentParameters->getMcsUplink(destinationUeId);
+        macPdus[i].mcs_.modulation = mcsToModulation[mcsValue];
+
         //Fill Numerology
         macPdus[i].numID_ = currentParameters->getNumerology();
 
         //Calculate number of bits for next transmission
-        size_t numberBits = get_bit_capacity(macPdus[i].numID_, macPdus[i].allocation_, macPdus[i].mimo_, macPdus[i].mcs_.modulation);
-        if(verbose) cout<<"[Scheduler] Scheduled "<<numberBits/8<<" Bytes for PDU "<<i<<endl;
+        size_t numberBytes = get_net_byte_capacity(macPdus[i].numID_, macPdus[i].allocation_, macPdus[i].mimo_, macPdus[i].mcs_.modulation, mcsToCodeRate[mcsValue]);
+        if(verbose) cout<<"[Scheduler] Scheduled "<<numberBytes<<" Bytes for PDU "<<i<<endl;
 
         //Create a new Multiplexer object to aggregate SDUs
-        Multiplexer* multiplexer = new Multiplexer(numberBits/8, 0, destinationUeId, verbose);
+        Multiplexer* multiplexer = new Multiplexer(numberBytes, 0, destinationUeId, verbose);
 
         //Aggregation procedure - Control SDUs
         int numberControlSDUs = sduBuffers->getNumberControlSdus(destinationUeId);
@@ -149,13 +151,18 @@ Scheduler::fillMacPdus(
         
         for(int j=0;j<numberControlSDUs;j++){
             //Verify if it is possivel to enqueue next SDU
-            if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextControlSduSize(destinationUeId))>numberBits/8){
+            if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextControlSduSize(destinationUeId))>numberBytes){
                 if(verbose) cout<<"[Scheduler] End of scheduling control SDUs: extrapolated bit capacity."<<endl;
                 break;
             }
 
+            if(multiplexer->getNumberSdusMultiplexed()==255){
+                if(verbose) cout<<"[Scheduler] End of scheduling control SDUs: extrapolated SDU capacity."<<endl;
+                break;
+            }
+
             //Clear buffer
-            bzero(sduBuffer, MAXIMUM_BUFFER_LENGTH);
+            bzero(sduBuffer, MQ_MAX_MSG_SIZE);
 
             //Get SDU from queue
             sduSize = sduBuffers->getNextControlSdu(destinationUeId, sduBuffer);
@@ -177,13 +184,17 @@ Scheduler::fillMacPdus(
         
         for(int j=0;j<numberDataSDUs;j++){
             //Verify if it is possivel to enqueue next SDU
-            if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextDataSduSize(destinationUeId))>numberBits/8){
+            if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextDataSduSize(destinationUeId))>numberBytes){
                 if(verbose) cout<<"[Scheduler] End of scheduling data SDUs: extrapolated bit capacity."<<endl;
                 break;
             }
 
+            if(multiplexer->getNumberSdusMultiplexed()==255){
+                if(verbose) cout<<"[Scheduler] End of scheduling control SDUs: extrapolated SDU capacity."<<endl;
+                break;
+            }
             //Clear buffer
-            bzero(sduBuffer, MAXIMUM_BUFFER_LENGTH);
+            bzero(sduBuffer, MQ_MAX_MSG_SIZE);
 
             //Get SDU from queue
             sduSize = sduBuffers->getNextDataSdu(destinationUeId, sduBuffer);

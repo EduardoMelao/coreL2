@@ -25,6 +25,7 @@ class MacController;
 class ProtocolControl{
 private:
     MacController* macController;           //MacController object with all system modules
+    bool rxMetricsReceived;                 //Flag to indicate RxMetrics with Fusion and WbSNR was received from UE
     bool verbose;                           //Verbosity flag
 
 public:
