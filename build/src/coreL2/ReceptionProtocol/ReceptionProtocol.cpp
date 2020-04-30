@@ -38,10 +38,11 @@ ReceptionProtocol::~ReceptionProtocol() {}
 
 void 
 ReceptionProtocol::receivePackageFromL1(
-    vector<MacPDU*> & buffer)   //Buffer where packet will be stored
+    vector<MacPDU*> & buffer,   //Buffer where packet will be stored
+    int maxSize)
 {
     if(verbose) cout<<"[ReceptionProtocol] Receiving packet from L1."<<endl;
-    l1l2Interface->receivePdus(buffer);
+    l1l2Interface->receivePdus(buffer, maxSize);
 }
 
 ssize_t 

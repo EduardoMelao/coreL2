@@ -172,7 +172,7 @@ ProtocolControl::receiveInterlayerMessages()
             //Clear buffer and message and receive next control message
             bzero(buffer, MQ_MAX_MSG_SIZE);
             message.clear();
-            ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer);
+            ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MQ_MAX_MSG_SIZE);
 
             //If it returns 0 or less, no information was received
             if(messageSize<=0)

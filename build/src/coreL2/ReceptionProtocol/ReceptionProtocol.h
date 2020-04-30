@@ -40,7 +40,7 @@ public:
      * @brief Receives packet from PHY Layer
      * @param buffer Buffer where packet will be stored
      */
-    void receivePackageFromL1(vector<MacPDU*> & buffer);
+    void receivePackageFromL1(vector<MacPDU*> & buffer, int maxSize);
 
     /**
      * @brief Receives packet from Linux IP Layer

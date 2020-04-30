@@ -462,7 +462,7 @@ MacController::decoding()
     vector<MacPDU*> bufferPdus;                 //Buffer to store PDUs incoming
 
     //Read packet from Socket
-    receptionProtocol->receivePackageFromL1(bufferPdus);
+    receptionProtocol->receivePackageFromL1(bufferPdus, MQ_MAX_MSG_SIZE);
 
     //Decode PDUs
     while(bufferPdus.size()>0){
