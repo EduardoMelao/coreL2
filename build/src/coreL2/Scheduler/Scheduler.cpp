@@ -125,16 +125,18 @@ Scheduler::fillMacPdus(
         macPdus[i].mimo_.precoding_mtx = currentParameters->getMimoPrecoding(destinationUeId);
 
         //Fill MCS struct
-        if(currentParameters->isBaseStation())  
-            macPdus[i].mcs_.modulation = mcsToModulation[currentParameters->getMcsDownlink(destinationUeId)];
+        uint8_t mcsValue;   //Value of MCS for current transmission and current destination
+        if(currentParameters->isBaseStation())
+            mcsValue = currentParameters->getMcsDownlink(destinationUeId);
         else
-            macPdus[i].mcs_.modulation = mcsToModulation[currentParameters->getMcsUplink(destinationUeId)];
-        
+            mcsValue = currentParameters->getMcsUplink(destinationUeId);
+        macPdus[i].mcs_.modulation = mcsToModulation[mcsValue];
+
         //Fill Numerology
         macPdus[i].numID_ = currentParameters->getNumerology();
 
         //Calculate number of bits for next transmission
-        size_t numberBits = get_bit_capacity(macPdus[i].numID_, macPdus[i].allocation_, macPdus[i].mimo_, macPdus[i].mcs_.modulation);
+        size_t numberBits = get_net_byte_capacity(macPdus[i].numID_, macPdus[i].allocation_, macPdus[i].mimo_, macPdus[i].mcs_.modulation, mcsToCodeRate[mcsValue]);
         if(verbose) cout<<"[Scheduler] Scheduled "<<numberBits/8<<" Bytes for PDU "<<i<<endl;
 
         //Create a new Multiplexer object to aggregate SDUs
