@@ -346,7 +346,7 @@ CoreL1::decoding(
                 continue;
             }
 
-            //Drop PDU if CRC does not check
+            //Provisional implementations filling MacPDUS
             macPDUs.resize(macPDUs.size()+1);
             macPDUs.back().mac_data_.resize(sizePdu);
             macPDUs.back().mac_data_.assign(&(buffer[offset-sizePdu]), &(buffer[offset-sizePdu])+sizePdu);
