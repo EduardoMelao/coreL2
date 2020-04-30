@@ -85,8 +85,10 @@ Cosora::spectrumSensingTimeout(){
 
         if(verbose) cout<<"[Cosora] New fusion LUT value: "<<(int)fusionLookupTable<<endl;
         //Set MAC Mode to RECONFIG_MODE if it is not entering STOP_MODE
-        if(currentParameters->getMacMode()!=STOP_MODE)
+        if(currentParameters->getMacMode()!=STOP_MODE){
             currentParameters->setMacMode(RECONFIG_MODE);
+            if(verbose) cout<<"\n\n[Cosora] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+        }
     }
 
     //Finally, set fusionLookupTable back to default value
