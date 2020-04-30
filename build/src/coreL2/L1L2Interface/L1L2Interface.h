@@ -7,32 +7,23 @@
 #ifndef INCLUDED_L1_L2_INTERFACE_H
 #define INCLUDED_L1_L2_INTERFACE_H
 
-#define PORT_TO_L1 8090
-#define PORT_FROM_L1 8091
-#define CONTROL_MESSAGES_PORT_TO_L1 8092
-#define CONTROL_MESSAGES_PORT_FROM_L1 8093
-
 #include <iostream>
+#include <mqueue.h>         //Posix Message Queues
 #include <vector>
-#include <sys/socket.h> //socket(), AF_INET, SOCK_DGRAM
-#include <arpa/inet.h>  //struct sockaddr_in
-#include <string.h>     //bzero()
-#include <unistd.h>     //close()
+#include <string.h>         //bzero()
+#include <unistd.h>         //close()
+#include <errno.h>          //errno
+#include <boost/crc.hpp>    //Boost CRC library
 #include "../../common/lib5grange/lib5grange.h"
+#include "../../common/libMac5gRange/libMac5gRange.h"
 
 using namespace std;
 using namespace lib5grange;
 
 class L1L2Interface{
 private:
-    int socketPduFromL1;                        //File descriptor of socket used to RECEIVE PDUs from L1
-    int socketPduToL1;                          //File descriptor of socket used to SEND PDUs to L1
-    int socketControlMessagesFromL1;            //File descriptor of socket used to RECEIVE Control Messages from L1
-    int socketControlMessagesToL1;              //File descriptor of socket used to SEND Control Messages to L1
-    struct sockaddr_in serverPdusSocketAddress; //Address of server to which client will send PDUs
-    struct sockaddr_in serverControlMessagesSocketAddress;  //Address of server to which client will send control messages
+    l1_l2_interface_t l1l2InterfaceQueues;      //Struct containing all queues to change messages with PHY  
     bool verbose;                               //Verbosity flag
-
     /**
     * @brief Auxiliary function for CRC calculation
     * @param data Single byte from PDU
@@ -40,22 +31,6 @@ private:
     * @returns 2-byte CRC calculation
     */
     unsigned short auxiliaryCalculationCRC(char data, unsigned short crc);
-
-    /**
-     * @brief Creates a new socket to serve as sender of messages
-     * @param port Socket port
-     * @param serverReceiverOfMessage Struct used to send message later
-     * @param serverIp Ip address of server
-     * @returns Socket file descriptor used to send message later
-     */
-    int createClientSocketToSendMessages(short port, struct sockaddr_in *serverReceiverOfMessage, const char* serverIp);
-
-    /**
-     * @brief Creates a new socket to serve as receiver of messages
-     * @param port Socket port
-     * @returns Socket file descriptor
-     */
-    int createServerSocketToReceiveMessages(short port);
 
 public:
     /**
@@ -77,9 +52,8 @@ public:
     /**
      * @brief Receives PDUs from PHY Layer
      * @param buffer Buffer where PDUs are going to be stored
-     * @param maximumSize Maximum size of PDU
      */
-    void receivePdus(vector<MacPDU*> & buffer, size_t maximumSize);
+    void receivePdus(vector<MacPDU*> & buffer);
 
     /**
      * @brief Sends Control Message to PHY
@@ -91,10 +65,9 @@ public:
     /**
      * @brief Received Control Message from PHY
      * @param buffer Buffer where message will be stored
-     * @param maximumLength Maximum message length in Bytes
      * @returns Size of message received in Bytes
      */
-    ssize_t receiveControlMessage(char* buffer, size_t maximumLength);
+    ssize_t receiveControlMessage(char* buffer);
 
     /**
      * @brief Calculates CRC of current PDU passed as parameter

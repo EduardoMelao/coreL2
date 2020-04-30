@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : April 30th, 2020
+@Last alteration : April 28th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -31,7 +31,6 @@ ProtocolControl::ProtocolControl(
 {
     macController = _macController;
     rxMetrics = new RxMetrics[macController->currentParameters->getNumberUEs()];
-    rxMetricsReceived = false;
     verbose = _verbose;
 }
 
@@ -70,31 +69,6 @@ ProtocolControl::decodeControlSdus(
                     cout<<"RI: "<<(int)rxMetrics[index].rankIndicator<<endl;
                 }
 
-                //Calculate average MCS
-                int averageMCS = 0;
-                if(rxMetricsReceived){
-                    for(int i=0;i<132;i++)
-                        averageMCS += LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr[i]);
-                }
-                averageMCS += LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr_avg)*macController->currentParameters->getUlReservation(macAddress).number_of_rb;
-                averageMCS = averageMCS/(macController->currentParameters->getUlReservation(macAddress).number_of_rb + (rxMetricsReceived? 133:0));
-
-                //Assert WbSNR was not received
-                rxMetricsReceived = false;
-
-                if(verbose) cout<<" MCS avg: "<<(int)averageMCS<<endl;
-
-                //Calculate new DLMCS
-                macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress, averageMCS);
-
-                //If new MCS is different from old, enter RECONFIG mode
-                if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
-                    //Changes current MAC mode to RECONFIG
-                    macController->currentParameters->setMacMode(RECONFIG_MODE);
-
-                    if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
-                }
-
                 break;
             }
             case '2':   //RxMetrics: snr per RB and Spectrum Sensing Report
@@ -114,14 +88,28 @@ ProtocolControl::decodeControlSdus(
                 //Deserialize Bytes
                 rxMetrics[index].snr_ssr_deserialize(rxMetricsBytes);
 
+                //Calculate average MCS
+                uint8_t averageMCS = 0;
+                for(int i=0;i<132;i++)
+                    averageMCS += LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr[i]);
+                averageMCS += rxMetrics[index].snr_avg;
+                averageMCS  =averageMCS/133;
+
+                //Calculate new DLMCS
+                macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress, averageMCS);
+                
                 if(verbose){
                     cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received: ";
-                    cout<<"Flut: "<<(int)rxMetrics[index].ssReport<<endl;
+                    cout<<"Flut: "<<(int)rxMetrics[index].ssReport<<" MCS avg:"<<(int)averageMCS<<endl;
                 }
-                
-                //Change flag value
-                rxMetricsReceived = true;
 
+                //If new MCS is different from old, enter RECONFIG mode
+                if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
+                    //Changes current MAC mode to RECONFIG
+                    macController->currentParameters->setMacMode(RECONFIG_MODE);
+
+                    if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+                }
                 //Perform Fusion calculation
                 macController->cosora->fusionAlgorithm(rxMetrics[index].ssReport);
 
@@ -172,7 +160,7 @@ ProtocolControl::receiveInterlayerMessages()
             //Clear buffer and message and receive next control message
             bzero(buffer, MQ_MAX_MSG_SIZE);
             message.clear();
-            ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer, MQ_MAX_MSG_SIZE);
+            ssize_t messageSize = macController->l1l2Interface->receiveControlMessage(buffer);
 
             //If it returns 0 or less, no information was received
             if(messageSize<=0)
