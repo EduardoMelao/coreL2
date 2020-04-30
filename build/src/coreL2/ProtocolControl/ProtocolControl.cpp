@@ -67,7 +67,7 @@ ProtocolControl::decodeControlSdus(
 
                 if(verbose){
                     cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received: ";
-                    cout<<"RI: "<<(int)rxMetrics[index].rankIndicator<<endl;
+                    cout<<"RI: "<<(int)rxMetrics[index].rankIndicator;
                 }
 
                 //Calculate average MCS
@@ -82,7 +82,7 @@ ProtocolControl::decodeControlSdus(
                 //Assert WbSNR was not received
                 rxMetricsReceived = false;
 
-                if(verbose) cout<<" MCS avg: "<<(int)averageMCS<<endl;
+                if(verbose) cout<<" and MCS avg: "<<(int)averageMCS<<endl;
 
                 //Calculate new DLMCS
                 macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress, averageMCS);
