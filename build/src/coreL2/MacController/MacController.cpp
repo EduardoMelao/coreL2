@@ -56,7 +56,6 @@ MacController::~MacController(){
     delete receptionProtocol;
     delete transmissionProtocol;
     delete tunInterface;
-    delete l1l2Interface;
     delete [] threads;
     delete ipMacTable;
     delete timerSubframe;
@@ -66,6 +65,7 @@ MacController::~MacController(){
     if(currentParameters->getMacMode()!=STOP_MODE){
         delete cliL2Interface;
         delete currentParameters;
+        delete l1l2Interface;
     }
 }
 
