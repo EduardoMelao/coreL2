@@ -222,7 +222,7 @@ typedef struct{
         struct rlimit rlim;
         memset(&rlim, 0, sizeof(rlim));
         rlim.rlim_cur = 4*(MQ_MAX_NUM_MSG*MQ_MAX_MSG_SIZE + MQ_MAX_NUM_MSG*sizeof(struct msg_msg *));
-        rlim.rlim_max = 4*(MQ_MAX_NUM_MSG*MQ_MAX_MSG_SIZE + MQ_MAX_NUM_MSG*sizeof(struct msg_msg *));
+        rlim.rlim_max = 5*(MQ_MAX_NUM_MSG*MQ_MAX_MSG_SIZE + MQ_MAX_NUM_MSG*sizeof(struct msg_msg *));
         setrlimit(RLIMIT_MSGQUEUE, &rlim); 
 
         //Define message queue attributes
