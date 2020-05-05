@@ -3,9 +3,9 @@
 L2 layer for POC of 5G-RANGE project
 
 ## 1. Prerequisites
-Operational System: Ubuntu 18.04 LTS
-
-Ubuntu packages: `sudo apt-get install libboost-all-dev cmake`
+ - Operational System: Ubuntu 18.04 LTS
+ - Ubuntu packages: `$ sudo apt-get install libboost-all-dev cmake`
+ - On BS, execute: `$ sudo sysctl net.ipv4.ip_forward = 1` to turn on IP forwarding
 
 ## 2. Stub of PHY layer
 StubPHY was built to support tests during MAC development. Its communication is based on UDP sockets between different machines under the same subnetwork, that is, the physical link is replaced by an Ethernet link with IPv4 packets.
@@ -125,15 +125,16 @@ Press + for MacStart, / for MacStop and * for MacConfigRequest
 
 #### 3.3.4 System configuration
 After commanding the system to start (`MacStartCommand`), the IPv4 address of MAC 5G-RANGE interface must be configured. While MAC is running, it can be observed that a new network interface is created: `tun0`. This interface must have IPv4 configured as one of the below:
-| UE ID | IPv4 address|
+| UE ID | IPv4 address of `tun0` interface|
 |:-:    |:-:          |
 |0*|10.0.0.10|
 |1 |10.0.0.11|
 |2 |10.0.0.12|
+|3 |10.0.0.13|
 
 *: UE ID 0 is reserved for BS.
 
-For now, the system does not support more than 2 UEs due this hard code configuration, but it will be implemented soon.
+For now, the system does not support more than 3 UEs due this hard code configuration.
 
 For example, to configure TUN IP address in BS, the command below has to be run in the terminal.
 ```sh
