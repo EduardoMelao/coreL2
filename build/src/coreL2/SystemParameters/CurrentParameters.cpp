@@ -7,7 +7,7 @@
 @Arquive name : CurrentParameters.cpp
 @Classification : System Parameters - Current Parameters
 @
-@Last alteration : April 16th, 2020
+@Last alteration : May 5th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -43,133 +43,140 @@ CurrentParameters::readTxtSystemParameters(
 	string readBuffer;		//Buffer that will be used to read file
 
 	ifstream readingConfigurationsFile;
-	readingConfigurationsFile.open(fileName);
 
-	//Gets FlagBS
-	getline(readingConfigurationsFile, readBuffer);
-	flagBS = (readBuffer[0]=='1');
-	readBuffer.clear();
+	try{
+		readingConfigurationsFile.open(fileName);
 
-	//Gets Number of UEs (only BS)
-	if(flagBS){
+		//Gets FlagBS
 		getline(readingConfigurationsFile, readBuffer);
-		numberUEs = stoi(readBuffer);
-		readBuffer.clear();
-	}
-	else numberUEs = 1;			//Consider UE has only one equipment: BS
-
-	//Gets numerology
-	getline(readingConfigurationsFile, readBuffer);
-	numerology = stoi(readBuffer);
-	readBuffer.clear();
-
-	//Gets OFDM GFDM option
-	getline(readingConfigurationsFile, readBuffer);
-	ofdm_gfdm = stoi(readBuffer);
-	readBuffer.clear();
-
-	//Gets Fusion LUT matrix default value (only BS)
-	if(flagBS){
-		getline(readingConfigurationsFile, readBuffer);
-		fLutMatrix = stoi(readBuffer);
-		readBuffer.clear();
-	}
-
-	//Gets Reception Metrics Periodicity
-	getline(readingConfigurationsFile, readBuffer);
-	rxMetricPeriodicity = stoi(readBuffer);
-	readBuffer.clear();
-
-	//Gets Maximum Transmission Unity in Bytes
-	getline(readingConfigurationsFile, readBuffer);
-	mtu = stol(readBuffer);
-	readBuffer.clear();
-
-	//Gets IP Timeout
-	getline(readingConfigurationsFile, readBuffer);
-	ipTimeout = stoi(readBuffer);
-	readBuffer.clear();
-
-	//The following are only for BS
-	if(flagBS){
-		//Gets Spectrum Sensing Report waiting Timeout
-		getline(readingConfigurationsFile, readBuffer);
-		ssreportWaitTimeout = stoi(readBuffer);
+		flagBS = (readBuffer[0]=='1');
 		readBuffer.clear();
 
-		//Gets Acknowledgement waiting Timeout
-		getline(readingConfigurationsFile, readBuffer);
-		ackWaitTimeout = stoi(readBuffer);
-		readBuffer.clear();
-
-		//Gets Acknowledgement waiting Timeout
-		getline(readingConfigurationsFile, readBuffer);
-		rbgSize = stoi(readBuffer);
-		readBuffer.clear();
-	}
-
-	//Resize vectors
-	ulReservation.resize(numberUEs);
-	if(flagBS) mcsDownlink.resize(numberUEs);
-	mcsUplink.resize(numberUEs);
-	mimoConf.resize(numberUEs);
-	mimoDiversityMultiplexing.resize(numberUEs);
-	mimoAntenna.resize(numberUEs);
-	mimoOpenLoopClosedLoop.resize(numberUEs);
-	mimoPrecoding.resize(numberUEs);
-	transmissionPowerControl.resize(numberUEs);
-
-	//Loop to read the parameters numberUEs times
-	for(int i=0;i<numberUEs;i++){	
-		//Gets UPLinkReservations
-		getline(readingConfigurationsFile, readBuffer);
-		ulReservation[i].target_ue_id = stoi(readBuffer);
-		readBuffer.clear();
-		getline(readingConfigurationsFile, readBuffer);
-		ulReservation[i].first_rb = stoi(readBuffer);
-		readBuffer.clear();
-		getline(readingConfigurationsFile, readBuffer);
-		ulReservation[i].number_of_rb = stoi(readBuffer);
-		readBuffer.clear();
-
-		//Gets MCS Downlink (only BS)
+		//Gets Number of UEs (only BS)
 		if(flagBS){
 			getline(readingConfigurationsFile, readBuffer);
-			mcsDownlink[i] = stoi(readBuffer);
+			numberUEs = stoi(readBuffer);
+			readBuffer.clear();
+		}
+		else numberUEs = 1;			//Consider UE has only one equipment: BS
+
+		//Gets numerology
+		getline(readingConfigurationsFile, readBuffer);
+		numerology = stoi(readBuffer);
+		readBuffer.clear();
+
+		//Gets OFDM GFDM option
+		getline(readingConfigurationsFile, readBuffer);
+		ofdm_gfdm = stoi(readBuffer);
+		readBuffer.clear();
+
+		//Gets Fusion LUT matrix default value (only BS)
+		if(flagBS){
+			getline(readingConfigurationsFile, readBuffer);
+			fLutMatrix = stoi(readBuffer);
 			readBuffer.clear();
 		}
 
-		//Gets MCS Uplink
+		//Gets Reception Metrics Periodicity
 		getline(readingConfigurationsFile, readBuffer);
-		mcsUplink[i] = stoi(readBuffer);
+		rxMetricPeriodicity = stoi(readBuffer);
 		readBuffer.clear();
 
-		//Gets MIMO configuration
+		//Gets Maximum Transmission Unity in Bytes
 		getline(readingConfigurationsFile, readBuffer);
-		mimoConf[i] = stoi(readBuffer);
-		readBuffer.clear();
-		getline(readingConfigurationsFile, readBuffer);
-		mimoDiversityMultiplexing[i] = stoi(readBuffer);
-		readBuffer.clear();
-		getline(readingConfigurationsFile, readBuffer);
-		mimoAntenna[i] = stoi(readBuffer);
-		readBuffer.clear();
-		getline(readingConfigurationsFile, readBuffer);
-		mimoOpenLoopClosedLoop[i] = stoi(readBuffer);
-		readBuffer.clear();
-		getline(readingConfigurationsFile, readBuffer);
-		mimoPrecoding[i] = stoi(readBuffer);
+		mtu = stol(readBuffer);
 		readBuffer.clear();
 
-		//Gets Transmission Power Control Information
+		//Gets IP Timeout
 		getline(readingConfigurationsFile, readBuffer);
-		transmissionPowerControl[i] = stoi(readBuffer);
+		ipTimeout = stoi(readBuffer);
 		readBuffer.clear();
+
+		//The following are only for BS
+		if(flagBS){
+			//Gets Spectrum Sensing Report waiting Timeout
+			getline(readingConfigurationsFile, readBuffer);
+			ssreportWaitTimeout = stoi(readBuffer);
+			readBuffer.clear();
+
+			//Gets Acknowledgement waiting Timeout
+			getline(readingConfigurationsFile, readBuffer);
+			ackWaitTimeout = stoi(readBuffer);
+			readBuffer.clear();
+
+			//Gets Acknowledgement waiting Timeout
+			getline(readingConfigurationsFile, readBuffer);
+			rbgSize = stoi(readBuffer);
+			readBuffer.clear();
+		}
+
+		//Resize vectors
+		ulReservation.resize(numberUEs);
+		if(flagBS) mcsDownlink.resize(numberUEs);
+		mcsUplink.resize(numberUEs);
+		mimoConf.resize(numberUEs);
+		mimoDiversityMultiplexing.resize(numberUEs);
+		mimoAntenna.resize(numberUEs);
+		mimoOpenLoopClosedLoop.resize(numberUEs);
+		mimoPrecoding.resize(numberUEs);
+		transmissionPowerControl.resize(numberUEs);
+
+		//Loop to read the parameters numberUEs times
+		for(int i=0;i<numberUEs;i++){	
+			//Gets UPLinkReservations
+			getline(readingConfigurationsFile, readBuffer);
+			ulReservation[i].target_ue_id = stoi(readBuffer);
+			readBuffer.clear();
+			getline(readingConfigurationsFile, readBuffer);
+			ulReservation[i].first_rb = stoi(readBuffer);
+			readBuffer.clear();
+			getline(readingConfigurationsFile, readBuffer);
+			ulReservation[i].number_of_rb = stoi(readBuffer);
+			readBuffer.clear();
+
+			//Gets MCS Downlink (only BS)
+			if(flagBS){
+				getline(readingConfigurationsFile, readBuffer);
+				mcsDownlink[i] = stoi(readBuffer);
+				readBuffer.clear();
+			}
+
+			//Gets MCS Uplink
+			getline(readingConfigurationsFile, readBuffer);
+			mcsUplink[i] = stoi(readBuffer);
+			readBuffer.clear();
+
+			//Gets MIMO configuration
+			getline(readingConfigurationsFile, readBuffer);
+			mimoConf[i] = stoi(readBuffer);
+			readBuffer.clear();
+			getline(readingConfigurationsFile, readBuffer);
+			mimoDiversityMultiplexing[i] = stoi(readBuffer);
+			readBuffer.clear();
+			getline(readingConfigurationsFile, readBuffer);
+			mimoAntenna[i] = stoi(readBuffer);
+			readBuffer.clear();
+			getline(readingConfigurationsFile, readBuffer);
+			mimoOpenLoopClosedLoop[i] = stoi(readBuffer);
+			readBuffer.clear();
+			getline(readingConfigurationsFile, readBuffer);
+			mimoPrecoding[i] = stoi(readBuffer);
+			readBuffer.clear();
+
+			//Gets Transmission Power Control Information
+			getline(readingConfigurationsFile, readBuffer);
+			transmissionPowerControl[i] = stoi(readBuffer);
+			readBuffer.clear();
+		}
+
+		readingConfigurationsFile.close();
+
+		if(verbose) cout<<"[CurrentParameters] Reading stored information from file successful."<<endl;
 	}
-
-	readingConfigurationsFile.close();
-
-	if(verbose) cout<<"[CurrentParameters] Reading stored information from file successful."<<endl;
+	catch(const exception& e){
+		cout<<"Error reading Default.txt file. Exiting..."<<endl;
+		exit(1);
+	}
 }
 
 void

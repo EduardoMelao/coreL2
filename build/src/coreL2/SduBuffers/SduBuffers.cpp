@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : April 28th, 2020
+@Last alteration : May 5th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -115,10 +115,10 @@ SduBuffers::enqueueingDataSdus()
             }
             
             //Everything is ok, buffer can be added to queue
-            //First, consult destination MAC address based on IP Address
-            int index = currentParameters->getIndex(getMacAddress(buffer));
+            //First, consult destination MAC address based on IP Address is it is BS
+            //If it is UE, always forward Data packet to BS
+            int index = currentParameters->isBaseStation()? currentParameters->getIndex(getMacAddress(buffer)) : 0;
 
-            
             //Test if index exists
             if(index!=-1){
                 //Allocate new buffer and copy information
