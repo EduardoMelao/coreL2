@@ -63,7 +63,6 @@ MacAddressTable::addEntry(
     uint8_t* newIpAddress = new uint8_t[4];  //Ip Address entry to be added
 
     //Resize mac Addresses vector and copy IP Address
-    macAddresses.resize(macAddresses.size()+1);
     for(int i=0;i<4;i++)
         newIpAddress[i]=ipAddress[i];
 
