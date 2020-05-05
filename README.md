@@ -77,7 +77,13 @@ $ make
 ### 3.3 MAC use
 Before using MAC, a default file must be filled with static/default information for MAC to initialize its modules. This default file is located at `build/Default.txt` and follows rules of construction. After filling this file, MAC can be executed and configured.
 
-#### 3.3.1 Structure of Default information file.
+#### 3.3.1 Structure of Default information file
+---
+**NOTE**
+
+This file must be editted before running MAC. The default configuration (this version on GitHub) only works for BS.
+
+---
 The file `Default.txt` is composed only by numbers, respecting ranges, as defined in the table below. The first column indicates if the attribute os necessary for BS and UE (BS/UE) or only for BS. The second column shows the range of the number to be put in the file. Finally, the third column presents the name and/or a short explanation about the parameter.
 | BS/UE or BS  | Range | Parameter  |
 |:-:|:-:|---|
@@ -123,7 +129,7 @@ Press + for MacStart, / for MacStop and * for MacConfigRequest
 - `*` MacConfigRequest simulates an alteration on System parameters during program execution.
 
 
-#### 3.3.4 System configuration
+#### 3.3.4 Linux System configuration
 After commanding the system to start (`MacStartCommand`), the IPv4 address of MAC 5G-RANGE interface must be configured. While MAC is running, it can be observed that a new network interface is created: `tun0`. This interface must have IPv4 configured as one of the below:
 | UE ID | IPv4 address of `tun0` interface|
 |:-:    |:-:          |
