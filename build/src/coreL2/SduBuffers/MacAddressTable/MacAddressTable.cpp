@@ -7,7 +7,7 @@
 @Arquive name : MacAddressTable.cpp
 @Classification : MAC Address Table
 @
-@Last alteration : February 13th, 2020
+@Last alteration : May 5th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -24,8 +24,6 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 #include "MacAddressTable.h"
 
-using namespace std;
-
 MacAddressTable::MacAddressTable(){
     MacAddressTable(false);
 }
@@ -34,25 +32,23 @@ MacAddressTable::MacAddressTable(
     bool _verbose)  //Verbosity flag
 {
     this->verbose = _verbose;
-    numberRegisters = 0;
     if(verbose) cout<<"[MacAddressTable] Created Mac Address Table"<<endl;
 }
 
-MacAddressTable::~MacAddressTable(){
-    while(numberRegisters>0){
+MacAddressTable::~MacAddressTable() { 
+    while(macAddresses.size()>0)
         deleteEntry(0);
-    }
 }
 
 int 
 MacAddressTable::getNumberRegisters(){
-    return numberRegisters;
+    return macAddresses.size();
 }
 
 void 
 MacAddressTable::printMacTable(){
     cout<<"ID \t IP \t\t MAC"<<endl;
-    for(int i=0;i<numberRegisters;i++){
+    for(int i=0;i<macAddresses.size();i++){
         cout<<i<<"\t"<<(int)ipAddresses[i][0]<<"."<<(int)ipAddresses[i][1]<<"."<<(int)ipAddresses[i][2]<<"."<<(int)ipAddresses[i][3]<<"."<<"\t"<<(int)macAddresses[i]<<endl;
     }
 }
@@ -62,70 +58,27 @@ MacAddressTable::addEntry(
     uint8_t* ipAddress,     //Entry IP Address
     uint8_t macAddress)     //Entry 5GR MAC Address)
 {
-    //Relocate arrays
-    uint8_t** _ipAddresses = new uint8_t*[numberRegisters+1];
-    uint8_t* _macAddresses = new uint8_t[numberRegisters+1];
+    uint8_t* newIpAddress = new uint8_t[4];  //Ip Address entry to be added
 
-    //Copy old information
-    for(int i=0;i<numberRegisters;i++){
-        _ipAddresses[i] = ipAddresses[i];
-        _macAddresses[i] = macAddresses[i];
-    }
+    //Resize mac Addresses vector and copy IP Address
+    for(int i=0;i<4;i++)
+        newIpAddress[i]=ipAddress[i];
 
-    //Add new information
-    _ipAddresses[numberRegisters] = ipAddress;
-    _macAddresses[numberRegisters] = macAddress;
-
-    //Delete old arrays, if they exist
-    if(numberRegisters){
-        delete[] ipAddresses;
-        delete[] macAddresses;
-    }
-
-    //Renew class arrays
-    this->ipAddresses = _ipAddresses;
-    this->macAddresses = _macAddresses;
-    if(verbose) cout<<"[MacAddressTable] Entry added"<<endl;
-
-    //Increment number of registers
-    numberRegisters++;
+    //Push back information
+    macAddresses.push_back(macAddress);
+    ipAddresses.push_back(newIpAddress);
 }
 
 void 
 MacAddressTable::deleteEntry(
     int id)     //Identification of the entry
 {
-    //Verify ID. ID is sequential
-    if(id>(numberRegisters-1)){
-        if(verbose) cout<<"[MacAddressTable] Invalid ID"<<endl;
-        return;
+    if(id<macAddresses.size()){
+        macAddresses.erase(macAddresses.begin()+id);
+        delete [] ipAddresses[id];
+        ipAddresses.erase(ipAddresses.begin()+id);
+        if(verbose) cout<<"[MacAddressTable] Entry successfully deleted"<<endl;
     }
-
-    //Relocate arrays
-    uint8_t** _ipAddresses = new uint8_t*[numberRegisters-1];
-    uint8_t* _macAddresses = new uint8_t[numberRegisters-1];
-
-    //Copy information
-    for(int i=0;i<id;i++){
-        _ipAddresses[i] = ipAddresses[i];
-        _macAddresses[i] = macAddresses[i];
-    }
-    for(int i=id;i<(numberRegisters-1);i++){
-        _ipAddresses[i] = ipAddresses[i+1];
-        _macAddresses[i] = macAddresses[i+1];
-    }
-
-    //Delete old arrays
-    delete[] ipAddresses;
-    delete[] macAddresses;
-
-    //Renew class arrays
-    this->ipAddresses = _ipAddresses;
-    this->macAddresses = _macAddresses;
-    if(verbose) cout<<"[MacAddressTable] Entry successfully deleted"<<endl;
-
-    //Decrement number of registers
-    numberRegisters--;
 }
 
 uint8_t 
@@ -133,7 +86,7 @@ MacAddressTable::getMacAddress(
     uint8_t* ipAddr)    //Entry IP Address
 {
     bool flag;      //Flag to verify if entry was found
-    for(int i=0;i<numberRegisters;i++){
+    for(int i=0;i<macAddresses.size();i++){
         flag = true;
         for(int j=0;j<4;j++){
             if(ipAddresses[i][j]!=ipAddr[j])
@@ -148,7 +101,7 @@ MacAddressTable::getMacAddress(
 uint8_t* MacAddressTable::getIpAddress(
     uint8_t macAddr)    //Entry 5GR Mac Address
 {
-    for(int i=0;i<numberRegisters;i++){
+    for(int i=0;i<ipAddresses.size();i++){
         if(macAddresses[i]==macAddr)
             return ipAddresses[i];
     }
