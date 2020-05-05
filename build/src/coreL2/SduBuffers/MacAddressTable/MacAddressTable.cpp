@@ -7,7 +7,7 @@
 @Arquive name : MacAddressTable.cpp
 @Classification : MAC Address Table
 @
-@Last alteration : April 5th, 2020
+@Last alteration : May 5th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
