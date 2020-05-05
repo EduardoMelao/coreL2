@@ -9,16 +9,16 @@
 
 #include <stdint.h> //uint8_t
 #include <iostream> //cout
+#include <vector>
 
 /**
  * @brief Table of correlation of IP Addresses and 5G-RANGE MAC Addresses
  */
 class MacAddressTable{
 private:
-    int numberRegisters;        //Number of current registers in the table
-    uint8_t** ipAddresses;      //Array of IP strings
-    uint8_t* macAddresses;      //Array of MAC Addresses
-    bool verbose;               //Verbosity flag
+    vector<uint8_t*> ipAddresses;   //Array of IP strings
+    vector<uint8_t> macAddresses;   //Array of MAC Addresses
+    bool verbose;                   //Verbosity flag
 
 public:
     /**
