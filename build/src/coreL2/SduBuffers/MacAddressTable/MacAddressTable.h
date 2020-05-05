@@ -11,6 +11,8 @@
 #include <iostream> //cout
 #include <vector>
 
+using namespace std;
+
 /**
  * @brief Table of correlation of IP Addresses and 5G-RANGE MAC Addresses
  */

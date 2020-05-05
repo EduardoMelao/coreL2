@@ -24,8 +24,6 @@ UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 #include "MacAddressTable.h"
 
-using namespace std;
-
 MacAddressTable::MacAddressTable(){
     MacAddressTable(false);
 }
