@@ -7,7 +7,7 @@
 @Arquive name : Scheduler.cpp
 @Classification : Scheduler
 @
-@Last alteration : April 30th, 2020
+@Last alteration : June 5th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -126,10 +126,13 @@ Scheduler::fillMacPdus(
 
         //Fill MCS struct
         uint8_t mcsValue;   //Value of MCS for current transmission and current destination
-        if(currentParameters->isBaseStation())
+        if(currentParameters->isBaseStation()){
             mcsValue = currentParameters->getMcsDownlink(destinationUeId);
-        else
+        }
+        else{
             mcsValue = currentParameters->getMcsUplink(destinationUeId);
+            macPdus[i].mcs_.power_offset=currentParameters->getTPC(destinationUeId);
+        }
         macPdus[i].mcs_.modulation = mcsToModulation[mcsValue];
 
         //Fill Numerology

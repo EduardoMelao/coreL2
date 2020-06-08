@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : May 4th, 2020
+@Last alteration : June 5th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -359,7 +359,7 @@ MacController::scheduling(){
         //Get buffer status information and store into ueIds and bufferSize vectors
         sduBuffers->bufferStatusInformation(ueIds, bufferSize);
 
-        //Execute if there are UEs selected for transmission
+        //Execute if there are UEs selected for transmission. Otherwise, do nothing.
         if(ueIds.size()>0){
             //If it is BS, perform spectrum allocation calculation for next transmission
             if(flagBS)
@@ -381,16 +381,6 @@ MacController::scheduling(){
             
             //Test if there is actualy information to send
             if(macPdus.size() > 0){
-                //Get number of UEs for next transmission
-                int numberUes = 1;
-                uint8_t currentUeId = macPdus[0].allocation_.target_ue_id;
-                for(int i=1;i<macPdus.size();i++){
-                    if(macPdus[i].allocation_.target_ue_id!=currentUeId){
-                        numberUes++;
-                        currentUeId = macPdus[i].allocation_.target_ue_id;
-                    }
-                }
-
                 //Create SubframeTx.Start message
                 string messageParameters;		            //This string will contain the parameters of the message
                 vector<uint8_t> messageParametersBytes;	    //Vector to receive serialized parameters structure
@@ -399,19 +389,14 @@ MacController::scheduling(){
                     BSSubframeTx_Start messageBS;	//Message parameters structure
 
                     //Fill the structure with information
-                    messageBS.numUEs = numberUes;
+                    messageBS.numUEs = currentParameters->getNumberUEs();
                     messageBS.numPDUs = macPdus.size();
                     messageBS.fLutDL = currentParameters->getFLUTMatrix();
 
-                    //Get Uplink reservations for each UE in this transmission
-                    currentUeId = macPdus[0].allocation_.target_ue_id;
-                    messageBS.ulReservations.push_back(currentParameters->getUlReservation(currentUeId));
-                    for(int i=1;i<macPdus.size();i++){
-                        if(currentUeId != macPdus[i].allocation_.target_ue_id){
-                            currentUeId = macPdus[i].allocation_.target_ue_id;
-                            messageBS.ulReservations.push_back(currentParameters->getUlReservation(currentUeId));
-                        }
-                    }
+                    //Get Uplink reservations
+                    currentParameters->getUlReservations(messageBS.ulReservations);
+
+                    //Fill other parameters
                     messageBS.numerology = currentParameters->getNumerology();
                     messageBS.ofdm_gfdm = currentParameters->isGFDM()? 1:0;
                     messageBS.rxMetricPeriodicity = currentParameters->getRxMetricsPeriodicity();
@@ -431,7 +416,7 @@ MacController::scheduling(){
 
                     //Serialize struct
                     messageUE.serialize(messageParametersBytes);
-                    }
+                }
 
                 //Copy structure bytes to message
                 for(uint i=0;i<messageParametersBytes.size();i++)
