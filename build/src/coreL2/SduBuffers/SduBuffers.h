@@ -9,19 +9,19 @@
 
 #include "../TimerSubframe/TimerSubframe.h"             //Library to count subframes 
 #include "../MacController/MacController.h"             //Mac Controller Library
-#include "MacAddressTable/MacAddressTable.h"            //IP <-> MAC mapping
+#include "MacAddressTable/MacAddressTable.h"            //IP <-> MAC Address(UE ID) mapping
 #include "../ReceptionProtocol/ReceptionProtocol.h"     //Reception Protocol to manage reception of L3 packets from TUN
 #include "../SystemParameters/CurrentParameters.h"      //System Current Parameters contains number of UEs and their IDs (MAC addresses)
-#include "../../common/libMac5gRange/libMac5gRange.h"   //MAC Common library contains system's states and substates
+#include "../../common/libMac5gRange/libMac5gRange.h"   //MAC Common library contains system states and substates
 #include <vector>                                       //Auxiliar library to manage arrays
 #include <mutex>                                        //Mutex Semaphores to prevent different threads trying to write the same variable
 
-#define DST_OFFSET 16               //Destination address offset in IP Packet [bytes]    
+#define DST_OFFSET 16   //Destination address offset in IP Packet [bytes]    
 
 using namespace std;
 
 /**
- * @brief Queues to store packets received from Linux IP layer and control packets (MACC SDUs) with control information to the other side
+ * @brief Queues to store packets received from Linux IP layer and control packets (MACC SDUs) with control information
  */
 class SduBuffers{
 private:
@@ -35,8 +35,12 @@ private:
     //Buffers
     vector<vector<char*>> dataSduQueue;     //Vector of L3 packets - MACD SDUs for each destination
     vector<vector<char*>> controlSduQueue;  //Vector of MACC SDUs for each destination
-    vector<vector<ssize_t>> dataSizes;      //Vector containing size of MACD SDU for each destination
-    vector<vector<ssize_t>> controlSizes;   //Vector containing size of MACC SDU for each destination
+    vector<vector<size_t>> dataSizes;      //Vector containing size of MACD SDU for each destination
+    vector<vector<size_t>> controlSizes;   //Vector containing size of MACC SDU for each destination
+
+    //Byte counters
+    vector<size_t> totalDataBufferBytes;    //Total number of bytes of all Data SDUs enqueued for transmission
+    vector<size_t> totalControlBufferBytes; //Total number of bytes of all Control SDUs enqueued for transmission
 
     //IP timeout control
     vector<vector<unsigned long long>> dataTimestamp;   //Vector of subframe index when IP packet was added to buffer
@@ -86,21 +90,22 @@ public:
      * @param macAddress Destination MAC Address
      * @returns Number of data packets enqueued; -1 for errors
      */
-    int getNumberDataSdus(uint8_t macAddress);
+    ssize_t getNumberDataSdus(uint8_t macAddress);
 
     /**
      * @brief Gets number of control packets that are currently enqueued
      * @param macAddress Destination MAC Address
      * @returns Number of control packets enqueued; -1 for errors
      */
-    int getNumberControlSdus(uint8_t macAddress);
+    ssize_t getNumberControlSdus(uint8_t macAddress);
 
     /**
      * @brief Informs the Scheduler about the state of SDU buffers
      * @param ueIds Vector of UEIDs for next transmission
-     * @param bufferSize Vector of Buffer status for each UE selected
+     * @param numberSDUs Vector of Buffer status (SDUs to transmit) for each UE selected
+     * @param numberBytes Vector of Buffer status (Bytes to transmit) for each UE selected
      */
-    void bufferStatusInformation(vector<uint8_t> &ueIds, vector<int> &bufferSize);
+    void bufferStatusInformation(vector<uint8_t> &ueIds, vector<size_t> &numberSDUs, vector<size_t> &numberBytes);
     
     /**
      * @brief Gets next data SDU on queue for treatment

@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : May 5th, 2020
+@Last alteration : June 10th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -33,6 +33,8 @@ SduBuffers::SduBuffers(
     TimerSubframe* _timerSubframe,          //Timer with Subframe indication to support IP timeout control
     bool _verbose)                          //Verbosity flag
 {
+    uint8_t numberUEs = currentParameters->getNumberUEs();  //Number of UEs in the system
+    
     //Assign class variables
     reception = _reception;
     currentParameters = _currentParameters;
@@ -41,11 +43,19 @@ SduBuffers::SduBuffers(
     verbose = _verbose;
 
     //Resize vectors
-    dataSduQueue.resize(currentParameters->getNumberUEs());
-    controlSduQueue.resize(currentParameters->getNumberUEs());
-    dataSizes.resize(currentParameters->getNumberUEs());
-    controlSizes.resize(currentParameters->getNumberUEs());
-    dataTimestamp.resize(currentParameters->getNumberUEs());
+    dataSduQueue.resize(numberUEs);
+    controlSduQueue.resize(numberUEs);
+    dataSizes.resize(numberUEs);
+    controlSizes.resize(numberUEs);
+    dataTimestamp.resize(numberUEs);
+    totalDataBufferBytes.resize(numberUEs);
+    totalControlBufferBytes.resize(numberUEs);
+
+    //Initialize Byte counters
+    for(int i=0; i<numberUEs; i++){
+        totalControlBufferBytes[i] = 0;
+        totalDataBufferBytes[i] = 0;
+    }
 }
 
 SduBuffers::~SduBuffers(){
@@ -87,9 +97,6 @@ SduBuffers::enqueueingDataSdus()
 
         else
         {
-            //Lock to write in the queue
-            lock_guard<mutex> lk(dataMutex);
-            
             //Check EOF
             if(numberBytesRead==0){
                 if(verbose) cout<<"[SduBuffers] End of Transmission."<<endl;
@@ -114,6 +121,9 @@ SduBuffers::enqueueingDataSdus()
                 continue;
             }
             
+            //Lock to write in the queue
+            lock_guard<mutex> lk(dataMutex);
+            
             //Everything is ok, buffer can be added to queue
             //First, consult destination MAC address based on IP Address is it is BS
             //If it is UE, always forward Data packet to BS
@@ -126,8 +136,11 @@ SduBuffers::enqueueingDataSdus()
                 for(int i=0;i<numberBytesRead;i++)
                     bufferDataSdu[i]=buffer[i];
                 
+                //Push back buffer to class arrays and increase byte counter
                 dataSduQueue[index].push_back(bufferDataSdu);
                 dataSizes[index].push_back(numberBytesRead);
+                totalDataBufferBytes[index] += numberBytesRead;
+
                 dataTimestamp[index].push_back(timerSubframe->getSubframeNumber());
             }
             else
@@ -173,20 +186,20 @@ SduBuffers::enqueueControlSdu(
         buffer[i]=controlSdu[i];
 
     int index = currentParameters->getIndex(macAddress);
-            
-    //Test if index exists
+
+    //Test if index exists and, if yes, push back buffer to clas arrays and increase byte counter
     if(index!=-1){
         controlSduQueue[index].push_back(buffer);
         controlSizes[index].push_back(numberBytes);
+        totalControlBufferBytes[index] += numberBytes;
     }
     else
         if(verbose) cout<<"[SduBuffers] Control SDU could not be added to queue: index not found."<<endl;
     
     if(verbose) cout<<"[SduBuffers] Control SDU added to Queue "<<index<<". Num SDUs: "<<controlSduQueue[index].size()<<endl;
-
 }
 
-int 
+ssize_t 
 SduBuffers::getNumberDataSdus(
     uint8_t macAddress)     //Destination MAC Address
 {
@@ -197,7 +210,7 @@ SduBuffers::getNumberDataSdus(
     return -1;
 }
 
-int 
+ssize_t 
 SduBuffers::getNumberControlSdus(
     uint8_t macAddress)     //Destination MAC Address
 {
@@ -210,23 +223,25 @@ SduBuffers::getNumberControlSdus(
 
 void
 SduBuffers::bufferStatusInformation(
-    vector<uint8_t> &ueIds,     //Vector of selected UE identifications
-    vector<int> &bufferSize)    //Vector of buffer status for each UE selected
+    vector<uint8_t> &ueIds,         //Vector of selected UE identifications
+    vector<size_t> &numberSDUs,     //Vector of Buffer status (SDUs to transmit) for each UE selected
+    vector<size_t> &numberBytes)    //Vector of Buffer status (Bytes to transmit) for each UE selected
 {
     uint8_t macAddress;     //Current UE Identification
-    int numSdus = 0;        //Total Number of DataSdus and ControlSdus
+    int numSdus;            //Total Number of DataSdus and ControlSdus
 
     for(int i=0;i<currentParameters->getNumberUEs();i++){
         //Get current MacAddress
         macAddress = currentParameters->getMacAddress(i);
 
         //Get current number of SDUs
-        numSdus  =getNumberDataSdus(macAddress) + getNumberControlSdus(macAddress);
+        numSdus = dataSduQueue[i].size() + controlSduQueue[i].size();
 
         //Select UE if there are SDUs to transmit
         if(numSdus>0){
             ueIds.push_back(macAddress);
-            bufferSize.push_back(numSdus);
+            numberSDUs.push_back(numSdus);
+            numberBytes.push_back(totalDataBufferBytes[i]+totalControlBufferBytes[i]);
         }
     }
 }
@@ -246,7 +261,7 @@ SduBuffers::getNextDataSdu(
         return -1;
     }
 
-    //Get front values from the vectors
+    //Get front values from the vectors and decrease Byte count
     returnValue = dataSizes[index].front();
     char* buffer2 = dataSduQueue[index].front();
     for(int i=0;i<returnValue;i++)
@@ -258,6 +273,7 @@ SduBuffers::getNextDataSdu(
     dataSizes[index].erase(dataSizes[index].begin());
     dataSduQueue[index].erase(dataSduQueue[index].begin());
     dataTimestamp[index].erase(dataTimestamp[index].begin());
+    totalDataBufferBytes[index] -= returnValue;
 
     if(verbose) cout<<"[SduBuffers] Got SDU from L3 queue."<<endl;
 
@@ -272,7 +288,7 @@ SduBuffers::getNextControlSdu(
     ssize_t returnValue;   //Return value
     int index = currentParameters->getIndex(macAddress);
 
-    //Lock mutex to remove SDU from the head of the queue
+    //Lock mutex to remove SDU from the head of the queue and decrease Byte count
     lock_guard<mutex> lk(controlMutex);
     if(controlSduQueue[index].size()==0){
         if(verbose) cout<<"[SduBuffers] Tried to get empty SDU from control SDU queue."<<endl;
@@ -290,6 +306,7 @@ SduBuffers::getNextControlSdu(
     //Delete front positions
     controlSizes[index].erase(controlSizes[index].begin());
     controlSduQueue[index].erase(controlSduQueue[index].begin());
+    totalControlBufferBytes[index] -= returnValue;
 
     if(verbose) cout<<"[SduBuffers] Got SDU from control SDU queue."<<endl;
 
@@ -335,7 +352,6 @@ SduBuffers::dataSduTimeoutChecking(){
     unsigned long long stop;    //Mark current Subframe to calculate 
     unsigned long long diff;    //Subframe difference
 
-    //Execute until withing STOP_MODE
     while(currentParameters->getMacMode()!=STOP_MODE){
         stop = timerSubframe->getSubframeNumber();    //Get current Subframe
 
@@ -366,7 +382,8 @@ SduBuffers::dataSduTimeoutChecking(){
             else{
                 if(verbose) cout<<"[SduBuffers] IP Packet timeout with "<<diff<<" subframes as difference."<<endl;
                 
-                //Delete front positions
+                //Delete front positions and delete byte count
+                totalDataBufferBytes[index] -= dataSizes[index].front();
                 dataSizes[index].erase(dataSizes[index].begin());
                 dataSduQueue[index].erase(dataSduQueue[index].begin());
                 dataTimestamp[index].erase(dataTimestamp[index].begin());
