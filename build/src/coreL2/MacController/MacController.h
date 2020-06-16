@@ -89,21 +89,9 @@ public:
     void startThreads();
 
     /**
-     * @brief Executes forever verifying if there's something to schedule
+     * @brief Executes when PHYTx.Indication is received. Schedules and sends MAC PDU(s) to PHY
      */
     void scheduling();
-
-    // #TODO: REMOVE /**
-    //  * @brief Immediately schedules SDUs for transmission
-    //  */
-    // void provisionalScheduling();
-
-    // /**
-    //  * @brief Sends Pdu contained in MUX to MacAddress passed as parameter
-    //  * @param mux Multiplexer object containing multiplexed SDUs
-    //  * @param macAddress Destination MAC Address
-    //  */
-    // void sendPdu(Multiplexer* mux, uint8_t macAddress);
 
     /**
      * @brief Procedure that performs decoding of PDUs received from L1

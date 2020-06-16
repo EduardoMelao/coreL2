@@ -40,10 +40,11 @@ public:
     /**
      * @brief Spectrum allocation procedure for BS
      * @param ueIds UEIDs for next transmission
-     * @param bufferSize Size of buffer for each UEID
+     * @param numberSDUs Number of SDUs on buffer for each UE
+     * @param numberBytes Number of total Bytes on buffer for each UE
      * @param allocations Vector where allocations will be stored
      */
-    void scheduleRequest(vector<uint8_t> ueIds, vector<int> bufferSizes, vector<allocation_cfg_t> &allocations);
+    void scheduleRequest(vector<uint8_t> ueIds, vector<size_t> numberSDUs, vector<size_t> numberBytes, vector<allocation_cfg_t> &allocations);
 
     /**
      * @brief Fills MacPdu with SDUs and information to PHY

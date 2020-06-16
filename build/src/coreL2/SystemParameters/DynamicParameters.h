@@ -30,11 +30,7 @@ protected:
 	vector<allocation_cfg_t> ulReservation;	    //[24 bits each] Spectrum allocation for Uplink
 	vector<uint8_t> mcsDownlink;				//[4 bit each] Modulation and Coding Scheme for Downlink
 	vector<uint8_t> mcsUplink;					//[4 bit each] Modulation and Coding Scheme for Uplink
-	vector<uint8_t> mimoConf;					//[1 bit each] 0 = SISO; 1 = MIMO
-	vector<uint8_t> mimoDiversityMultiplexing;	//[1 bit each] 0 = Diversity; 1 = Multiplexing
-	vector<uint8_t> mimoAntenna;				//[1 bit each] 0 = 2x2; 1 = 4x4
-	vector<uint8_t> mimoOpenLoopClosedLoop;		//[1 bit each] 0 = Open Loop; 1 = Closed Loop
-	vector<uint8_t> mimoPrecoding;				//[4 bits each] MIMO codeblock configuration for DL and UL
+	vector<mimo_cfg_t> mimo;					//Struct containing mimo configuration
 	vector<uint8_t> transmissionPowerControl;	//[6 bits each] Transmission Power Control
 	uint8_t rxMetricPeriodicity;				//[4 bits each] CSI period for CQI, PMI and SSM provided by PHY
 	mutex dynamicParametersMutex;				//Mutex to control access of parameters
@@ -63,31 +59,23 @@ public:
 	 * @param _ulReservation Spectrum allocation for Uplink
 	 * @param _mcsDownlink Modulation and Coding Scheme for Downlink
 	 * @param _mcsUplink Modulation and Coding Scheme for Uplink
-	 * @param _mimoConf SISO(0) or MIMO(1) flag
-	 * @param _mimoDiversityMultiplexing Diversity(0) or Multiplexing(1) flag
-	 * @param _mimoAntenna MIMO 2x2(0) or 4x4(1) antenna scheme
-	 * @param _mimoOpenLoopClosedLoop MIMO 0 = Open Loop; 1 = Closed Loop
-	 * @param _mimoPrecoding MIMO codeblock configuration for DL and UL
+	 * @param _mimo Mimo configuration
 	 * @param _transmissionPowerControl Transmission Power Control
 	 * @param _rxMetricPeriodicity CSI period for CQI, PMI and SSM provided by PHY
 	 */
-	void fillDynamicVariables(uint8_t _fLutMatrix, vector<allocation_cfg_t> _ulReservations, vector<uint8_t> _mcsDownlink, vector<uint8_t> _mcsUplink, vector<uint8_t> _mimoConf, vector<uint8_t> _mimoDiversityMultiplexing,
-						vector<uint8_t> _mimoAntenna, vector<uint8_t> _mimoOpenLoopClosedLoop, vector<uint8_t> _mimoPrecoding, vector<uint8_t> _transmissionPowerControl, uint8_t _rxMetricPeriodicity);
+	void fillDynamicVariables(uint8_t _fLutMatrix, vector<allocation_cfg_t> _ulReservations, vector<uint8_t> _mcsDownlink, 
+		vector<uint8_t> _mcsUplink, vector<mimo_cfg_t> _mimo, vector<uint8_t> _transmissionPowerControl, uint8_t _rxMetricPeriodicity);
 
     /**
 	 * @brief Initialize all variables with dynamic information on UE
 	 * @param _ulReservation Spectrum allocation for Uplink
 	 * @param _mcsUplink Modulation and Coding Scheme for Uplink
-	 * @param _mimoConf SISO(0) or MIMO(1) flag
-	 * @param _mimoDiversityMultiplexing Diversity(0) or Multiplexing(1) flag
-	 * @param _mimoAntenna MIMO 2x2(0) or 4x4(1) antenna scheme
-	 * @param _mimoOpenLoopClosedLoop MIMO 0 = Open Loop; 1 = Closed Loop
-	 * @param _mimoPrecoding MIMO codeblock configuration for DL and UL
+	 * @param _mimo Mimo configuration
 	 * @param _transmissionPowerControl Transmission Power Control
 	 * @param _rxMetricPeriodicity CSI period for CQI, PMI and SSM provided by PHY
 	 */
-	void fillDynamicVariables(allocation_cfg_t _ulReservation, uint8_t _mcsUplink, uint8_t _mimoConf, uint8_t _mimoDiversityMultiplexing, uint8_t _mimoAntenna, 
-							uint8_t _mimoOpenLoopClosedLoop, uint8_t _mimoPrecoding, uint8_t _transmissionPowerControl, uint8_t _rxMetricPeriodicity);
+	void fillDynamicVariables(allocation_cfg_t _ulReservation, uint8_t _mcsUplink, 
+		mimo_cfg_t _mimo, uint8_t _transmissionPowerControl, uint8_t _rxMetricPeriodicity);
 
     /**
 	 * @brief Seriaizes all variables to a sequence of bytes to be transmitted to UE
@@ -97,7 +85,7 @@ public:
 	void serialize(uint8_t targetUeId, vector<uint8_t> & bytes);
 
     /**
-	 * @brief Deserialize bytes to initialize all variables with dynamic information from MACC SDU
+	 * @brief Deserialize bytes to initialize all variables with dynamic information from MACC SDU (only UE)
 	 * @param bytes Bytes with all variables information serialized
 	 */
 	void deserialize(vector<uint8_t> & bytes);
@@ -132,13 +120,9 @@ public:
 	/**
 	 * @brief Sets MIMO configurations
      * @param macAddress UE MAC Address
-	 * @param _mimoConf SISO(0) or MIMO(1) flag
-	 * @param _mimoDiversityMultiplexing Diversity(0) or Multiplexing(1) flag
-	 * @param _mimoAntenna MIMO 2x2(0) or 4x4(1) antenna scheme
-	 * @param _mimoOpenLoopClosedLoop MIMO 0 = Open Loop; 1 = Closed Loop
-	 * @param _mimoPrecoding MIMO codeblock configuration for DL and UL
+	 * @param _mimo Mimo configuration
 	 */
-	void setMimo(uint8_t macAddress, uint8_t _mimoConf, uint8_t _mimoDiversityMultiplexing, uint8_t _mimoAntenna, uint8_t _mimoOpenLoopClosedLoop, uint8_t _mimoPrecoding);
+	void setMimo(uint8_t macAddress, mimo_cfg_t _mimo);
 
 	/**
 	 * @brief Sets TPC
@@ -199,35 +183,7 @@ public:
      * @param macAddress UE MAC Address
      * @returns MIMO Configuration of UE identified as parameter
      */
-    uint8_t getMimoConf(uint8_t macAddress);
-
-    /**
-     * @brief Getter for MIMO Diversity or Multiplexing flag
-     * @param macAddress UE MAC Address
-     * @returns MIMO Diversity or Multiplexing flag of UE identified as parameter
-     */
-    uint8_t getMimoDiversityMultiplexing(uint8_t macAddress);
-
-    /**
-     * @brief Getter for MIMO Antennas number
-     * @param macAddress UE MAC Address
-     * @returns MIMO Antennas number of UE identified as parameter
-     */
-    uint8_t getMimoAntenna(uint8_t macAddress);
-
-    /**
-     * @brief Getter for MIMO OpenLoop or ClosedLoop flag
-     * @param macAddress UE MAC Address
-     * @returns MIMO OpenLoop or ClosedLoop flag of UE identified as parameter
-     */
-    uint8_t getMimoOpenLoopClosedLoop(uint8_t macAddress);
-
-    /**
-     * @brief Getter for MIMO Precoding index
-     * @param macAddress UE MAC Address
-     * @returns MIMO Precoding index of UE identified as parameter
-     */
-    uint8_t getMimoPrecoding(uint8_t macAddress);
+    mimo_cfg_t getMimo(uint8_t macAddress);
 
     /**
      * @brief Getter for Transmission Power Control

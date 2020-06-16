@@ -7,7 +7,7 @@
 @Arquive name : CurrentParameters.cpp
 @Classification : System Parameters - Current Parameters
 @
-@Last alteration : May 5th, 2020
+@Last alteration : June 16th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -114,12 +114,12 @@ CurrentParameters::readTxtSystemParameters(
 		ulReservation.resize(numberUEs);
 		if(flagBS) mcsDownlink.resize(numberUEs);
 		mcsUplink.resize(numberUEs);
-		mimoConf.resize(numberUEs);
-		mimoDiversityMultiplexing.resize(numberUEs);
-		mimoAntenna.resize(numberUEs);
-		mimoOpenLoopClosedLoop.resize(numberUEs);
-		mimoPrecoding.resize(numberUEs);
+		mimo.resize(numberUEs);
 		transmissionPowerControl.resize(numberUEs);
+
+		//Declare mimo auxiliary variables
+		uint8_t mimoConf;		//Mimo configuration: on/off flag
+		uint8_t mimoDivMult;	//Mimo Diversity/Multiplexing flag
 
 		//Loop to read the parameters numberUEs times
 		for(int i=0;i<numberUEs;i++){	
@@ -148,19 +148,17 @@ CurrentParameters::readTxtSystemParameters(
 
 			//Gets MIMO configuration
 			getline(readingConfigurationsFile, readBuffer);
-			mimoConf[i] = stoi(readBuffer);
+			mimoConf = stoi(readBuffer);
 			readBuffer.clear();
 			getline(readingConfigurationsFile, readBuffer);
-			mimoDiversityMultiplexing[i] = stoi(readBuffer);
+			mimoDivMult = stoi(readBuffer);
+			readBuffer.clear();
+			mimo[i].scheme = mimoConf? (mimoDivMult? MULTIPLEXING : DIVERSITY) : NONE;
+			getline(readingConfigurationsFile, readBuffer);
+			mimo[i].num_tx_antenas = stoi(readBuffer);
 			readBuffer.clear();
 			getline(readingConfigurationsFile, readBuffer);
-			mimoAntenna[i] = stoi(readBuffer);
-			readBuffer.clear();
-			getline(readingConfigurationsFile, readBuffer);
-			mimoOpenLoopClosedLoop[i] = stoi(readBuffer);
-			readBuffer.clear();
-			getline(readingConfigurationsFile, readBuffer);
-			mimoPrecoding[i] = stoi(readBuffer);
+			mimo[i].precoding_mtx = stoi(readBuffer);
 			readBuffer.clear();
 
 			//Gets Transmission Power Control Information
@@ -242,11 +240,27 @@ CurrentParameters::recordTxtCurrentParameters(){
 		writingConfigurationsFile << to_string((int)mcsUplink[i]) << '\n';
 
 		//Writes MIMO configuration
-		writingConfigurationsFile << to_string((int)mimoConf[i]) << '\n';
-		writingConfigurationsFile << to_string((int)mimoDiversityMultiplexing[i]) << '\n';
-		writingConfigurationsFile << to_string((int)mimoAntenna[i]) << '\n';
-		writingConfigurationsFile << to_string((int)mimoOpenLoopClosedLoop[i]) << '\n';
-		writingConfigurationsFile << to_string((int)mimoPrecoding[i]) << '\n';
+		switch (mimo[i].scheme){
+		case NONE:
+			writingConfigurationsFile << to_string(0) << '\n';
+			writingConfigurationsFile << to_string(0) << '\n';
+			break;
+		
+		case DIVERSITY:
+			writingConfigurationsFile << to_string(1) << '\n';
+			writingConfigurationsFile << to_string(0) << '\n';
+			break;
+		
+		case MULTIPLEXING:
+			writingConfigurationsFile << to_string(1) << '\n';
+			writingConfigurationsFile << to_string(1) << '\n';
+			break;
+		
+		default:
+			break;
+		}
+		writingConfigurationsFile << to_string((int)mimo[i].num_tx_antenas) << '\n';
+		writingConfigurationsFile << to_string((int)mimo[i].precoding_mtx) << '\n';
 
 		//Gets Transmission Power Control Information
 		writingConfigurationsFile << to_string((int)transmissionPowerControl[i]) << '\n';
@@ -262,11 +276,9 @@ CurrentParameters::loadDynamicParametersDefaultInformation(
 	DynamicParameters* dynamicParameters)	//DynamicParameters object with dynamic information to be filled
 {
 	if(flagBS)
-		dynamicParameters->fillDynamicVariables(fLutMatrix, ulReservation, mcsDownlink, mcsUplink, mimoConf, mimoDiversityMultiplexing, mimoAntenna,
-												mimoOpenLoopClosedLoop, mimoPrecoding, transmissionPowerControl, rxMetricPeriodicity);
+		dynamicParameters->fillDynamicVariables(fLutMatrix, ulReservation, mcsDownlink, mcsUplink, mimo, transmissionPowerControl, rxMetricPeriodicity);
 	else
-		dynamicParameters->fillDynamicVariables(ulReservation[0], mcsUplink[0], mimoConf[0], mimoDiversityMultiplexing[0], mimoAntenna[0],
-												mimoOpenLoopClosedLoop[0], mimoPrecoding[0], transmissionPowerControl[0], rxMetricPeriodicity);
+		dynamicParameters->fillDynamicVariables(ulReservation[0], mcsUplink[0], mimo[0], transmissionPowerControl[0], rxMetricPeriodicity);
 	if(verbose) cout<<"[CurrentParameters] DynamicParameters filled correctly."<<endl;
 }
 
@@ -387,11 +399,7 @@ CurrentParameters::setCLIParameters(
 
 	//Sets MIMO configuration and TPC configuration
 	for(int i=0;i<ulReservation.size();i++){
-		mimoConf[getIndex(ulReservation[i].target_ue_id)] = dynamicParameters->getMimoConf(ulReservation[i].target_ue_id);
-		mimoDiversityMultiplexing[getIndex(ulReservation[i].target_ue_id)] = dynamicParameters->getMimoDiversityMultiplexing(ulReservation[i].target_ue_id);
-		mimoAntenna[getIndex(ulReservation[i].target_ue_id)] = dynamicParameters->getMimoAntenna(ulReservation[i].target_ue_id);
-		mimoOpenLoopClosedLoop[getIndex(ulReservation[i].target_ue_id)] = dynamicParameters->getMimoOpenLoopClosedLoop(ulReservation[i].target_ue_id);
-		mimoPrecoding[getIndex(ulReservation[i].target_ue_id)] = dynamicParameters->getMimoPrecoding(ulReservation[i].target_ue_id);
+		mimo[getIndex(ulReservation[i].target_ue_id)] = dynamicParameters->getMimo(ulReservation[i].target_ue_id);
 		transmissionPowerControl[getIndex(ulReservation[i].target_ue_id)] = dynamicParameters->getTPC(ulReservation[i].target_ue_id);
 	}
 }

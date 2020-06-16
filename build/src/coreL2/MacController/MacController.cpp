@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : June 5th, 2020
+@Last alteration : June 16th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -347,7 +347,8 @@ MacController::scheduling(){
         currentParameters->setMacTxMode(ACTIVE_MODE_TX);
         //Create vectors to store UEIDs and number of packets for next transmission
         vector<uint8_t> ueIds;                  //UEIDs of each UE selected for next transmission
-        vector<int> bufferSize;                 //Current buffer status for each UE
+        vector<size_t> numberSdus;              //Current number of SDUs on buffer for each UE
+        vector<size_t> numberBytes;             //Current number of total Bytes on buffer for each UE
         vector<allocation_cfg_t> allocations;   //Vector containing allocation for next transmission
 
         //Before any procedure, check if there are channels available for transmission
@@ -357,7 +358,7 @@ MacController::scheduling(){
         }
 
         //Get buffer status information and store into ueIds and bufferSize vectors
-        sduBuffers->bufferStatusInformation(ueIds, bufferSize);
+        sduBuffers->bufferStatusInformation(ueIds, numberSdus, numberBytes);
 
         //Execute if there are UEs selected for transmission. Otherwise, do nothing.
         if(ueIds.size()>0){
