@@ -7,7 +7,7 @@
 @Arquive name : Scheduler.cpp
 @Classification : Scheduler
 @
-@Last alteration : June 16th, 2020
+@Last alteration : June 17th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -20,7 +20,7 @@ Direction : Diretoria de Operações (DO)
 UA : 1230 - Centro de Competencia - Sistemas Embarcados
 
 @Description : This module is responsible for Scheduling SDUs into MAC PDUs
-            to be transmitted in the next subframe.
+            to be transmitted in the next subframe allocating information into RBs.
 */
 
 #include "Scheduler.h"
@@ -49,8 +49,9 @@ Scheduler::scheduleRequest(
     size_t numberUEs = ueIds.size();        //Number of UEs selected for next transmission
     uint8_t numberAvailableRBs = 0;         //Number of available RBs for next transmission
     size_t totalDesiredAllocation = 0;      //Sum of all desired RB allocations
+    uint8_t infoBits;                       //Number of information bits to send
     vector<size_t> desiredRbAllocation;     //Vector of desired allocations for each UE
-    vector<uint8_t> rbsAllocation;         //Vector of number of RBs (allocation) for each UE   
+    vector<uint8_t> rbsAllocation;          //Vector of number of RBs (allocation) for each UE   
 
     //Resize vectors
     desiredRbAllocation.resize(numberUEs);
@@ -62,53 +63,73 @@ Scheduler::scheduleRequest(
 
     //For each UE, calculate desired number of RBs to allocate
     for(int i=0;i<numberUEs;i++){
-        uint8_t infoBits = 8 + 2*numberSDUs[i] + numberBytes[i]; //2[SA+DA+numSDUs]+2[CRC])*2[no maximo 2 cabeçalhos] + 2[Flag D/C + SizeSDU]*numSDUs + numBytes
-        infoBits *= 8;  //Convert Bytes to bits    
+        //Calculate number of info bytes = 2[SA+DA+numSDUs]+2[CRC])*2[no maximo 2 cabeçalhos] + 2[Flag D/C + SizeSDU]*numSDUs + numBytes
+        infoBits = 8 + 2*numberSDUs[i] + numberBytes[i];    //Bytes
+        infoBits *= 8;  //Convert bytes to bits    
+
+        //Calculate desired RB allocation
         desiredRbAllocation[i] = get_num_required_rb(currentParameters->getNumerology(), currentParameters->getMimo(ueIds[i]),
             mcsToModulation[currentParameters->getMcsDownlink(ueIds[i])], mcsToCodeRate[currentParameters->getMcsDownlink(ueIds[i])], infoBits);
+        
+        //Increase total desired RB allocation counter
+        totalDesiredAllocation += desiredRbAllocation[i];
     }
 
-    //Evaluate allocations 
-    int rbgOffset=0;        //Offset for each RBG allocation
-    int currentChannel;     //Current spectrum channel (0,1,2 or 3)
-    int ueOffset = 0;     //Index to identify current UE
+    //Test if derired allocations exceed total RBs available
+    if(totalDesiredAllocation>numberAvailableRBs){      //Then RBs need to be allocated proportionally to desired RB allocation
+        for(int i=0;i<numberUEs;i++){
+            //Truncating result ignores fractional part of the result and prevents from allocating more RBs than available (but can be less efficient)
+            rbsAllocation[i] = trunc((float)desiredRbAllocation[i]*(float)numberAvailableRBs/((float)totalDesiredAllocation));
+        }
+    }
+    else    //Then, RB allocation equals desired RB allocations
+    {
+        rbsAllocation = vector<uint8_t>(desiredRbAllocation.begin(), desiredRbAllocation.end());
+    }
+    
 
-    while(ueOffset<ueIds.size()){
+    //Declare variables to evaluate actual allocations considering "holes" in channels available
+    int rbOffset=0;         //Offset for each RBG allocation
+    int currentChannel;     //Current spectrum channel (0,1,2 or 3)
+    int ueOffset = 0;       //Index to identify current UE
+
+    while(ueOffset<ueIds.size()){       //Do it for all UEs
         //Verify if current channel is free or search for next channel
-        currentChannel = rbgOffset/3;
-        if(rbgOffset%3==0){
+        //First, get current channel based on RBs offset
+        currentChannel = rbOffset/33;       //Doing integer division will ignore fractional part
+        //Then, verify if channel is available in Fusion lookup table. If it is not, search for next available channel
+        if(rbOffset%33==0){
             while(((currentParameters->getFLUTMatrix()>>currentChannel)&1)!=1){
                 currentChannel++;
-                rbgOffset+=3;
+                rbOffset+=33;
             }
         }
 
         //Define spectrum allocation structure
         allocations.resize(allocations.size()+1);
         allocations.back().target_ue_id = ueIds[ueOffset];
-        allocations.back().first_rb = rbgOffset*currentParameters->getRbgSize();
+        allocations.back().first_rb = rbOffset;
         allocations.back().number_of_rb = 0;
 
-        while(rbgsAllocation[ueOffset]>0){
-            allocations.back().number_of_rb+=currentParameters->getRbgSize();
-            rbgsAllocation[ueOffset]--;
-            rbgOffset++;
-            currentChannel = rbgOffset/3;
+        while(rbsAllocation[ueOffset]>0){
+            allocations.back().number_of_rb += 1;
+            rbsAllocation[ueOffset]--;
+            rbOffset++;
+            currentChannel = rbOffset/33;   //Doing integer division will ignore fractional part
 
-            //Verify if next RBG is idle
-            if(rbgOffset<12&&rbgOffset%3==0){
+            //Verify if next RB is idle
+            if(rbOffset<132&&rbOffset%33==0){
                 if(((currentParameters->getFLUTMatrix()>>currentChannel)&1)!=1){
                     break;
                 }
             }
         }
-        if(rbgsAllocation[ueOffset]>0)
+
+        if(rbsAllocation[ueOffset]>0)
             continue;
-        
         else
             ueOffset++;
-    }
-    
+    }    
 }   
 
 void
@@ -116,11 +137,14 @@ Scheduler::fillMacPdus(
     vector<MacPDU> &macPdus)     //Vector of MacPDUs to be filled
 {
     uint8_t destinationUeId;                //Current Destination UE Identification
-    char sduBuffer[MQ_MAX_MSG_SIZE];    //Buffer to store SDU on aggregation procedure
+    char sduBuffer[MQ_MAX_MSG_SIZE];        //Buffer to store SDU on aggregation procedure
     size_t sduSize;                         //SDU Size in bytes
     for(int i=0;i<macPdus.size();i++){
         destinationUeId = macPdus[i].allocation_.target_ue_id;
 
+        //Fill Numerology
+        macPdus[i].numID_ = currentParameters->getNumerology();
+        
         //Fill MAC - PHY control struct
         macPdus[i].macphy_ctl_.first_tb_in_subframe = i==0;
         macPdus[i].macphy_ctl_.last_tb_in_subframe = i==(macPdus.size()-1);
@@ -139,9 +163,7 @@ Scheduler::fillMacPdus(
             macPdus[i].mcs_.power_offset=currentParameters->getTPC(destinationUeId);
         }
         macPdus[i].mcs_.modulation = mcsToModulation[mcsValue];
-
-        //Fill Numerology
-        macPdus[i].numID_ = currentParameters->getNumerology();
+        macPdus[i].mcs_.num_coded_bytes = get_bit_capacity(macPdus[i]);
 
         //Calculate number of bits for next transmission
         size_t numberBytes = get_net_byte_capacity(macPdus[i].numID_, macPdus[i].allocation_, macPdus[i].mimo_, macPdus[i].mcs_.modulation, mcsToCodeRate[mcsValue]);
@@ -216,8 +238,10 @@ Scheduler::fillMacPdus(
         }
 
         //Retreive full PDU from multiplexer if not empty
-        if(!multiplexer->isEmpty())
+        if(!multiplexer->isEmpty()){
             multiplexer->getPDU(macPdus[i].mac_data_);
+            macPdus[i].mcs_.num_info_bytes = macPdus[i].mac_data_.size();
+        }
         else
             macPdus.erase(macPdus.begin()+i);
         
