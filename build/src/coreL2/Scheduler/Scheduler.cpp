@@ -89,7 +89,7 @@ Scheduler::scheduleRequest(
     
 
     //Declare variables to evaluate actual allocations considering "holes" in channels available
-    int rbOffset=0;         //Offset for each RBG allocation
+    int rbOffset=0;         //Offset for each RB allocation
     int currentChannel;     //Current spectrum channel (0,1,2 or 3)
     int ueOffset = 0;       //Index to identify current UE
 
@@ -144,7 +144,7 @@ Scheduler::fillMacPdus(
 
         //Fill Numerology
         macPdus[i].numID_ = currentParameters->getNumerology();
-        
+
         //Fill MAC - PHY control struct
         macPdus[i].macphy_ctl_.first_tb_in_subframe = i==0;
         macPdus[i].macphy_ctl_.last_tb_in_subframe = i==(macPdus.size()-1);

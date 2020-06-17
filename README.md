@@ -97,7 +97,6 @@ The file `Default.txt` is composed only by numbers, respecting ranges, as define
 |BS/UE|	[0..65536]	|IP timeout
 |BS		|[1..10]	    |SS Report timeout
 |BS		|[1..10]	    |Ack timeout
-|BS		|[1..33]	    |Resource Block Group (RBG) size
 |BS/UE	|[0..15]		|*User Equipment Identification
 |BS/UE	|[1..132]	|*RBStart
 |BS/UE	|[1..132]	|*NumRBs
