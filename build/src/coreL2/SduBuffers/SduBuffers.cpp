@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : June 10th, 2020
+@Last alteration : June 18th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -33,7 +33,7 @@ SduBuffers::SduBuffers(
     TimerSubframe* _timerSubframe,          //Timer with Subframe indication to support IP timeout control
     bool _verbose)                          //Verbosity flag
 {
-    uint8_t numberUEs = currentParameters->getNumberUEs();  //Number of UEs in the system
+    uint8_t numberUEs = _currentParameters->getNumberUEs();  //Number of UEs in the system
     
     //Assign class variables
     reception = _reception;

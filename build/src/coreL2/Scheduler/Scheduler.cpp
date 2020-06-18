@@ -7,7 +7,7 @@
 @Arquive name : Scheduler.cpp
 @Classification : Scheduler
 @
-@Last alteration : June 17th, 2020
+@Last alteration : June 18th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -74,7 +74,7 @@ Scheduler::scheduleRequest(
         //Increase total desired RB allocation counter
         totalDesiredAllocation += desiredRbAllocation[i];
 
-        if(verbose) cout<<"[Scheduler] UE "<<(int)ueIds[i]<<"has "<<infoBits/8<<" bytes to transmit and needs "<<desiredRbAllocation[i]<<" RBs."<<endl;
+        if(verbose) cout<<"[Scheduler] UE "<<(int)ueIds[i]<<" has "<<infoBits/8<<" bytes to transmit and needs "<<desiredRbAllocation[i]<<" RBs."<<endl;
     }
 
     //Test if derired allocations exceed total RBs available
