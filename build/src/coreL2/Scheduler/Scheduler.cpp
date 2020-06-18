@@ -73,6 +73,8 @@ Scheduler::scheduleRequest(
         
         //Increase total desired RB allocation counter
         totalDesiredAllocation += desiredRbAllocation[i];
+
+        if(verbose) cout<<"[Scheduler] UE "<<(int)ueIds[i]<<"has "<<infoBits/8<<" bytes to transmit and needs "<<desiredRbAllocation[i]<<" RBs."<<endl;
     }
 
     //Test if derired allocations exceed total RBs available
