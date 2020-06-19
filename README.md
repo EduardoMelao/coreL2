@@ -104,7 +104,7 @@ The file `Default.txt` is composed only by numbers, respecting ranges, as define
 |BS/UE	|[0..15]	|	*MCS Uplink
 |BS/UE	|[0/1]		|*MIMO on(1) or off(0)
 |BS/UE	|[0/1]		|*MIMO diversity(0) or multiplexing(1)
-|BS/UE	|[0/1]		|*MIMO number of Tx antennas
+|BS/UE	|[1/2/4]		|*MIMO number of Tx antennas
 |BS/UE	|[0..15]	|	*MIMO precoding matrix index
 |BS/UE| 	[0..40]	 |   *Transmission Power Control
  
