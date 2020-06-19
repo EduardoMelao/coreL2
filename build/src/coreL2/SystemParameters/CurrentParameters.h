@@ -41,7 +41,6 @@ private:
 	uint16_t ipTimeout;				//[16 bits] IP Timeout time (milliseconds)
 	uint8_t ssreportWaitTimeout;	//[4 bits] Spectrum Sensing Report Wait Timeout in number of subframes
 	uint8_t ackWaitTimeout;			//[4 bits] Acknowledgement Wait Timeout time in number of subframes
-	uint8_t rbgSize;				//[8 bits] Resouce Block group size
 
 public:
 	/**
@@ -138,12 +137,6 @@ public:
 	 * @returns Corresponding MAC Address
 	 */
 	uint8_t getMacAddress(int index);
-
-	/**
-	 * @brief Gets Resouce Block Group size
-	 * @returns rbgSize
-	 */
-	uint8_t getRbgSize();
 
 	/**
 	 * @brief Gets flag to control if it is necessary to send information to UE

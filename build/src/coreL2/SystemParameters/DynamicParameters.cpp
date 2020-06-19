@@ -7,7 +7,7 @@
 @Arquive name : DynamicParameters.cpp
 @Classification : System Parameters - Dynamic Parameters
 @
-@Last alteration : March 10th, 2020
+@Last alteration : June 16th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -38,11 +38,7 @@ DynamicParameters::fillDynamicVariables(
     vector<allocation_cfg_t> _ulReservations,   //Uplink Reservations
     vector<uint8_t> _mcsDownlink,               //Modulation and Coding Scheme Downlink
     vector<uint8_t> _mcsUplink,                 //Modulation and Coding Scheme Uplink
-    vector<uint8_t> _mimoConf,                  //Mimo Configuration
-    vector<uint8_t> _mimoDiversityMultiplexing, //Mimo Diversity/Multiplexing flag
-	vector<uint8_t> _mimoAntenna,               //Mimo number of antennas
-    vector<uint8_t> _mimoOpenLoopClosedLoop,    //Mimo OpenLoop/ClosedLoop flag
-    vector<uint8_t> _mimoPrecoding,             //Mimo Precoding index
+    vector<mimo_cfg_t> _mimo,                   //Mimo configurations
     vector<uint8_t> _transmissionPowerControl,  //Transmission Power Control
     uint8_t _rxMetricPeriodicity)               //Rx Metrics Periodicity in number of subframes
 {
@@ -56,11 +52,7 @@ DynamicParameters::fillDynamicVariables(
     ulReservation = _ulReservations;
     mcsDownlink = _mcsDownlink;
     mcsUplink = _mcsUplink;
-    mimoConf = _mimoConf;
-    mimoDiversityMultiplexing = _mimoDiversityMultiplexing;
-    mimoAntenna = _mimoAntenna;
-    mimoOpenLoopClosedLoop = _mimoOpenLoopClosedLoop;
-    mimoPrecoding = _mimoPrecoding;
+    mimo = _mimo;
     transmissionPowerControl = _transmissionPowerControl;
     rxMetricPeriodicity = _rxMetricPeriodicity;
 }
@@ -69,11 +61,7 @@ void
 DynamicParameters::fillDynamicVariables(
     allocation_cfg_t _ulReservation,        //Uplink Reservation
     uint8_t _mcsUplink,                     //Modulation and Coding Scheme Uplink
-    uint8_t _mimoConf,                      //Mimo configuration
-    uint8_t _mimoDiversityMultiplexing,     //Mimo Diversity/Multiplexing flag
-    uint8_t _mimoAntenna,                   //Mimo number of antennas
-	uint8_t _mimoOpenLoopClosedLoop,        //Mimo OpenLoop/ClosedLoop flag
-    uint8_t _mimoPrecoding,                 //Mimo Precoding index
+    mimo_cfg_t _mimo,                       //Mimo configuration
     uint8_t _transmissionPowerControl,      //Transmission Power Control
     uint8_t _rxMetricPeriodicity)           //Rx Metrics periodicity in number of  
 {
@@ -83,11 +71,7 @@ DynamicParameters::fillDynamicVariables(
     //Push back information on vectors
     ulReservation.push_back(_ulReservation);
     mcsUplink.push_back(_mcsUplink);
-    mimoConf.push_back(_mimoConf);
-    mimoDiversityMultiplexing.push_back(_mimoDiversityMultiplexing);
-    mimoAntenna.push_back(_mimoAntenna);
-    mimoOpenLoopClosedLoop.push_back(_mimoOpenLoopClosedLoop);
-    mimoPrecoding.push_back(_mimoPrecoding);
+    mimo.push_back(_mimo);
     transmissionPowerControl.push_back(_transmissionPowerControl);
     rxMetricPeriodicity = _rxMetricPeriodicity;
 }
@@ -119,8 +103,7 @@ DynamicParameters::serialize(
     push_bytes(bytes, ulReservation[index].first_rb);
     push_bytes(bytes, ulReservation[index].number_of_rb);
 
-	auxiliary = (mimoPrecoding[index]&15)|((mimoOpenLoopClosedLoop[index]&1)<<4)|((mimoAntenna[index]&1)<<5)|((mimoDiversityMultiplexing[index]&1)<<6)|((mimoConf[index]&1)<<7);
-	push_bytes(bytes, auxiliary);
+    mimo[index].serialize(bytes);
 
 	push_bytes(bytes, transmissionPowerControl[index]);
 
@@ -136,11 +119,7 @@ DynamicParameters::deserialize(
 
     //Clear all vectors before deserializing
     transmissionPowerControl.clear();
-    mimoPrecoding.clear();
-    mimoOpenLoopClosedLoop.clear();
-    mimoAntenna.clear();
-    mimoDiversityMultiplexing.clear();
-    mimoConf.clear();
+    mimo.clear();
     ulReservation.clear();
     mcsUplink.clear();
 
@@ -149,12 +128,8 @@ DynamicParameters::deserialize(
     pop_bytes(auxiliary, bytes);
     transmissionPowerControl.push_back(auxiliary);
 
-    pop_bytes(auxiliary, bytes);
-    mimoPrecoding.push_back(auxiliary&15);                  //First 4 bits
-    mimoOpenLoopClosedLoop.push_back((auxiliary>>4)&1);     //5th bit
-    mimoAntenna.push_back((auxiliary>>5)&1);                //6th bit
-    mimoDiversityMultiplexing.push_back((auxiliary>>6)&1);  //7th bit
-    mimoConf.push_back((auxiliary>>7)&1);                   //8th bit
+    mimo.resize(1);
+    mimo[0].deserialize(bytes);
 
     ulReservation.resize(1);
     pop_bytes(ulReservation[0].number_of_rb, bytes);
@@ -235,11 +210,7 @@ DynamicParameters::setMcsUplink(
 void 
 DynamicParameters::setMimo(
     uint8_t macAddress,                     //UE Mac Address
-    uint8_t _mimoConf,                      //MIMO configuration
-    uint8_t _mimoDiversityMultiplexing,     //MIMO Diversity or Multiplexing
-    uint8_t _mimoAntenna,                   //MIMO antenna scheme: 2x2 or 4x4
-    uint8_t _mimoOpenLoopClosedLoop,        //MIMO open loop or closed loop
-    uint8_t _mimoPrecoding)                 //MIMO codeblock configuration for DL OR UL
+    mimo_cfg_t _mimo)                       //MIMO configuration
 {
     //Lock mutex till the end of procedure
     lock_guard<mutex> lk(dynamicParametersMutex);
@@ -250,15 +221,10 @@ DynamicParameters::setMimo(
         exit(1);
     }
     
-    if(mimoConf[index]!=_mimoConf || mimoDiversityMultiplexing[index]!=_mimoDiversityMultiplexing || mimoAntenna[index]!=_mimoAntenna || 
-        mimoOpenLoopClosedLoop[index]!=_mimoOpenLoopClosedLoop || mimoPrecoding[index]!=_mimoPrecoding)
+    if(mimo[index].scheme!=_mimo.scheme || mimo[index].num_tx_antenas!=_mimo.num_tx_antenas || mimo[index].precoding_mtx!=_mimo.precoding_mtx)
     {
         //Assign new value(s)
-        mimoConf[index] = _mimoConf;
-        mimoDiversityMultiplexing[index] = _mimoDiversityMultiplexing;
-        mimoAntenna[index] = _mimoAntenna;
-        mimoOpenLoopClosedLoop[index] = _mimoOpenLoopClosedLoop;
-        mimoPrecoding[index] = _mimoPrecoding;
+        mimo[index]=_mimo;
     }
 }
 
@@ -360,8 +326,8 @@ DynamicParameters::getMcsUplink(
     return mcsUplink[index];
 }
 
-uint8_t 
-DynamicParameters::getMimoConf(
+mimo_cfg_t 
+DynamicParameters::getMimo(
     uint8_t macAddress) //UE MAC Address
 {
     //Lock mutex till the end of procedure
@@ -372,68 +338,7 @@ DynamicParameters::getMimoConf(
         cout<<"[DynamicParameters] Error getting MIMO Configuration: macAddress not found."<<endl;
         exit(1);
     }
-    return mimoConf[index];
-}
-
-
-uint8_t 
-DynamicParameters::getMimoDiversityMultiplexing(
-    uint8_t macAddress) //UE MAC Address
-{
-    //Lock mutex till the end of procedure
-    lock_guard<mutex> lk(dynamicParametersMutex);
-    
-    int index = getIndex(macAddress);
-    if(index==-1){
-        cout<<"[DynamicParameters] Error getting MIMO Diversity/Multiplexing flag: macAddress not found."<<endl;
-        exit(1);
-    }
-    return mimoDiversityMultiplexing[index];
-}
-
-uint8_t 
-DynamicParameters::getMimoAntenna(
-    uint8_t macAddress) //UE MAC Address
-{
-    //Lock mutex till the end of procedure
-    lock_guard<mutex> lk(dynamicParametersMutex);
-    
-    int index = getIndex(macAddress);
-    if(index==-1){
-        cout<<"[DynamicParameters] Error getting MIMO number of Antennas: macAddress not found."<<endl;
-        exit(1);
-    }
-    return mimoAntenna[index];
-}
-
-uint8_t 
-DynamicParameters::getMimoOpenLoopClosedLoop(
-    uint8_t macAddress) //UE MAC Address
-{
-    //Lock mutex till the end of procedure
-    lock_guard<mutex> lk(dynamicParametersMutex);
-    
-    int index = getIndex(macAddress);
-    if(index==-1){
-        cout<<"[DynamicParameters] Error getting MIMO OpenLoop/ClosedLoop flag: macAddress not found."<<endl;
-        exit(1);
-    }
-    return mimoOpenLoopClosedLoop[index];
-}
-
-uint8_t 
-DynamicParameters::getMimoPrecoding(
-    uint8_t macAddress) //UE MAC Address
-{
-    //Lock mutex till the end of procedure
-    lock_guard<mutex> lk(dynamicParametersMutex);
-    
-    int index = getIndex(macAddress);
-    if(index==-1){
-        cout<<"[DynamicParameters] Error getting MIMO Precoding index: macAddress not found."<<endl;
-        exit(1);
-    }
-    return mimoPrecoding[index];
+    return mimo[index];
 }
 
 uint8_t 
