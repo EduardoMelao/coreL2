@@ -40,29 +40,25 @@ public:
     /**
      * @brief Spectrum allocation procedure for BS
      * @param ueIds UEIDs for next transmission
-     * @param bufferSize Size of buffer for each UEID
+     * @param numberSDUs Number of SDUs on buffer for each UE
+     * @param numberBytes Number of total Bytes on buffer for each UE
      * @param allocations Vector where allocations will be stored
      */
-    void scheduleRequest(vector<uint8_t> ueIds, vector<int> bufferSizes, vector<allocation_cfg_t> &allocations);
+    void scheduleRequestBS(vector<uint8_t> ueIds, vector<size_t> numberSDUs, vector<size_t> numberBytes, vector<allocation_cfg_t> &allocations);
+
+    /**
+     * @brief Spectrum allocation procedure for UE
+     * @param numberSDUs Number of SDUs on buffer for BS
+     * @param numberBytes Number of total Bytes on buffer for BS
+     * @param allocations Spectrum allocation
+     */
+    void scheduleRequestUE(size_t numberSDUs, size_t numberBytes, allocation_cfg_t &allocation);
 
     /**
      * @brief Fills MacPdu with SDUs and information to PHY
      * @param macPdus Vector of MacPDUs to be filled
      */
     void fillMacPdus(vector<MacPDU> &macPdus);
-
-    /**
-     * @brief Scheduling procedure for BS
-     * @param macPDUs Array of MAC PDUs where scheduler will store Multiplexed SDUs
-     */
-    void scheduleRequestBS(MacPDU** macPdus);
-
-
-    /**
-     * @brief Scheduling procedure for UE
-     * @param macPDUs MAC PDU where scheduler will store Multiplexed SDUs
-     */
-    void scheduleRequestUE(MacPDU* macPdu);
 
     /**
      * @brief Procedure thar calculates spectrum allocation for 2 UEs (and only) for schedulingRequest procedure for downlink

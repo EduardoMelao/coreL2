@@ -97,7 +97,6 @@ The file `Default.txt` is composed only by numbers, respecting ranges, as define
 |BS/UE|	[0..65536]	|IP timeout
 |BS		|[1..10]	    |SS Report timeout
 |BS		|[1..10]	    |Ack timeout
-|BS		|[1..33]	    |Resource Block Group (RBG) size
 |BS/UE	|[0..15]		|*User Equipment Identification
 |BS/UE	|[1..132]	|*RBStart
 |BS/UE	|[1..132]	|*NumRBs
@@ -105,8 +104,7 @@ The file `Default.txt` is composed only by numbers, respecting ranges, as define
 |BS/UE	|[0..15]	|	*MCS Uplink
 |BS/UE	|[0/1]		|*MIMO on(1) or off(0)
 |BS/UE	|[0/1]		|*MIMO diversity(0) or multiplexing(1)
-|BS/UE	|[0/1]		|*MIMO antennas 2x2(0) or 4x4(1)
-|BS/UE	|[0/1]		|*MIMO OL(0) or CL(1)
+|BS/UE	|[1/2/4]		|*MIMO number of Tx antennas
 |BS/UE	|[0..15]	|	*MIMO precoding matrix index
 |BS/UE| 	[0..40]	 |   *Transmission Power Control
  
