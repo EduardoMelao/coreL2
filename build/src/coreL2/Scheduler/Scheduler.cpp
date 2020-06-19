@@ -49,7 +49,7 @@ Scheduler::scheduleRequest(
     size_t numberUEs = ueIds.size();        //Number of UEs selected for next transmission
     uint8_t numberAvailableRBs = 0;         //Number of available RBs for next transmission
     size_t totalDesiredAllocation = 0;      //Sum of all desired RB allocations
-    uint8_t infoBits;                       //Number of information bits to send
+    size_t infoBits;                        //Number of information bits to send
     vector<size_t> desiredRbAllocation;     //Vector of desired allocations for each UE
     vector<uint8_t> rbsAllocation;          //Vector of number of RBs (allocation) for each UE   
 
