@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : June 17th, 2020
+@Last alteration : June 19th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -364,11 +364,10 @@ MacController::scheduling(){
         if(ueIds.size()>0){
             //If it is BS, perform spectrum allocation calculation for next transmission
             if(flagBS)
-                scheduler->scheduleRequest(ueIds, numberSdus, numberBytes, allocations);
+                scheduler->scheduleRequestBS(ueIds, numberSdus, numberBytes, allocations);
             else{
                 allocations.resize(1);
-                allocations[0] = currentParameters->getUlReservation(currentParameters->getCurrentMacAddress());
-                allocations[0].target_ue_id = 0;
+                scheduler->scheduleRequestUE(numberSdus[0], numberSdus[0], allocations[0]);
             }
 
             //Create MacPDU structures and populate allocations

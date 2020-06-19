@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : April 28th, 2020
+@Last alteration : June 28th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -17,8 +17,8 @@ Company : Centro de Pesquisa e Desenvolvimento em Telecomunicacoes (CPQD)
 Direction : Diretoria de Operações (DO)
 UA : 1230 - Centro de Competencia - Sistemas Embarcados
 @Description : This module controls de communication between MAC and PHY,
-    using UPD sockets in the two Layers to exchange data Bytes and control Bytes. 
-    CRC Calculation and checking is made here too.
+    using Message Queues between the two Layers to exchange data Bytes and 
+    control Bytes. CRC Calculation and checking is made here too.
 */
 
 #include "L1L2Interface.h"
@@ -49,10 +49,11 @@ L1L2Interface::sendPdus(
 
     //Perform CRC calculations
     for(int i=0;i<macPdus.size();i++){
-        numberPduBytes = macPdus[i].mac_data_.size();      //Number of Data Bytes before inserting CRC
-        macPdus[i].mac_data_.resize(numberPduBytes+2);     //Resize vector
+        numberPduBytes = macPdus[i].mac_data_.size();       //Number of Data Bytes before inserting CRC
+        macPdus[i].mac_data_.resize(numberPduBytes+2);      //Resize vector
         crcPackageCalculate((char*)&(macPdus[i].mac_data_[0]), numberPduBytes);
-        macPdus[i].serialize(serializedMacPdus);           //Serialize MAC PDU
+        macPdus[i].mcs_.num_info_bytes += 2;                //Insert 2 Bytes for CRC
+        macPdus[i].serialize(serializedMacPdus);            //Serialize MAC PDU
     }
 
     //Send PDU to L1

@@ -7,7 +7,7 @@
 @Arquive name : Scheduler.cpp
 @Classification : Scheduler
 @
-@Last alteration : June 18th, 2020
+@Last alteration : June 19th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -39,7 +39,7 @@ Scheduler::Scheduler(
 Scheduler::~Scheduler() {}
 
 void 
-Scheduler::scheduleRequest(
+Scheduler::scheduleRequestBS(
     vector<uint8_t> ueIds,                  //Vector of Ue identifications for next transmission
     vector<size_t> numberSDUs,              //Vector of number of SDUs on buffer for each UE
     vector<size_t> numberBytes,             //Vector of Number of total Bytes on buffer for each UE
@@ -74,7 +74,7 @@ Scheduler::scheduleRequest(
         //Increase total desired RB allocation counter
         totalDesiredAllocation += desiredRbAllocation[i];
 
-        if(verbose) cout<<"[Scheduler] UE "<<(int)ueIds[i]<<" has "<<infoBits/8<<" bytes to transmit and needs "<<desiredRbAllocation[i]<<" RBs."<<endl;
+        if(verbose) cout<<"[Scheduler] BS has "<<infoBits/8<<" bytes to transmit to UE "<<(int)ueIds[i]<<" and needs "<<desiredRbAllocation[i]<<" RBs."<<endl;
     }
 
     //Test if derired allocations exceed total RBs available
@@ -133,6 +133,34 @@ Scheduler::scheduleRequest(
             ueOffset++;
     }    
 }   
+
+void 
+Scheduler::scheduleRequestUE(
+    size_t numberSDUs,              //Number of SDUs on buffer for BS
+    size_t numberBytes,             //Number of total Bytes on buffer for BS
+    allocation_cfg_t &allocation)   //Spectrum allocations will be stored
+{
+    //Get stating allocation that equals uplink reservation
+    allocation = currentParameters->getUlReservation(currentParameters->getCurrentMacAddress());
+    allocation.target_ue_id = 0;    //Target UEID for an UE is BS
+
+    //Define variables
+    uint8_t numberAvailableRBs = allocation.number_of_rb;   //Number of available RBs for next transmission
+    size_t desiredRbAllocation;                             //Desired RB allocation 
+    size_t infoBits;                                        //Number of information bits to send
+
+    //Calculate number of info bytes = 2[SA+DA+numSDUs]+2[CRC])*2[no maximo 2 cabeçalhos] + 2[Flag D/C + SizeSDU]*numSDUs + numBytes
+    infoBits = 8 + 2*numberSDUs + numberBytes;    //Bytes
+    infoBits *= 8;  //Convert bytes to bits    
+
+    //Calculate desired RB allocation
+    desiredRbAllocation = get_num_required_rb(currentParameters->getNumerology(), currentParameters->getMimo(0),
+        mcsToModulation[currentParameters->getMcsDownlink(0)], mcsToCodeRate[currentParameters->getMcsDownlink(0)], infoBits);
+    
+    allocation.number_of_rb = desiredRbAllocation > numberAvailableRBs ? numberAvailableRBs:desiredRbAllocation;
+
+    if(verbose) cout<<"[Scheduler] UE "<<(int)currentParameters->getCurrentMacAddress()<<" has "<<infoBits/8<<" bytes to transmit and needs "<<desiredRbAllocation<<" RBs."<<endl;
+}
 
 void
 Scheduler::fillMacPdus(
