@@ -155,7 +155,7 @@ Scheduler::scheduleRequestUE(
 
     //Calculate desired RB allocation
     desiredRbAllocation = get_num_required_rb(currentParameters->getNumerology(), currentParameters->getMimo(0),
-        mcsToModulation[currentParameters->getMcsDownlink(0)], mcsToCodeRate[currentParameters->getMcsDownlink(0)], infoBits);
+        mcsToModulation[currentParameters->getMcsUplink(0)], mcsToCodeRate[currentParameters->getMcsUplink(0)], infoBits);
     
     allocation.number_of_rb = desiredRbAllocation > numberAvailableRBs ? numberAvailableRBs:desiredRbAllocation;
 
