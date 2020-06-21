@@ -367,7 +367,7 @@ MacController::scheduling(){
                 scheduler->scheduleRequestBS(ueIds, numberSdus, numberBytes, allocations);
             else{
                 allocations.resize(1);
-                scheduler->scheduleRequestUE(numberSdus[0], numberSdus[0], allocations[0]);
+                scheduler->scheduleRequestUE(numberSdus[0], numberBytes[0], allocations[0]);
             }
 
             //Create MacPDU structures and populate allocations

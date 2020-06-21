@@ -140,7 +140,7 @@ Scheduler::scheduleRequestUE(
     size_t numberBytes,             //Number of total Bytes on buffer for BS
     allocation_cfg_t &allocation)   //Spectrum allocations will be stored
 {
-    //Get stating allocation that equals uplink reservation
+    //Get starting allocation that equals uplink reservation
     allocation = currentParameters->getUlReservation(currentParameters->getCurrentMacAddress());
     allocation.target_ue_id = 0;    //Target UEID for an UE is BS
 
