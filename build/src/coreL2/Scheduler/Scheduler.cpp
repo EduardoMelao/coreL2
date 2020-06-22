@@ -200,7 +200,7 @@ Scheduler::fillMacPdus(
         if(verbose) cout<<"[Scheduler] Scheduled "<<numberBytes<<" Bytes for PDU "<<i<<endl;
 
         //Create a new Multiplexer object to aggregate SDUs
-        Multiplexer* multiplexer = new Multiplexer(numberBytes, 0, destinationUeId, verbose);
+        Multiplexer* multiplexer = new Multiplexer(numberBytes, currentParameters->getCurrentMacAddress(), destinationUeId, verbose);
 
         //Aggregation procedure - Control SDUs
         int numberControlSDUs = sduBuffers->getNumberControlSdus(destinationUeId);
