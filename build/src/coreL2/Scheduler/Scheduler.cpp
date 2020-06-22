@@ -140,7 +140,7 @@ Scheduler::scheduleRequestUE(
     size_t numberBytes,             //Number of total Bytes on buffer for BS
     allocation_cfg_t &allocation)   //Spectrum allocations will be stored
 {
-    //Get stating allocation that equals uplink reservation
+    //Get starting allocation that equals uplink reservation
     allocation = currentParameters->getUlReservation(currentParameters->getCurrentMacAddress());
     allocation.target_ue_id = 0;    //Target UEID for an UE is BS
 
@@ -155,7 +155,7 @@ Scheduler::scheduleRequestUE(
 
     //Calculate desired RB allocation
     desiredRbAllocation = get_num_required_rb(currentParameters->getNumerology(), currentParameters->getMimo(0),
-        mcsToModulation[currentParameters->getMcsDownlink(0)], mcsToCodeRate[currentParameters->getMcsDownlink(0)], infoBits);
+        mcsToModulation[currentParameters->getMcsUplink(0)], mcsToCodeRate[currentParameters->getMcsUplink(0)], infoBits);
     
     allocation.number_of_rb = desiredRbAllocation > numberAvailableRBs ? numberAvailableRBs:desiredRbAllocation;
 
@@ -200,7 +200,7 @@ Scheduler::fillMacPdus(
         if(verbose) cout<<"[Scheduler] Scheduled "<<numberBytes<<" Bytes for PDU "<<i<<endl;
 
         //Create a new Multiplexer object to aggregate SDUs
-        Multiplexer* multiplexer = new Multiplexer(numberBytes, 0, destinationUeId, verbose);
+        Multiplexer* multiplexer = new Multiplexer(numberBytes, currentParameters->getCurrentMacAddress(), destinationUeId, verbose);
 
         //Aggregation procedure - Control SDUs
         int numberControlSDUs = sduBuffers->getNumberControlSdus(destinationUeId);
