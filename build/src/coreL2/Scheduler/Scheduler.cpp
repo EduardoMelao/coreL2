@@ -7,7 +7,7 @@
 @Arquive name : Scheduler.cpp
 @Classification : Scheduler
 @
-@Last alteration : June 19th, 2020
+@Last alteration : July 2nd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -193,11 +193,11 @@ Scheduler::fillMacPdus(
             macPdus[i].mcs_.power_offset=currentParameters->getTPC(destinationUeId);
         }
         macPdus[i].mcs_.modulation = mcsToModulation[mcsValue];
-        macPdus[i].mcs_.num_coded_bytes = get_bit_capacity(macPdus[i]);
+        macPdus[i].mcs_.num_coded_bytes = get_bit_capacity(macPdus[i])/8;
 
         //Calculate number of bits for next transmission
         size_t numberBytes = get_net_byte_capacity(macPdus[i].numID_, macPdus[i].allocation_, macPdus[i].mimo_, macPdus[i].mcs_.modulation, mcsToCodeRate[mcsValue]);
-        if(verbose) cout<<"[Scheduler] Scheduled "<<numberBytes<<" Bytes for PDU "<<i<<endl;
+        if(verbose) cout<<"[Scheduler] Scheduled "<<numberBytes<<" Bytes for PDU "<<i<<" destinated to UE "<<(int)macPdus[i].allocation_.target_ue_id<<endl;
 
         //Create a new Multiplexer object to aggregate SDUs
         Multiplexer* multiplexer = new Multiplexer(numberBytes, currentParameters->getCurrentMacAddress(), destinationUeId, verbose);
