@@ -101,7 +101,7 @@ Scheduler::scheduleRequestBS(
         currentChannel = rbOffset/33;       //Doing integer division will ignore fractional part
         //Then, verify if channel is available in Fusion lookup table. If it is not, search for next available channel
         if(rbOffset%33==0){
-            while(((currentParameters->getFLUTMatrix()>>(4-currentChannel))&1)!=1){
+            while(((currentParameters->getFLUTMatrix()>>(3-currentChannel))&1)!=1){
                 currentChannel++;
                 rbOffset+=33;
             }
@@ -121,7 +121,7 @@ Scheduler::scheduleRequestBS(
 
             //Verify if next RB is idle
             if(rbOffset<132&&rbOffset%33==0){
-                if(((currentParameters->getFLUTMatrix()>>(4-currentChannel))&1)!=1){
+                if(((currentParameters->getFLUTMatrix()>>(3-currentChannel))&1)!=1){
                     break;
                 }
             }
