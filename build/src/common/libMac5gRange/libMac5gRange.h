@@ -243,11 +243,11 @@ typedef struct{
         
         //Open Control message queues
         mqControlToPhy = mq_open( MQ_CONTROL_TO_L1, \
-                                O_CREAT|O_RDWR|O_NONBLOCK, \
+                                O_CREAT|O_RDWR, \
                                 0666, \
                                 &messageQueueAttributes);
         mqControlFromPhy = mq_open( MQ_CONTROL_FROM_L1, \
-                                O_CREAT|O_RDWR|O_NONBLOCK, \
+                                O_CREAT|O_RDWR, \
                                 0666, \
                                 &messageQueueAttributes);   
         //Check for errors

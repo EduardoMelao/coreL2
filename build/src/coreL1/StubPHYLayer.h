@@ -7,6 +7,8 @@
 #ifndef INCLUDED_CORE_L1_H
 #define INCLUDED_CORE_L1_H
 
+#define CONTROL_TIMEOUT 4600 
+
 #include <iostream>     //cout
 #include <stdint.h>     //uint16_t
 #include <sys/socket.h> //socket(), AF_INET, SOCK_DGRAM
@@ -17,6 +19,8 @@
 #include <thread>       //thread
 #include <mqueue.h>     //POSIX Message Queues
 #include <errno.h>      //errno
+#include <sys/time.h>   //struct timeval
+#include <sys/select.h> //select()
 #include "../common/lib5grange/lib5grange.h"
 #include "../common/libMac5gRange/libMac5gRange.h"
 

@@ -7,6 +7,8 @@
 #ifndef INCLUDED_L1_L2_INTERFACE_H
 #define INCLUDED_L1_L2_INTERFACE_H
 
+#define CONTROL_TIMEOUT 4600    //Timeout, in microseconds, to wait for control messages from PHY
+
 #include <iostream>
 #include <mqueue.h>         //Posix Message Queues
 #include <vector>
@@ -14,6 +16,8 @@
 #include <unistd.h>         //close()
 #include <errno.h>          //errno
 #include <boost/crc.hpp>    //Boost CRC library
+#include <sys/time.h>       //struct timeval
+#include <sys/select.h>     //select()
 #include "../../common/lib5grange/lib5grange.h"
 #include "../../common/libMac5gRange/libMac5gRange.h"
 
