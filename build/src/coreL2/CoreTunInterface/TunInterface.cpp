@@ -7,7 +7,7 @@
 @Arquive name : TunInterface.cpp
 @Classification : TUN Interface
 @
-@Last alteration : January 20th, 2020
+@Last alteration : July 2nd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -79,9 +79,6 @@ TunInterface::allocTunInterface(){
     ioctl(fileDescriptor, TUNSETIFF, (void *) &interfaceRequirement);
     strncpy(deviceName,interfaceRequirement.ifr_name, IFNAMSIZ);
 
-    //Set interface to be inblockable for reading
-    fcntl(fileDescriptor, F_SETFL, O_NONBLOCK);
-
     //Forces interface to me initialized as "UP" with MTU
     char cmd[100];
     sprintf(cmd, "ifconfig %s up mtu %s", interfaceRequirement.ifr_ifrn.ifrn_name, to_string(mtu).c_str());
@@ -93,9 +90,30 @@ TunInterface::allocTunInterface(){
 ssize_t 
 TunInterface::readTunInterface(
     char* buffer,           //Buffer to store packet read
-    size_t numberBytes)     //Number of bytes read
+    size_t numberBytes)     //Maximum number of bytes to read
 {
-    return read(fileDescriptor, buffer, numberBytes);
+    ssize_t ready;      //Variable to store return value from select() function
+
+    //Set timeout struct
+    struct timeval timeout; //Struct containing time to wait for data from Tun Interface
+    timeout.tv_sec = 0;
+    timeout.tv_usec = TUN_TIMEOUT;
+
+
+    //Initialize file descriptor set
+    fd_set readFdSet;       //File descriptor set to pass as argument for select()
+    FD_ZERO(&readFdSet);
+    FD_SET(fileDescriptor, &readFdSet);
+
+    ready = select(fileDescriptor+1, &readFdSet, NULL, NULL, &timeout);
+
+    //If file descriptor is ready, return read function
+    if(ready>0)
+        return read(fileDescriptor, buffer, numberBytes);
+
+    //Else, for timeout return -1; For errors, print and return -1
+    if(ready<0) cout<<"[TunInterface] Errors occured reading from tun interface."<<endl;
+    return -1;
 }
 
 bool 
