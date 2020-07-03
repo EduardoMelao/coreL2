@@ -169,19 +169,26 @@ Scheduler::fillMacPdus(
     uint8_t destinationUeId;                //Current Destination UE Identification
     char sduBuffer[MQ_MAX_MSG_SIZE];        //Buffer to store SDU on aggregation procedure
     size_t sduSize;                         //SDU Size in bytes
-    for(int i=0;i<macPdus.size();i++){
-        destinationUeId = macPdus[i].allocation_.target_ue_id;
+    vector<MacPDU>::iterator pduIterator;   //Iterator for MacPDUs vector
+
+    //Set iterator to vector begin
+    pduIterator = macPdus.begin();          
+
+    //Iterate each PDU filling it
+    while(pduIterator != macPdus.end()){
+        //Get destination UeID for this PDU
+        destinationUeId = pduIterator->allocation_.target_ue_id;
 
         //Fill Numerology
-        macPdus[i].numID_ = currentParameters->getNumerology();
+        pduIterator->numID_ = currentParameters->getNumerology();
 
         //Fill MAC - PHY control struct
-        macPdus[i].macphy_ctl_.first_tb_in_subframe = i==0;
-        macPdus[i].macphy_ctl_.last_tb_in_subframe = i==(macPdus.size()-1);
-        macPdus[i].macphy_ctl_.sequence_number = i;
+        pduIterator->macphy_ctl_.first_tb_in_subframe = pduIterator==macPdus.begin();
+        pduIterator->macphy_ctl_.last_tb_in_subframe = pduIterator==(macPdus.end()-1);
+        pduIterator->macphy_ctl_.sequence_number = pduIterator - macPdus.begin();
 
         //Fill MIMO struct
-        macPdus[i].mimo_ = currentParameters->getMimo(destinationUeId);
+        pduIterator->mimo_ = currentParameters->getMimo(destinationUeId);
 
         //Fill MCS struct
         uint8_t mcsValue;   //Value of MCS for current transmission and current destination
@@ -190,14 +197,14 @@ Scheduler::fillMacPdus(
         }
         else{
             mcsValue = currentParameters->getMcsUplink(destinationUeId);
-            macPdus[i].mcs_.power_offset=currentParameters->getTPC(destinationUeId);
+            pduIterator->mcs_.power_offset=currentParameters->getTPC(destinationUeId);
         }
-        macPdus[i].mcs_.modulation = mcsToModulation[mcsValue];
-        macPdus[i].mcs_.num_coded_bytes = get_bit_capacity(macPdus[i])/8;
+        pduIterator->mcs_.modulation = mcsToModulation[mcsValue];
+        pduIterator->mcs_.num_coded_bytes = get_bit_capacity(*pduIterator)/8;
 
         //Calculate number of bits for next transmission
-        size_t numberBytes = get_net_byte_capacity(macPdus[i].numID_, macPdus[i].allocation_, macPdus[i].mimo_, macPdus[i].mcs_.modulation, mcsToCodeRate[mcsValue]);
-        if(verbose) cout<<"[Scheduler] Scheduled "<<numberBytes<<" Bytes for PDU "<<i<<" destinated to UE "<<(int)macPdus[i].allocation_.target_ue_id<<endl;
+        size_t numberBytes = get_net_byte_capacity(pduIterator->numID_, pduIterator->allocation_, pduIterator->mimo_, pduIterator->mcs_.modulation, mcsToCodeRate[mcsValue]);
+        if(verbose) cout<<"[Scheduler] Scheduled "<<numberBytes<<" Bytes for PDU "<<(int)pduIterator->macphy_ctl_.sequence_number<<" destinated to UE "<<(int)pduIterator->allocation_.target_ue_id<<endl;
 
         //Create a new Multiplexer object to aggregate SDUs
         Multiplexer* multiplexer = new Multiplexer(numberBytes, currentParameters->getCurrentMacAddress(), destinationUeId, verbose);
@@ -242,6 +249,9 @@ Scheduler::fillMacPdus(
             exit(1);
         }
         
+        //Lock Data Queue modifications semaphore
+        sduBuffers->lockDataSduQueue();
+        
         for(int j=0;j<numberDataSDUs;j++){
             //Verify if it is possivel to enqueue next SDU
             if((multiplexer->getNumberofBytes() + 2 + sduBuffers->getNextDataSduSize(destinationUeId))>numberBytes){
@@ -266,109 +276,20 @@ Scheduler::fillMacPdus(
             //Add SDU to multiplexer
             multiplexer->addSDU(sduBuffer, sduSize, 1);
         }
+        //Release Data Queue modifications semaphore
+        sduBuffers->unlockDataSduQueue();
 
         //Retreive full PDU from multiplexer if not empty
         if(!multiplexer->isEmpty()){
-            multiplexer->getPDU(macPdus[i].mac_data_);
-            macPdus[i].mcs_.num_info_bytes = macPdus[i].mac_data_.size();
+            multiplexer->getPDU(pduIterator->mac_data_);
+            pduIterator->mcs_.num_info_bytes = pduIterator->mac_data_.size();
+            //Avance PDU iterator
+            pduIterator++;
         }
         else
-            macPdus.erase(macPdus.begin()+i);
+            macPdus.erase(pduIterator);
         
         //Delete multiplexer
         delete multiplexer;
-    }
-}
-
-void
-Scheduler::calculateDownlinkSpectrumAllocation(
-    MacPDU** macPdus,           //Array of MAC PDUs where scheduler will store Multiplexed SDUs
-    uint8_t fusionLutValue)     //Fusion Lookup Table value: array of 4 least significat bits
-{
-    //Process cases 
-    switch(fusionLutValue){
-        case 15:    //1111 -> 2x33 RBs for both UEs
-            //UE[0]: RBs 0 to 65
-            macPdus[0]->allocation_.first_rb = 0;
-            macPdus[0]->allocation_.number_of_rb = 66;
-
-            //UE[1]: RBs 66 to 131
-            macPdus[1]->allocation_.first_rb = 66;
-            macPdus[1]->allocation_.number_of_rb = 66;
-        break;
-
-        case 13: case 11:   //1101(13) or 1011(11) -> 2x33 RBs for one UE and 1x33 RBs for the other
-            //UE[0]: RBs 0 to 32(flut=11) or 65(flut=13)
-            //UE[1]: RBs 66(flut=11) or 99(flut=13) to 131
-
-            macPdus[0]->allocation_.first_rb = 0;
-
-            if(fusionLutValue==11){
-                macPdus[0]->allocation_.number_of_rb = 33;
-                macPdus[1]->allocation_.first_rb = 66;
-                macPdus[1]->allocation_.number_of_rb = 66;
-            }
-            else{
-                macPdus[0]->allocation_.number_of_rb = 66;
-                macPdus[1]->allocation_.first_rb = 99;
-                macPdus[1]->allocation_.number_of_rb = 33;
-            }
-        break;
-
-        case 14: case 7:    //1110(14) or 0111(7) -> 1,5x33 RBs for both UEs
-            //UE[0]: RBs 0 to 48(flut=14) or 33 to 81(flut=7)
-            //UE[1]: RBs 49 to 98(flut=14) or 82 to 131(flut=7)
-
-            if(fusionLutValue==7){
-                macPdus[0]->allocation_.first_rb = 33;
-                macPdus[1]->allocation_.first_rb = 82;
-            }
-            else{
-                macPdus[0]->allocation_.first_rb = 0;
-                macPdus[1]->allocation_.first_rb = 49;
-            }
-
-            macPdus[0]->allocation_.number_of_rb = 49;
-            macPdus[1]->allocation_.number_of_rb = 50;
-        break;
-
-        case 9: case 10: case 12: case 5: case 6: case 3:           //1001, 1010, 1100, 0101, 0110 or 0011 -> 1x33 RBs for both UEs
-            //UE[0]: RBs 0 to 32(flut=9,10,12) or 33 to 65(flut=5,6) or 66 to 98(flut=3)
-            //UE[1]: RBs 33 to 65(flut=12) or 66 to 98(flut=6,10) or 99 to 131(flut=9,5,3)
-            for(int i=0;i<3;i++){
-                if((fusionLutValue<<i)&8==8){
-                    macPdus[0]->allocation_.first_rb = i*33;
-                    break;
-                }
-            }
-            for(int i=0;i<3;i++){
-                if((fusionLutValue>>i)&1==1){
-                    macPdus[1]->allocation_.first_rb = (3-i)*33;
-                    break;
-                }
-            }
-            macPdus[0]->allocation_.number_of_rb = 33;
-            macPdus[1]->allocation_.number_of_rb = 33;
-        break;
-
-        case 8: case 4: case 2: case 1:     //1000, 0100, 0010 or 0001 -> 0,5x33 RBs for both UEs
-            //UE[0]: RBs 0 to 15(flut=8) or 33 to 48(flut=4) or 66 to 81(flut=2) ir 99 to 114(flut=1)
-            //UE[1]: RBs 16 to 32(flut=8) or 49 to 65(flut=4) or 82 to 98(flut=2) ir 115 to 131(flut=1)
-            
-            for(int i=0;i<4;i++){
-                if((fusionLutValue<<i)&8==8){
-                    macPdus[0]->allocation_.first_rb = 33*i;
-                    break;
-                }
-            }
-            macPdus[1]->allocation_.first_rb = macPdus[0]->allocation_.number_of_rb + 16;
-
-            macPdus[0]->allocation_.number_of_rb = 16;
-            macPdus[1]->allocation_.number_of_rb = 17;
-        break;
-
-        default:
-            if(verbose) cout<<"[Scheduler] Invalid Fusion Lookup Table value"<<endl;
-        break;
     }
 }
