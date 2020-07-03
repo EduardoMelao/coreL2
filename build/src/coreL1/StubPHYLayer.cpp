@@ -299,8 +299,9 @@ CoreL1::decoding(
     if(!flagBS){       //Create UESubframeRx.Start message
         UESubframeRx_Start messageUE;	//Messages parameters structure
         for(int i=0;i<132;i++)
-            messageUE.snr[i] = 11;
+            messageUE.snr.push_back(11);
         messageUE.ssm = 3;
+        messageUE.numberPDUs = 1;
         messageUE.serialize(subFrameStartMessage);
     }
 

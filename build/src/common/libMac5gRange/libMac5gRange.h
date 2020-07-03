@@ -126,8 +126,9 @@ typedef struct{
  * @brief Struct for UESubframeRx.Start, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    float snr[132];     //Signal to Noise Ratio per Resource Block //#TODO: define range
-    float ssm;          //SSM: Spectrum Sensing Measurement. Array of 4 bits
+    vector<float> snr;  //Signal to Noise Ratio per Resource Block //#TODO: define range
+    uint8_t ssm;        //SSM: Spectrum Sensing Measurement. Array of 4 bits
+    uint8_t numberPDUs; //Number of PDUs received
     
     /**
      * @brief Serialization method for the struct
@@ -138,16 +139,16 @@ typedef struct{
      **/
     void serialize(vector<uint8_t> & bytes)
     {
-        push_bytes(bytes,(ssm));
-        for(int i=0;i<132;i++)
-            push_bytes(bytes, snr[i]);
+        push_bytes(bytes,ssm);
+        push_bytes(bytes, numberPDUs);
+        serialize_vector(bytes, snr);
     }
 
     /** deserializatyion method for the struct (inverse order)**/
     void deserialize(vector<uint8_t> & bytes)
     {
-        for(int i=131;i>=0;i--)
-            pop_bytes(snr[i], bytes);
+        deserialize_vector(snr, bytes);
+        pop_bytes(numberPDUs, bytes);
         pop_bytes(ssm, bytes);
     }
 }UESubframeRx_Start;
@@ -156,10 +157,10 @@ typedef struct{
  * @brief Struct for RxMetrics, as defined in L1-L2_InterfaceDefinition.xlsx
  */
 typedef struct{
-    float snr[132];         //Channel Signal to Noise Ratio per Resource Block
+    vector<float> snr;      //Channel Signal to Noise Ratio per Resource Block
     float snr_avg;          //Average Signal to Noise Ratio
-    float rankIndicator;    //Rank Indicator
-    float ssReport;         //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 4 bits
+    uint8_t rankIndicator;  //Rank Indicator
+    uint8_t ssReport;       //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 4 bits
     
     /**
      * @brief Serialization method for the struct
@@ -183,8 +184,7 @@ typedef struct{
      **/
     void snr_ssr_serialize(vector<uint8_t> & bytes)
     {
-        for(int i=0;i<132;i++)
-            push_bytes(bytes, snr[i]);
+        serialize_vector(bytes, snr);
         push_bytes(bytes, ssReport);
     }
 
@@ -199,8 +199,7 @@ typedef struct{
     void snr_ssr_deserialize(vector<uint8_t> & bytes)
     {
         pop_bytes(ssReport, bytes);
-        for(int i=131;i>=0;i--)
-            pop_bytes(snr[i], bytes);
+        deserialize_vector(snr, bytes);
     }
 }RxMetrics;
 

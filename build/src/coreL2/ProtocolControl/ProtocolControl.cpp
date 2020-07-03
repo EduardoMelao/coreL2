@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : April 30th, 2020
+@Last alteration : July 3rd, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -197,31 +197,33 @@ ProtocolControl::receiveInterlayerMessages()
                     sourceMacAddress = macController->decoding();
                 break;
                 case 'D':    //Treat UESubframeRX.Start message
-                    if(messageSize>1){      //It means that RX metrics were received
-                        UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
+                {
+                    UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
 
-                        //Copy buffer to vector
-                        messageParametersBytes.resize(messageSize-1);
-                        messageParametersBytes.assign(&(buffer[1]), &(buffer[1])+(messageSize-1));
+                    //Copy buffer to vector
+                    messageParametersBytes.resize(messageSize-1);
+                    messageParametersBytes.assign(&(buffer[1]), &(buffer[1])+(messageSize-1));
 
-                        //Deserialize message
-                        messageParametersUE.deserialize(messageParametersBytes);
-                        if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start with Rx Metrics message. Receiving PDU from L1..."<<endl;
+                    //Deserialize message
+                    messageParametersUE.deserialize(messageParametersBytes);
+                    if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start with Rx Metrics message. Receiving PDU from L1..."<<endl;
 
-                        //Perform Spctrum Sensing Report calculation
-                        uint8_t ssReport = Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm);     //SSM->SSReport calculation
+                    //Perform Spctrum Sensing Report calculation
+                    uint8_t ssReport = Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm);     //SSM->SSReport calculation
 
-                        //Assign new values and enqueue a control SDU to BS with updated information
-                        for(int i=0;i<132;i++)
-                            rxMetrics->snr[i] = messageParametersUE.snr[i];
-                        rxMetrics->ssReport = ssReport;
+                    //Assign new values and enqueue a control SDU to BS with updated information
+                    for(int i=0;i<132;i++)
+                        rxMetrics->snr[i] = messageParametersUE.snr[i];
+                    rxMetrics->ssReport = ssReport;
 
-                        //Send Report to BS
-                        rxMetricsReport(false);
+                    //Send Report to BS
+                    rxMetricsReport(false);
+
+                    if(messageParametersUE.numberPDUs>0){
+                        if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
+                        macController->decoding();
                     }
-
-                    if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
-                    macController->decoding();
+                }
                 break;
                 case 'F':    //Treat PHYTx.Indication message
                     macController->scheduling();
