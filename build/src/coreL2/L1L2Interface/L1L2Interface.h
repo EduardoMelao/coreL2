@@ -7,7 +7,7 @@
 #ifndef INCLUDED_L1_L2_INTERFACE_H
 #define INCLUDED_L1_L2_INTERFACE_H
 
-#define CONTROL_TIMEOUT 4600    //Timeout, in microseconds, to wait for control messages from PHY
+#define CONTROL_TIMEOUT_uSEC 4600    //Timeout, in microseconds, to wait for control messages from PHY
 
 #include <iostream>
 #include <mqueue.h>         //Posix Message Queues

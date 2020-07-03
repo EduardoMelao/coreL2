@@ -125,7 +125,7 @@ L1L2Interface::receiveControlMessage(
     //Set timeout struct
     struct timeval timeout; //Struct containing time to wait for data from Tun Interface
     timeout.tv_sec = 0;
-    timeout.tv_usec = CONTROL_TIMEOUT;
+    timeout.tv_usec = CONTROL_TIMEOUT_uSEC;
 
 
     //Initialize file descriptor set

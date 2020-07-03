@@ -29,7 +29,8 @@
 
 using namespace std;
 
-#define PHY_READY 1     //Timeout, in seconds, to wait for PHY to be stopped
+#define PHY_READY_TIMEOUT_SEC 1     //Timeout, in seconds, to wait for PHY to be stopped
+#define MAIN_THREAD_SLEEPING_TIME_uSEC 4600  //Time, in microseconds, to repeat manager() loop and check system state 
 
 //Initializing classes that will be defined in other .h files
 class ProtocolControl;

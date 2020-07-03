@@ -7,7 +7,7 @@
 #ifndef INCLUDED_CORE_L1_H
 #define INCLUDED_CORE_L1_H
 
-#define CONTROL_TIMEOUT 4600 
+#define CONTROL_TIMEOUT_uSEC 4600 
 
 #include <iostream>     //cout
 #include <stdint.h>     //uint16_t
