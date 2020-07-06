@@ -7,7 +7,7 @@
 @Arquive name : Scheduler.cpp
 @Classification : Scheduler
 @
-@Last alteration : July 3rd, 2020
+@Last alteration : July 6th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -58,8 +58,7 @@ Scheduler::scheduleRequestBS(
     rbsAllocation.resize(numberUEs);
 
     //Calculate total number of available RBs for next transmission
-    for(int i=0;i<4;i++)
-        numberAvailableRBs += (((currentParameters->getFLUTMatrix())>>i)&1)*33;
+    numberAvailableRBs = Cosora::spectrumSensingConvertToRBIdle(currentParameters->getFLUTMatrix());
 
     //For each UE, calculate desired number of RBs to allocate
     for(int i=0;i<numberUEs;i++){
