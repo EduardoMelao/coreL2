@@ -112,7 +112,7 @@ ProtocolControl::decodeControlSdus(
                 //Assert new AvgSNR was not received
                 rxMetricsReceived = false;
 
-                if(verbose) cout<<"Dl MCS calculated: "<<(int)averageMCS<<endl;
+                if(verbose) cout<<"[ProtocolControl] Downlink MCS calculated: "<<(int)averageMCS<<endl;
 
                 //Calculate new DLMCS
                 macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress, averageMCS);
