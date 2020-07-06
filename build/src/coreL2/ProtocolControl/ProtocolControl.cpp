@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : July 3rd, 2020
+@Last alteration : July 6th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -212,6 +212,7 @@ ProtocolControl::receiveInterlayerMessages()
                     uint8_t ssReport = Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm);     //SSM->SSReport calculation
 
                     //Assign new values and enqueue a control SDU to BS with updated information
+                    rxMetrics->snr.resize(132);
                     for(int i=0;i<132;i++)
                         rxMetrics->snr[i] = messageParametersUE.snr[i];
                     rxMetrics->ssReport = ssReport;

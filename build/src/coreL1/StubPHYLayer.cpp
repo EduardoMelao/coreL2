@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : July 3rd, 2020
+@Last alteration : July 6th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -368,16 +368,8 @@ CoreL1::decoding(
         for(int i=0;i<macPDUs.size();i++)
             macPDUs[i].serialize(bytesPDUs);
 
-        //Send SubframeRx.Start control message to L2 and RX Metrics if it is time
-        if(rxMetricsPeriodicity && subFrameCounter==rxMetricsPeriodicity){
-            sendInterlayerMessage((char*)&subFrameStartMessage[0], subFrameStartMessage.size());
-            subFrameCounter = 0;
-        }
-        else{
-            sendInterlayerMessage((char*)&subFrameStartMessage[0], 1);
-        }
-
-        if(rxMetricsPeriodicity) subFrameCounter ++;
+        //Send SubframeRx.Start control message to L2 and RX Metrics
+        sendInterlayerMessage((char*)&subFrameStartMessage[0], subFrameStartMessage.size());
         
         //Send PDUs
         mq_send(l1l2Interface.mqPduFromPhy, (const char*)&bytesPDUs[0], bytesPDUs.size(), 1);
