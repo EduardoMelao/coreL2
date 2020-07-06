@@ -103,6 +103,12 @@ SduBuffers::enqueueingDataSdus()
                 break;
             }
 
+            //Check maximum number of Bytes
+            if(numberBytesRead>(32768-10)){     //10 is for header margin
+                if(verbose) cout<<"[SduBuffers] Dropped too much big SDU."<<endl;
+                break;
+            }
+
             //Check ipv4
             if(((buffer[0]>>4)&15) != 4){
                 if(verbose) cout<<"[SduBuffers] Dropped non-ipv4 packet."<<endl;

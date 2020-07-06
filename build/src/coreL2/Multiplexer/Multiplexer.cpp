@@ -7,7 +7,7 @@
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : July 3rd, 2020
+@Last alteration : July 6th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -73,7 +73,7 @@ Multiplexer::getNumberofBytes(){
 bool 
 Multiplexer::addSduPosition(
     char* sdu,                  //Buffer containing single SDU
-    size_t size,              //SDU size
+    uint16_t size,              //SDU size
     uint8_t flagDataControl,    //SDU Data/Control flag
     int position)               //Position in the queue where SDU will be added
 {
@@ -109,7 +109,7 @@ Multiplexer::addSduPosition(
 bool 
 Multiplexer::addSDU(
     char* sdu,                  //Buffer containing single SDU
-    size_t size,              //SDU size
+    uint16_t size,              //SDU size
     uint8_t flagDataControl)    //SDU Data/Control flag
 {
     //Verify if it is possible to insert SDU (considering CRC)

@@ -26,7 +26,7 @@ private:
     uint8_t destinationAddress;             //Destination MAC address
     int offset;                             //Offset for decoding
     int controlOffset;                      //Offset for encoding Control SDUs
-    vector<size_t> sizesSDUs;               //Sizes of each SDU multiplexed
+    vector<uint16_t> sizesSDUs;             //Sizes of each SDU multiplexed
     vector<uint8_t> flagsDataControlSDUs;   //Data(1)/Control(0) flag
     bool verbose;                           //Verbosity flag
     
@@ -38,7 +38,7 @@ private:
      * @param position Position where SDU will be added
      * @returns True if SDU was inserted successfully; False otherwise
      */
-    bool addSduPosition(char* sdu, size_t size, uint8_t flagDataControl, int position);  
+    bool addSduPosition(char* sdu, uint16_t size, uint8_t flagDataControl, int position);  
     
     /**
      * @brief Returns the current queue buffer length considering the size of each SDU
@@ -80,7 +80,7 @@ public:
      * @param flagDataControl SDU D/C flag
      * @returns True if SDU was inserted successfully; False otherwise
      */     
-    bool addSDU(char* sdu, size_t size, uint8_t flagDataControl);
+    bool addSDU(char* sdu, uint16_t size, uint8_t flagDataControl);
 
     /**
      * @brief Function used for getting SDUs while decoding
