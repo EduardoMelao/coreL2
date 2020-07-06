@@ -8,7 +8,7 @@
 @Arquive name : SduBuffers.cpp
 @Classification : SDU Buffers
 @
-@Last alteration : June 18th, 2020
+@Last alteration : July 6th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -103,6 +103,12 @@ SduBuffers::enqueueingDataSdus()
                 break;
             }
 
+            //Check maximum number of Bytes
+            if(numberBytesRead>(32768-10)){     //10 is for header margin
+                if(verbose) cout<<"[SduBuffers] Dropped too much big SDU."<<endl;
+                break;
+            }
+
             //Check ipv4
             if(((buffer[0]>>4)&15) != 4){
                 if(verbose) cout<<"[SduBuffers] Dropped non-ipv4 packet."<<endl;
@@ -125,7 +131,7 @@ SduBuffers::enqueueingDataSdus()
             lock_guard<mutex> lk(dataMutex);
             
             //Everything is ok, buffer can be added to queue
-            //First, consult destination MAC address based on IP Address is it is BS
+            //First, consult destination MAC address based on IP Address if it is BS
             //If it is UE, always forward Data packet to BS
             int index = currentParameters->isBaseStation()? currentParameters->getIndex(getMacAddress(buffer)) : 0;
 
@@ -254,8 +260,7 @@ SduBuffers::getNextDataSdu(
     ssize_t returnValue;   //Return value
     int index = currentParameters->getIndex(macAddress);
 
-    //Lock mutex to remove SDU from the head of the queue
-    lock_guard<mutex> lk(dataMutex);
+    //Remove SDU from the head of the queue
     if(dataSduQueue[index].size()==0){
         if(verbose) cout<<"[SduBuffers] Tried to get empty SDU from L3."<<endl;
         return -1;
@@ -319,8 +324,6 @@ SduBuffers::getNextDataSduSize(
 {          
     int index = currentParameters->getIndex(macAddress);
 
-    //Lock mutex to remove SDU from the head of the queue
-    lock_guard<mutex> lk(dataMutex);
     if(dataSduQueue[index].size()==0){
         if(verbose) cout<<"[SduBuffers] Tried to get size of empty SDU from L3."<<endl;
         return -1;
@@ -349,48 +352,63 @@ SduBuffers::getNextControlSduSize(
 
 void 
 SduBuffers::dataSduTimeoutChecking(){
-    unsigned long long stop;    //Mark current Subframe to calculate 
-    unsigned long long diff;    //Subframe difference
+    unsigned long long stop;            //Mark current Subframe to calculate subframe difference
+    unsigned long long diff;            //Subframe difference
+    size_t numberSleepingSubframes = 0; //Number of subframes to sleep until packets can timeout; If there is an ampty queue, set to 1.
+    size_t desiredSleepingTime;         //Desired sleeping time for each queue in number of subframes
 
     while(currentParameters->getMacMode()!=STOP_MODE){
         stop = timerSubframe->getSubframeNumber();    //Get current Subframe
 
+        dataMutex.lock();   //Lock Data SDU Buffer mutex to possibly make alterarions on queue
         for(int index=0;index<currentParameters->getNumberUEs();index++){
-            dataMutex.lock();   //Lock Data SDU Buffer mutex to possibly make alterarions on queue
-            //Check if there are Data SDUs to analyze
-            if(!(dataSduQueue[index].size()>0)){
-                dataMutex.unlock();
-                this_thread::sleep_for(chrono::microseconds(SUBFRAME_DURATION));
-                break;
-            }
+            //Look for late IP packets
+            while(1){
+                //Check if there are Data SDUs to analyze
+                if(!(dataSduQueue[index].size()>0)){
+                    numberSleepingSubframes = 1;
+                    break;
+                }
 
-            
-            //Calculate Subframe difference
-            if(dataTimestamp[index][0]>stop){   
-                diff = (18446744073709551615ULL - dataTimestamp[index][0]);
-                diff += stop;
-            }
-            else 
-                diff = stop - dataTimestamp[index][0];
+                //Calculate Subframe difference (considering subframe counter can extrapolate maximum unsigned long long)
+                if(dataTimestamp[index][0]>stop){   
+                    diff = (18446744073709551615ULL - dataTimestamp[index][0]);
+                    diff += stop;
+                }
+                else 
+                    diff = stop - dataTimestamp[index][0];
 
-            //Verify timeout
-            if(diff<currentParameters->getIpTimeout()){
-                //Nothing to do: unlock mutex and sleep for a subframe dutation
-                dataMutex.unlock();
-                this_thread::sleep_for(chrono::microseconds((currentParameters->getIpTimeout()-diff)*SUBFRAME_DURATION));
-            }
-            else{
-                if(verbose) cout<<"[SduBuffers] IP Packet timeout with "<<diff<<" subframes as difference."<<endl;
-                
-                //Delete front positions and delete byte count
-                totalDataBufferBytes[index] -= dataSizes[index].front();
-                dataSizes[index].erase(dataSizes[index].begin());
-                dataSduQueue[index].erase(dataSduQueue[index].begin());
-                dataTimestamp[index].erase(dataTimestamp[index].begin());
-
-                //Unlock Mutex
-                dataMutex.unlock();
+                //Verify timeout
+                if(diff<currentParameters->getIpTimeout()){
+                    //Nothing to do: set desired sleeping time and wait
+                    desiredSleepingTime = currentParameters->getIpTimeout()-diff;
+                    if(numberSleepingSubframes==0) numberSleepingSubframes = desiredSleepingTime;
+                    else if(desiredSleepingTime<numberSleepingSubframes) numberSleepingSubframes = desiredSleepingTime;
+                    break;
+                }
+                else{
+                    if(verbose) cout<<"[SduBuffers] IP Packet from queue "<<index<<" timed out with "<<diff<<" subframes as difference."<<endl;
+                    
+                    //Delete front positions and delete byte count
+                    totalDataBufferBytes[index] -= dataSizes[index].front();
+                    dataSizes[index].erase(dataSizes[index].begin());
+                    dataSduQueue[index].erase(dataSduQueue[index].begin());
+                    dataTimestamp[index].erase(dataTimestamp[index].begin());
+                }
             }
         }
+        //Unlock Mutex and sleep
+        dataMutex.unlock();
+        this_thread::sleep_for(chrono::microseconds((numberSleepingSubframes*SUBFRAME_DURATION)));
     }
+}
+
+void
+SduBuffers::lockDataSduQueue(){
+    dataMutex.lock();
+}
+
+void
+SduBuffers::unlockDataSduQueue(){
+    dataMutex.unlock();
 }

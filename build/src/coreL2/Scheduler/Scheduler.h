@@ -59,13 +59,6 @@ public:
      * @param macPdus Vector of MacPDUs to be filled
      */
     void fillMacPdus(vector<MacPDU> &macPdus);
-
-    /**
-     * @brief Procedure thar calculates spectrum allocation for 2 UEs (and only) for schedulingRequest procedure for downlink
-     * @param macPDUs Array of MAC PDUs where scheduler will store Multiplexed SDUs
-     * @param fusionLutValue Fusion Lookup Table value: array of 4 least significat bits
-     */
-    void calculateDownlinkSpectrumAllocation(MacPDU** macPdus, uint8_t fusionLutValue);
 };
 
 #endif //INCLUDED_SCHEDULER_H
