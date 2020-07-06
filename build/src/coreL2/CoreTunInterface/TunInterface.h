@@ -15,6 +15,10 @@
 #include <sys/types.h>  //size_t
 #include <fcntl.h>      //open(), O_RDWR
 #include <sys/ioctl.h>  //ioctl()
+#include <sys/time.h>   //struct timeval
+#include <sys/select.h> //select()
+
+#define TUN_TIMEOUT_uSEC 4600    //TImeout, in microseconds, to wait for data from Tun interface (1 subframe duration)
 
 /**
  * @brief Class to alloc, save the descriptor and manage operations of TUN interface
@@ -43,7 +47,7 @@ public:
      * @param deviceName Interface name
      */
     TunInterface(const char* deviceName);
-   
+
     /**
      * @brief Creates interface
      * @param deviceName Interface name

@@ -7,7 +7,7 @@
 @Arquive name : Multiplexer.cpp
 @Classification : Multiplexer
 @
-@Last alteration : April 29th, 2020
+@Last alteration : July 6th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -115,7 +115,7 @@ Multiplexer::addSDU(
     //Verify if it is possible to insert SDU (considering CRC)
     if((size+2+currentPDUSize)>maxNumberBytes){
         if(verbose) cout<<"[Multiplexer] Tried to multiplex SDU which size extrapolates maxNumberBytes."<<endl;
-        exit(4);
+        return false;
     }
 
     //Adds SDU to position depending if it is Data or Control SDU

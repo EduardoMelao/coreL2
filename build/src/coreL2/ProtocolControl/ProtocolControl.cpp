@@ -7,7 +7,7 @@
 @Arquive name : ProtocolControl.cpp
 @Classification : Protocol Control
 @
-@Last alteration : April 30th, 2020
+@Last alteration : July 6th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -48,7 +48,7 @@ ProtocolControl::decodeControlSdus(
     //If it is BS, it can receive ACKs or Rx Metrics
     if(macController->currentParameters->isBaseStation()){
         switch(buffer[0]){
-            case '1':   //RxMetrics: snr_avg and rankIndicator
+            case '1':   //RxMetrics: snr_avg and rankIndicator [PDU received by UE rxMetrics]
             {
                 //Verify index
                 int index = macController->currentParameters->getIndex(macAddress);
@@ -65,39 +65,16 @@ ProtocolControl::decodeControlSdus(
                 //Deserialize Bytes
                 rxMetrics[index].snr_avg_ri_deserialize(rxMetricsBytes);
 
+                rxMetricsReceived = true;
+
                 if(verbose){
-                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received: ";
+                    cout<<"[ProtocolControl] PDU RxMetrics from UE "<<(int) macAddress<<" received: ";
                     cout<<"RI: "<<(int)rxMetrics[index].rankIndicator;
-                }
-
-                //Calculate average MCS
-                int averageMCS = 0;
-                if(rxMetricsReceived){
-                    for(int i=0;i<132;i++)
-                        averageMCS += LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr[i]);
-                }
-                averageMCS += LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr_avg)*macController->currentParameters->getUlReservation(macAddress).number_of_rb;
-                averageMCS = averageMCS/(macController->currentParameters->getUlReservation(macAddress).number_of_rb + (rxMetricsReceived? 133:0));
-
-                //Assert WbSNR was not received
-                rxMetricsReceived = false;
-
-                if(verbose) cout<<" and MCS avg: "<<(int)averageMCS<<endl;
-
-                //Calculate new DLMCS
-                macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress, averageMCS);
-
-                //If new MCS is different from old, enter RECONFIG mode
-                if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
-                    //Changes current MAC mode to RECONFIG
-                    macController->currentParameters->setMacMode(RECONFIG_MODE);
-
-                    if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
                 }
 
                 break;
             }
-            case '2':   //RxMetrics: snr per RB and Spectrum Sensing Report
+            case '2':   //RxMetrics: SNR per RB and Spectrum Sensing Report [periodic rxMetrics]
             {
                 //Verify index
                 int index = macController->currentParameters->getIndex(macAddress);
@@ -118,12 +95,35 @@ ProtocolControl::decodeControlSdus(
                     cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received: ";
                     cout<<"Flut: "<<(int)rxMetrics[index].ssReport<<endl;
                 }
-                
-                //Change flag value
-                rxMetricsReceived = true;
 
                 //Perform Fusion calculation
                 macController->cosora->fusionAlgorithm(rxMetrics[index].ssReport);
+
+                //Calculate average SNR and MCS
+                float averageSNR = 0;
+                size_t averageMCS;
+                for(int i=0;i<132;i++)
+                    averageSNR += rxMetrics[index].snr[i];
+                if(rxMetricsReceived)   //Add SNR_avg contribution
+                    averageSNR += rxMetrics[index].snr_avg*rxMetrics[index].numberRBs;
+                averageSNR = averageSNR/((rxMetricsReceived? rxMetrics[index].numberRBs:0) + 132);
+                averageMCS = LinkAdaptation::getSnrConvertToMcs(averageSNR);
+
+                //Assert new AvgSNR was not received
+                rxMetricsReceived = false;
+
+                if(verbose) cout<<"[ProtocolControl] Downlink MCS calculated: "<<(int)averageMCS<<endl;
+
+                //Calculate new DLMCS
+                macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress, averageMCS);
+
+                //If new MCS is different from old, enter RECONFIG mode
+                if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
+                    //Changes current MAC mode to RECONFIG
+                    macController->currentParameters->setMacMode(RECONFIG_MODE);
+
+                    if(verbose) cout<<"\n\n[ProtocolControl] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+                }
 
                 break;
             }
@@ -197,31 +197,34 @@ ProtocolControl::receiveInterlayerMessages()
                     sourceMacAddress = macController->decoding();
                 break;
                 case 'D':    //Treat UESubframeRX.Start message
-                    if(messageSize>1){      //It means that RX metrics were received
-                        UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
+                {
+                    UESubframeRx_Start messageParametersUE;     //Define struct for UE parameters
 
-                        //Copy buffer to vector
-                        messageParametersBytes.resize(messageSize-1);
-                        messageParametersBytes.assign(&(buffer[1]), &(buffer[1])+(messageSize-1));
+                    //Copy buffer to vector
+                    messageParametersBytes.resize(messageSize-1);
+                    messageParametersBytes.assign(&(buffer[1]), &(buffer[1])+(messageSize-1));
 
-                        //Deserialize message
-                        messageParametersUE.deserialize(messageParametersBytes);
-                        if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start with Rx Metrics message. Receiving PDU from L1..."<<endl;
+                    //Deserialize message
+                    messageParametersUE.deserialize(messageParametersBytes);
+                    if(verbose) cout<<"[ProtocolControl] Received UESubframeRx.Start with Rx Metrics message. Receiving PDU from L1..."<<endl;
 
-                        //Perform Spctrum Sensing Report calculation
-                        uint8_t ssReport = Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm);     //SSM->SSReport calculation
+                    //Perform Spctrum Sensing Report calculation
+                    uint8_t ssReport = Cosora::calculateSpectrumSensingValue(messageParametersUE.ssm);     //SSM->SSReport calculation
 
-                        //Assign new values and enqueue a control SDU to BS with updated information
-                        for(int i=0;i<132;i++)
-                            rxMetrics->snr[i] = messageParametersUE.snr[i];
-                        rxMetrics->ssReport = ssReport;
+                    //Assign new values and enqueue a control SDU to BS with updated information
+                    rxMetrics->snr.resize(132);
+                    for(int i=0;i<132;i++)
+                        rxMetrics->snr[i] = messageParametersUE.snr[i];
+                    rxMetrics->ssReport = ssReport;
 
-                        //Send Report to BS
-                        rxMetricsReport(false);
+                    //Send Report to BS
+                    rxMetricsReport(false);
+
+                    if(messageParametersUE.numberPDUs>0){
+                        if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
+                        macController->decoding();
                     }
-
-                    if(verbose) cout<<"[ProtocolControl] Receiving PDU from L1..."<<endl;
-                    macController->decoding();
+                }
                 break;
                 case 'F':    //Treat PHYTx.Indication message
                     macController->scheduling();

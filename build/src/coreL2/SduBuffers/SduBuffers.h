@@ -141,5 +141,16 @@ public:
      * @brief Checks for IP packets with timeout exceeded
      */
     void dataSduTimeoutChecking();
+
+    /**
+     * @brief Locks mutex for Data SDU queue
+     */
+    void lockDataSduQueue();
+    
+    /**
+     * @brief Locks mutex for Data SDU queue
+     */
+    void unlockDataSduQueue();
+    
 };
 #endif  //SDU_BUFFERS_H

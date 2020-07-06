@@ -57,7 +57,7 @@ public:
      * @param spectrumSensingReport SS Report from UE
      * @returns Number of RBs in idle
      */
-    static uint16_t spectrumSensingConvertToRBIdle(uint8_t spectrumSensingReport);
+    static uint8_t spectrumSensingConvertToRBIdle(uint8_t spectrumSensingReport);
 
     /**
      * @brief This procedure waits for SSWaitTimeout subframes receiving SSR from UES and then

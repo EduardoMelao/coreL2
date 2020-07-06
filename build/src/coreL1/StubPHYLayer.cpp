@@ -7,7 +7,7 @@
 @Arquive name : StubPHYLayer.cpp
 @Classification : Core L1 [STUB]
 @
-@Last alteration : April 28th, 2020
+@Last alteration : July 6th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -299,8 +299,9 @@ CoreL1::decoding(
     if(!flagBS){       //Create UESubframeRx.Start message
         UESubframeRx_Start messageUE;	//Messages parameters structure
         for(int i=0;i<132;i++)
-            messageUE.snr[i] = 11;
+            messageUE.snr.push_back(11);
         messageUE.ssm = 3;
+        messageUE.numberPDUs = 1;
         messageUE.serialize(subFrameStartMessage);
     }
 
@@ -367,16 +368,8 @@ CoreL1::decoding(
         for(int i=0;i<macPDUs.size();i++)
             macPDUs[i].serialize(bytesPDUs);
 
-        //Send SubframeRx.Start control message to L2 and RX Metrics if it is time
-        if(rxMetricsPeriodicity && subFrameCounter==rxMetricsPeriodicity){
-            sendInterlayerMessage((char*)&subFrameStartMessage[0], subFrameStartMessage.size());
-            subFrameCounter = 0;
-        }
-        else{
-            sendInterlayerMessage((char*)&subFrameStartMessage[0], 1);
-        }
-
-        if(rxMetricsPeriodicity) subFrameCounter ++;
+        //Send SubframeRx.Start control message to L2 and RX Metrics
+        sendInterlayerMessage((char*)&subFrameStartMessage[0], subFrameStartMessage.size());
         
         //Send PDUs
         mq_send(l1l2Interface.mqPduFromPhy, (const char*)&bytesPDUs[0], bytesPDUs.size(), 1);
@@ -413,7 +406,29 @@ CoreL1::receiveInterlayerMessage(){
     while(1){
         //Clear buffer and message and receive next control message
         bzero(buffer, MQ_MAX_MSG_SIZE);
-        messageSize = mq_receive(l1l2Interface.mqControlToPhy, buffer, MQ_MAX_MSG_SIZE, NULL);
+
+        //Set timeout struct
+        struct timeval timeout; //Struct containing time to wait for data from Tun Interface
+        timeout.tv_sec = 0;
+        timeout.tv_usec = CONTROL_TIMEOUT_uSEC;
+
+
+        //Initialize file descriptor set
+        fd_set readFdSet;       //File descriptor set to pass as argument for select()
+        FD_ZERO(&readFdSet);
+        FD_SET(l1l2Interface.mqControlToPhy, &readFdSet);
+
+        size_t ready = select(l1l2Interface.mqControlToPhy+1, &readFdSet, NULL, NULL, &timeout);
+
+        //If file descriptor is ready, return read function
+        if(ready>0)
+            messageSize = mq_receive(l1l2Interface.mqControlToPhy, buffer, MQ_MAX_MSG_SIZE, NULL);
+        else{
+            //Else, for timeout return -1; For errors, print and return -1
+            if(ready<0) cout<<"[CoreL1] Errors occured reading from Control MQ."<<endl;
+            messageSize = -1;
+        }
+        
 
         if(messageSize<0)   //No message received
             continue;

@@ -26,7 +26,7 @@ class DynamicParameters{
 private:
 protected:
     //Dynamic information as informed on spreadsheet L1-L2_InterfaceDefinition.xlsx
-	uint8_t fLutMatrix;							//[4 bits] BitMap from Fusion Spectrum Analysis
+	uint8_t fLutMatrix;							//[4 bits] BitMap [0 0 0 0 CH0 CH1 CH2 CH3] from Fusion Spectrum Analysis
 	vector<allocation_cfg_t> ulReservation;	    //[24 bits each] Spectrum allocation for Uplink
 	vector<uint8_t> mcsDownlink;				//[4 bit each] Modulation and Coding Scheme for Downlink
 	vector<uint8_t> mcsUplink;					//[4 bit each] Modulation and Coding Scheme for Uplink

@@ -7,7 +7,7 @@
 @Arquive name : MacController.cpp
 @Classification : MAC Controller
 @
-@Last alteration : June 19th, 2020
+@Last alteration : July 6th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -185,8 +185,8 @@ MacController::manager(){
                 //Set MAC mode to start mode
                 currentParameters->setMacMode(START_MODE);
 
-                //Wait for PHY to be ready for PHY_READY seconds
-                this_thread::sleep_for(chrono::seconds(PHY_READY));
+                //Wait for PHY to be ready for PHY_READY_TIMEOUT_SEC seconds
+                this_thread::sleep_for(chrono::seconds(PHY_READY_TIMEOUT_SEC));
             }
             break;
 
@@ -212,7 +212,7 @@ MacController::manager(){
                             protocolControl->sendInterlayerMessages(&stopRequestMessage, 1);
 
                             //Wait 1s for PHYConfig.Response Message
-                            this_thread::sleep_for(chrono::seconds(PHY_READY));
+                            this_thread::sleep_for(chrono::seconds(PHY_READY_TIMEOUT_SEC));
                         }
                     }
                 }
@@ -224,7 +224,7 @@ MacController::manager(){
                         protocolControl->sendInterlayerMessages(&stopRequestMessage, 1);
 
                         //Wait 1s for PHYConfig.Response Message
-                        this_thread::sleep_for(chrono::seconds(PHY_READY));
+                        this_thread::sleep_for(chrono::seconds(PHY_READY_TIMEOUT_SEC));
                     }
                 }
             }
@@ -314,6 +314,8 @@ MacController::manager(){
             }
             break;
         }
+        //Sleep before checking system state again
+        this_thread::sleep_for(chrono::microseconds(MAIN_THREAD_SLEEPING_TIME_uSEC));
     }
 }
 
@@ -474,10 +476,11 @@ MacController::decoding()
                 if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
             }
         }
-        else{   //If it is BS, send report to BS
+        else{   //If it is UE, send report to BS
 
             protocolControl->rxMetrics->rankIndicator = bufferPdus[0]->rankIndicator_;
             protocolControl->rxMetrics->snr_avg = bufferPdus[0]->snr_avg_;
+            protocolControl->rxMetrics->numberRBs = bufferPdus[0]->allocation_.number_of_rb;
             protocolControl->rxMetricsReport(true);
         }
 
