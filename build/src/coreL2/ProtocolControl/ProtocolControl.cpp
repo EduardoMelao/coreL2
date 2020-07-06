@@ -48,7 +48,7 @@ ProtocolControl::decodeControlSdus(
     //If it is BS, it can receive ACKs or Rx Metrics
     if(macController->currentParameters->isBaseStation()){
         switch(buffer[0]){
-            case '1':   //RxMetrics: snr_avg and rankIndicator
+            case '1':   //RxMetrics: snr_avg and rankIndicator [PDU received by UE rxMetrics]
             {
                 //Verify index
                 int index = macController->currentParameters->getIndex(macAddress);
@@ -65,39 +65,16 @@ ProtocolControl::decodeControlSdus(
                 //Deserialize Bytes
                 rxMetrics[index].snr_avg_ri_deserialize(rxMetricsBytes);
 
+                rxMetricsReceived = true;
+
                 if(verbose){
-                    cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received: ";
+                    cout<<"[ProtocolControl] PDU RxMetrics from UE "<<(int) macAddress<<" received: ";
                     cout<<"RI: "<<(int)rxMetrics[index].rankIndicator;
-                }
-
-                //Calculate average MCS
-                int averageMCS = 0;
-                if(rxMetricsReceived){
-                    for(int i=0;i<132;i++)
-                        averageMCS += LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr[i]);
-                }
-                averageMCS += LinkAdaptation::getSnrConvertToMcs(rxMetrics[index].snr_avg)*macController->currentParameters->getUlReservation(macAddress).number_of_rb;
-                averageMCS = averageMCS/(macController->currentParameters->getUlReservation(macAddress).number_of_rb + (rxMetricsReceived? 133:0));
-
-                //Assert WbSNR was not received
-                rxMetricsReceived = false;
-
-                if(verbose) cout<<" and MCS avg: "<<(int)averageMCS<<endl;
-
-                //Calculate new DLMCS
-                macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress, averageMCS);
-
-                //If new MCS is different from old, enter RECONFIG mode
-                if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
-                    //Changes current MAC mode to RECONFIG
-                    macController->currentParameters->setMacMode(RECONFIG_MODE);
-
-                    if(verbose) cout<<"\n\n[MacController] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
                 }
 
                 break;
             }
-            case '2':   //RxMetrics: snr per RB and Spectrum Sensing Report
+            case '2':   //RxMetrics: SNR per RB and Spectrum Sensing Report [periodic rxMetrics]
             {
                 //Verify index
                 int index = macController->currentParameters->getIndex(macAddress);
@@ -118,12 +95,35 @@ ProtocolControl::decodeControlSdus(
                     cout<<"[ProtocolControl] RxMetrics from UE "<<(int) macAddress<<" received: ";
                     cout<<"Flut: "<<(int)rxMetrics[index].ssReport<<endl;
                 }
-                
-                //Change flag value
-                rxMetricsReceived = true;
 
                 //Perform Fusion calculation
                 macController->cosora->fusionAlgorithm(rxMetrics[index].ssReport);
+
+                //Calculate average SNR and MCS
+                float averageSNR = 0;
+                size_t averageMCS;
+                for(int i=0;i<132;i++)
+                    averageSNR += rxMetrics[index].snr[i];
+                if(rxMetricsReceived)   //Add SNR_avg contribution
+                    averageSNR += rxMetrics[index].snr_avg*rxMetrics[index].numberRBs;
+                averageSNR = averageSNR/((rxMetricsReceived? rxMetrics[index].numberRBs:0) + 132);
+                averageMCS = LinkAdaptation::getSnrConvertToMcs(averageSNR);
+
+                //Assert new AvgSNR was not received
+                rxMetricsReceived = false;
+
+                if(verbose) cout<<"Dl MCS calculated: "<<(int)averageMCS<<endl;
+
+                //Calculate new DLMCS
+                macController->cliL2Interface->dynamicParameters->setMcsDownlink(macAddress, averageMCS);
+
+                //If new MCS is different from old, enter RECONFIG mode
+                if(macController->cliL2Interface->dynamicParameters->getMcsDownlink(macAddress)!=macController->currentParameters->getMcsDownlink(macAddress)){
+                    //Changes current MAC mode to RECONFIG
+                    macController->currentParameters->setMacMode(RECONFIG_MODE);
+
+                    if(verbose) cout<<"\n\n[ProtocolControl] ___________ System entering RECONFIG mode by System parameters alteration. ___________\n"<<endl;
+                }
 
                 break;
             }

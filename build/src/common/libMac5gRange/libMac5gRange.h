@@ -161,6 +161,7 @@ typedef struct{
     float snr_avg;          //Average Signal to Noise Ratio
     uint8_t rankIndicator;  //Rank Indicator
     uint8_t ssReport;       //SS Report: Spectrum Sensing Report, part of RxMetrics. Array of 4 bits
+    uint8_t numberRBs;      //Allocation previously used on downlink
     
     /**
      * @brief Serialization method for the struct
@@ -173,6 +174,7 @@ typedef struct{
     {
         push_bytes(bytes, snr_avg);
         push_bytes(bytes, rankIndicator);
+        push_bytes(bytes, numberRBs);
     }
 
     /**
@@ -191,6 +193,7 @@ typedef struct{
     /** Deserialization method for the struct (inverse order)**/
     void snr_avg_ri_deserialize(vector<uint8_t> & bytes)
     {
+        pop_bytes(numberRBs, bytes);
         pop_bytes(rankIndicator, bytes);
         pop_bytes(snr_avg, bytes);
     }
