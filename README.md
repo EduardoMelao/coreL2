@@ -86,7 +86,7 @@ This file must be editted before running MAC. The default configuration (this ve
 ---
 The file `Default.txt` is composed only by numbers, respecting ranges, as defined in the table below. The first column indicates if the attribute os necessary for BS and UE (BS/UE) or only for BS. The second column shows the range of the number to be put in the file. Finally, the third column presents the name and/or a short explanation about the parameter.
 
-On UE, just the attributes identifies with (BS/UE) must be present on `Default.txt` file.
+On UE, just the attributes identified with (BS/UE) must be present on `Default.txt` file.
 | BS/UE or BS  | Range | Parameter  |
 |:-:|:-:|---|
 |BS/UE|[0..1]|Flag BS(1) or UE(0)
@@ -111,7 +111,8 @@ On UE, just the attributes identifies with (BS/UE) must be present on `Default.t
 |BS/UE| 	[0..40]	 |   *Transmission Power Control
  
 `*` These informations are read Number of UEs times (for BS), these are Uplink reservations for each UE. All parameters marked with `*` have to be repeated, in blocks of parameters (one block with all parameters for UE 1, then other block for UE 2, and so on). 
-`**` The 4 bits are referrered to 4 channels: 0 (RBs 0 to 32), 1 (RBs 33 to 65), 2 (RBs 66 to 98), 3 (RBs 99 to 131). The least significant bit refers to Channel 0 and so on, till the most significat bit (of the four) refers to Channel 3.
+
+`**` The 4 bits are referred to 4 channels: 0 (RBs 0 to 32), 1 (RBs 33 to 65), 2 (RBs 66 to 98), 3 (RBs 99 to 131). The least significant bit refers to Channel 0 and so on, till the most significat bit (of the four) refers to Channel 3.
 
 #### 3.3.2 Execution of MAC
 After filling `Default.txt` and leaving it into `build/` directory, MAC can be executed using the comand below (parameter with `< >` is optional; do not use `<` or `>`).
