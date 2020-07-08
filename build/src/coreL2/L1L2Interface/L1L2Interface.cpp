@@ -7,7 +7,7 @@
 @Arquive name : L1L2Interface.cpp
 @Classification : L1 L2 Interface
 @
-@Last alteration : July 3rd, 2020
+@Last alteration : July 8th, 2020
 @Responsible : Eduardo Melao
 @Email : emelao@cpqd.com.br
 @Telephone extension : 7015
@@ -92,13 +92,12 @@ L1L2Interface::receivePdus(
     //While offset does not reach the end of receptionBuffer
     while(receptionBufferBytes.size()){
         //Resize MAC PDUs vector and reserialize next PDU
-        buffer.resize(buffer.size()+1);
-        buffer[buffer.size()-1] = new MacPDU(receptionBufferBytes);
+        buffer.push_back(new MacPDU(receptionBufferBytes));
 
         //Drop PDU if CRC does not check
-        if(!crcPackageChecking((char*)&(buffer[buffer.size()-1]->mac_data_[0]), buffer[buffer.size()-1]->mac_data_.size())){
-            if(verbose) cout<<"Drop Package due to CRC error"<<endl;
-            buffer.erase(buffer.end());
+        if(!crcPackageChecking((char*)&(buffer.back()->mac_data_[0]), buffer.back()->mac_data_.size())){
+            if(verbose) cout<<"[L1L2Interface] Drop Package due to CRC error"<<endl;
+            buffer.pop_back();
         }
     }
 
